@@ -53,3 +53,19 @@ class SimulationSuite extends munit.FunSuite:
     val curve = Simulation.simulate(profile, Nil, t0, at(30))
     assert(curve.samples.forall(_.bracMgL == 0.0))
   }
+
+  test("back-to-back drinks whose end and start coincide to the millisecond do not crash the solver") {
+    // Found in review: tiny floating-point gaps between "end of drink A" and "start of drink B" created
+    // sub-1e-11-minute segments, and the step-size underflow check fired after a successful final step.
+    for k <- 0 until 60 do
+      val first  = t0.plusMillis(10 * 60000L + k)
+      val second = t0.plusMillis(30 * 60000L + k)
+      val curve = Simulation.simulate(
+        profile,
+        Seq(Intake.Drink(lager, first, Minutes(20)), Intake.Drink(lager, second, Minutes(20))),
+        t0,
+        at(240)
+      )
+      assert(curve.samples.map(_.bacMgDl).max > 5, s"k=$k")
+  }
+

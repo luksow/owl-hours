@@ -112,7 +112,8 @@ object Solver:
 
       val fac = if err == 0 then 5.0 else math.min(5.0, math.max(0.2, 0.9 * math.pow(err, -0.2)))
       h = math.min(h * fac, tol.hMax)
-      if h < 1e-10 then throw IllegalStateException(s"Step size underflow at t=$t (non-finite or stiff state)")
+      // Only a rejected step that shrinks below 1e-10 is a failure; a tiny accepted final step is fine.
+      if err > 1.0 && h < 1e-10 then throw IllegalStateException(s"Step size underflow at t=$t (non-finite or stiff state)")
     Stop(t, next, eventFired = false)
 
   private def arr(n: Int) = new Array[Double](n)
