@@ -1,0 +1,12 @@
+target/
+.bsp/
+.bloop/
+.metals/
+.idea/
+.vscode/
+project/project/
+node_modules/
+reference/.venv/
+reference/__pycache__/
+.superpowers/
+*.class
