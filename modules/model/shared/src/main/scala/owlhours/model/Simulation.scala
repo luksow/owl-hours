@@ -1,0 +1,57 @@
+package owlhours.model
+
+import java.time.Instant
+import owlhours.domain.*
+
+final case class BacSample(at: Instant, bacMgDl: Double, bracMgL: Double)
+final case class Curve(samples: Vector[BacSample])
+
+object Simulation:
+  /** "Back to ~0": 0.1 ‰. */
+  val ZeroThresholdMgDl: Double = 0.1 * BacUnit.MgDlPerPermille
+
+  /** Shortest drinking duration the model is fed; a 0-minute shot would otherwise divide by zero. */
+  val MinDrinkMinutes: Double = 0.5
+
+  def anthropometrics(p: Profile): Anthropometrics =
+    Anthropometrics(
+      sex = if p.sex == Sex.Male then 1.0 else 0.0,
+      weightKg = p.weight.unwrap,
+      heightM = p.height.unwrap / 100.0,
+      ageYears = p.age.unwrap.toDouble
+    )
+
+  def simulate(
+      profile: Profile,
+      intakes: Seq[Intake],
+      from: Instant,
+      to: Instant,
+      stepMinutes: Int = 1,
+      params: Params = Params.published
+  ): Curve =
+    require(to.isAfter(from), s"to ($to) must be after from ($from)")
+    require(stepMinutes > 0, "stepMinutes must be positive")
+    val leadMin   = intakes.map(_.startsAt).minOption.fold(0.0)(first => math.max(0.0, minutesBetween(first, from) + 1))
+    val leadSteps = math.ceil(leadMin / stepMinutes).toInt
+    val origin    = from.minusSeconds(leadSteps.toLong * stepMinutes * 60)
+    val result =
+      Engine.run(anthropometrics(profile), schedule(intakes, origin), 0.0, minutesBetween(origin, to), stepMinutes, params)
+    Curve(
+      (leadSteps until result.size).map { i =>
+        val bac = result.bacMgDl(i)
+        BacSample(origin.plusSeconds(math.round(result.times(i) * 60)), bac, if bac > 0 then result.bracMgL(i) else 0.0)
+      }.toVector
+    )
+
+  private def schedule(intakes: Seq[Intake], origin: Instant): Schedule =
+    val drinks = intakes.collect {
+      case Intake.Drink(s, start, dur) =>
+        DrinkInput(minutesBetween(origin, start), math.max(dur.unwrap, MinDrinkMinutes), s.volume.unwrap / 1000,
+          s.abv.unwrap, s.kcalPerLitre.unwrap)
+      case Intake.Water(vol, start, dur) =>
+        DrinkInput(minutesBetween(origin, start), math.max(dur.unwrap, MinDrinkMinutes), vol.unwrap / 1000, 0, 0)
+    }
+    val meals = intakes.collect { case Intake.Meal(kcal, at) => MealInput(minutesBetween(origin, at), kcal.unwrap) }
+    Schedule(drinks, meals)
+
+  private[model] def minutesBetween(a: Instant, b: Instant): Double = (b.toEpochMilli - a.toEpochMilli) / 60000.0
