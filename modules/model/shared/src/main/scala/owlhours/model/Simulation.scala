@@ -5,6 +5,7 @@ import owlhours.domain.*
 
 final case class BacSample(at: Instant, bacMgDl: Double, bracMgL: Double)
 final case class Curve(samples: Vector[BacSample])
+final case class Projection(curve: Curve, low: Vector[Double], high: Vector[Double])
 
 object Simulation:
   /** "Back to ~0": 0.1 ‰. */
@@ -42,6 +43,14 @@ object Simulation:
         BacSample(origin.plusSeconds(math.round(result.times(i) * 60)), bac, if bac > 0 then result.bracMgL(i) else 0.0)
       }.toVector
     )
+
+  /** Central curve plus the person-to-person variation band (pointwise min/max of three runs). */
+  def project(profile: Profile, intakes: Seq[Intake], from: Instant, to: Instant, stepMinutes: Int = 1): Projection =
+    val base = simulate(profile, intakes, from, to, stepMinutes, Params.published)
+    val slow = simulate(profile, intakes, from, to, stepMinutes, Params.slowMetaboliser(Params.published))
+    val fast = simulate(profile, intakes, from, to, stepMinutes, Params.fastMetaboliser(Params.published))
+    val runs = Seq(base, slow, fast).map(_.samples.map(_.bacMgDl))
+    Projection(base, runs.transpose.map(_.min).toVector, runs.transpose.map(_.max).toVector)
 
   private def schedule(intakes: Seq[Intake], origin: Instant): Schedule =
     val drinks = intakes.collect {
