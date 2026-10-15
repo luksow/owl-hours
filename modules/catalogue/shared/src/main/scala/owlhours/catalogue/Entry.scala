@@ -30,7 +30,11 @@ enum Method(val dilution: Double):
   case Shaken  extends Method(0.28)
   case Blended extends Method(0.28)
 
-final case class Serving(label: String, volume: Millilitres)
+final case class Serving(label: String, volume: Millilitres):
+  /** "330 ml" when unlabelled, otherwise "bottle · 330 ml". */
+  def display: String =
+    val ml = s"${Format.number(volume.unwrap)} ml"
+    if label.trim.isEmpty then ml else s"${label.trim} · $ml"
 
 sealed trait Entry:
   def id: CatalogueId

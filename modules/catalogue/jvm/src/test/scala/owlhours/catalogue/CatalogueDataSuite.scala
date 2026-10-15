@@ -57,3 +57,10 @@ class CatalogueDataSuite extends munit.FunSuite:
     assertEquals(Group.values.toList.map(c.inGroup(_).size).sum, c.all.size)
     assert(c.inGroup(Group.Cocktails).forall(_.isInstanceOf[Recipe]))
   }
+
+  test("no style or product lists the same serving volume twice") {
+    for i <- c.styles ++ c.products do
+      val volumes = i.servings.map(_.volume.unwrap)
+      assertEquals(volumes.distinct.size, volumes.size, s"${i.id.unwrap}: ${i.servings}")
+  }
+

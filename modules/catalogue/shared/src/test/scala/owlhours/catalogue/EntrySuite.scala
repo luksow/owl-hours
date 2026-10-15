@@ -36,3 +36,11 @@ class EntrySuite extends munit.FunSuite:
     assertEquals(Method.values.map(m => m -> m.dilution).toList,
       List(Method.Neat -> 0.0, Method.Built -> 0.10, Method.Stirred -> 0.22, Method.Shaken -> 0.28, Method.Blended -> 0.28))
   }
+
+  test("servings display their volume, with the label when there is one") {
+    assertEquals(Serving("", Millilitres(330)).display, "330 ml")
+    assertEquals(Serving("  ", Millilitres(330)).display, "330 ml")
+    assertEquals(Serving("UK pint", Millilitres(568)).display, "UK pint · 568 ml")
+    assertEquals(Serving("ochoko", Millilitres(45.5)).display, "ochoko · 45.5 ml")
+  }
+
