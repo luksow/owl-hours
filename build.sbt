@@ -38,7 +38,19 @@ lazy val catalogue = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("modules/catalogue"))
   .dependsOn(domain)
-  .settings(name := "owlhours-catalogue", testDeps)
+  .settings(
+    name := "owlhours-catalogue",
+    libraryDependencies ++= Seq(
+      "io.circe"     %%% "circe-core"   % V.circe,
+      "io.circe"     %%% "circe-parser" % V.circe,
+      "pl.iterators" %%% "kebs-circe"   % V.kebs
+    ),
+    testDeps
+  )
+  .jvmSettings(
+    // the shipped data file is read by the JVM data-completeness suite
+    Test / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "catalogue" / "data"
+  )
 
 lazy val root = project
   .in(file("."))
