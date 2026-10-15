@@ -8,6 +8,7 @@ val V = new {
   val munitScalaCheck = "1.3.1"
   val scalaJavaTime   = "2.7.0"
   val circe           = "0.14.17"
+  val catsEffect      = "3.5.7"
 }
 
 val testDeps = Def.settings(
@@ -52,7 +53,22 @@ lazy val catalogue = crossProject(JVMPlatform, JSPlatform)
     Test / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "modules" / "catalogue" / "data"
   )
 
+lazy val store = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("modules/store"))
+  .dependsOn(domain)
+  .settings(
+    name := "owlhours-store",
+    libraryDependencies ++= Seq(
+      "io.circe"      %%% "circe-core"   % V.circe,
+      "io.circe"      %%% "circe-parser" % V.circe,
+      "pl.iterators"  %%% "kebs-circe"   % V.kebs,
+      "org.typelevel" %%% "cats-effect"  % V.catsEffect
+    ),
+    testDeps
+  )
+
 lazy val root = project
   .in(file("."))
-  .aggregate(domain.jvm, domain.js, model.jvm, model.js, catalogue.jvm, catalogue.js)
+  .aggregate(domain.jvm, domain.js, model.jvm, model.js, catalogue.jvm, catalogue.js, store.jvm, store.js)
   .settings(name := "owlhours", publish / skip := true)
