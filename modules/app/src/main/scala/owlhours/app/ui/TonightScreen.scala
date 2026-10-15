@@ -67,7 +67,7 @@ object TonightScreen:
       case w: Intake.Water => Marker(w.start, MarkerKind.Water)
       case m: Intake.Meal  => Marker(m.at, MarkerKind.Meal)
     }
-    val chart = ChartSvg.render(t, now, markers, TimeFormat.hhmm)
+    val chart = ChartSvg.render(t, now, markers, at => -new scala.scalajs.js.Date(at.toEpochMilli.toDouble).getTimezoneOffset().toInt, TimeFormat.hhmm)
     div(
       cls := "px-5",
       div(cls := "mt-6 flex items-end gap-4",

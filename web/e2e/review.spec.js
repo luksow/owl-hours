@@ -84,3 +84,21 @@ test("storage that is blocked is reported", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText(/can't save on this device/)).toBeVisible();
 });
+
+test("the clock catches up when the app becomes visible again", async ({ page }) => {
+  await page.clock.install();
+  await onboarded(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Drink" }).click();
+  await page.getByLabel("Search drinks").fill("pils");
+  await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).click();
+  // a litre over 5 minutes: clearly above the "back to ~0" display threshold 40 minutes later
+  await page.getByLabel("Amount (ml)").fill("1000");
+  await page.getByLabel("Drinking time (min)").fill("5");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByTestId("bac")).toBeVisible();
+  const before = await page.getByTestId("bac").textContent();
+  await page.clock.setSystemTime(Date.now() + 40 * 60_000);
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect(page.getByTestId("bac")).not.toHaveText(before);
+});

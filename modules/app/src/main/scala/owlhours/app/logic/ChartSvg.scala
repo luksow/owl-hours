@@ -18,7 +18,8 @@ object ChartSvg:
   private val Dim   = "#C7A6AE"
   private val MgDl12 = 1.2 * BacUnit.MgDlPerPermille
 
-  def render(t: Tonight, now: Instant, markers: List[Marker], timeLabel: Instant => String): String =
+  /** `utcOffsetMinutes` gives the local offset at an instant, so hour ticks land on local wall-clock hours. */
+  def render(t: Tonight, now: Instant, markers: List[Marker], utcOffsetMinutes: Instant => Int, timeLabel: Instant => String): String =
     val from    = t.viewFrom.toEpochMilli.toDouble
     val to      = t.viewTo.toEpochMilli.toDouble
     val samples = t.projection.curve.samples
@@ -62,11 +63,12 @@ object ChartSvg:
         case MarkerKind.Water => Ice
         case MarkerKind.Meal  => Amber
       sb ++= s"""<circle class="oh-marker" cx="${n(x(m.at))}" cy="182" r="4" fill="$colour"/>"""
-    val twoHours = 2 * 3600 * 1000L
-    var tick     = ((from.toLong + twoHours - 1) / twoHours) * twoHours
+    val stepMs   = if to - from < 6 * 3600 * 1000 then 3600 * 1000L else 2 * 3600 * 1000L
+    val offsetMs = utcOffsetMinutes(t.viewFrom) * 60000L
+    var tick     = (((from.toLong + offsetMs + stepMs - 1) / stepMs) * stepMs) - offsetMs
     while tick <= to.toLong do
       val at = Instant.ofEpochMilli(tick)
       sb ++= s"""<text x="${n(x(at))}" y="206" text-anchor="middle" font-size="11" fill="$Dim">${Markup.escape(timeLabel(at))}</text>"""
-      tick += twoHours
+      tick += stepMs
     sb ++= "</svg>"
     sb.toString

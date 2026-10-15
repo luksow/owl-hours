@@ -87,7 +87,9 @@ object AppState:
         .flatMap(r => catalogue.set(r.fold(CatalogueState.Failed(_), CatalogueState.Ready(_))))
         .background
       start <- Now.instant.toResource
-      now <- (Stream.awakeEvery[IO](30.seconds).evalMap(_ => Now.instant)).holdResource(start)
+      // tick every 30 s, and at once when the app is shown again (timers are paused while a phone sleeps)
+      woken = fs2.dom.events[IO, dom.Event](dom.document, "visibilitychange").void
+      now <- Stream.awakeEvery[IO](30.seconds).void.merge(woken).evalMap(_ => Now.instant).holdResource(start)
       hash0 <- window.location.hash.get.toResource
       route <- fs2.dom
         .events[IO, dom.HashChangeEvent](dom.window, "hashchange")

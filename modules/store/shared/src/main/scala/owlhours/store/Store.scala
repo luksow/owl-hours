@@ -2,7 +2,7 @@ package owlhours.store
 
 import cats.effect.kernel.Sync
 import cats.syntax.all.*
-import io.circe.{Decoder, parser}
+import io.circe.{Decoder, DecodingFailure, parser}
 import io.circe.syntax.*
 import java.time.Instant
 import owlhours.domain.*
@@ -59,9 +59,13 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
           case Right(a) => F.pure((Some(a), None))
           case Left(e) =>
             val backup = s"oh.recovery.$key.${now.toEpochMilli}"
+            // The reason without circe's cursor history ("DecodingFailure at .x: …"), which means nothing to people.
+            val reason = e match
+              case d: DecodingFailure => d.message
+              case other              => other.getMessage
             // Copy, then remove the original so the problem is reported once, not on every launch.
             (kv.set(backup, raw) *> kv.remove(key))
-              .as((None, Some(s"Could not read $what, so it was reset. A copy was kept as $backup (${e.getMessage}).")))
+              .as((None, Some(s"Could not read $what, so it was reset. A copy was kept as $backup ($reason).")))
     }
 
 object Store:

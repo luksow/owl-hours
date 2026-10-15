@@ -52,6 +52,8 @@ class StoreSuite extends munit.FunSuite:
     val copies = kv.data.keys.filter(_.startsWith(s"oh.recovery.${Store.Keys.profile}."))
     assertEquals(copies.size, 1)
     assertEquals(kv.data(copies.head), """{"sex":"Female","age":12}""")
+    // no decoder internals in a message meant for people
+    assert(!loaded.problems.head.contains("DecodingFailure") && !loaded.problems.head.contains("DownField"), loaded.problems.head)
   }
 
   test("an unknown intake type is a readable problem, not a crash") {

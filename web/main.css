@@ -1,10 +1,17 @@
 @import "tailwindcss";
-@import "@fontsource/mr-dafoe/400.css";
-@import "@fontsource/barlow-condensed/400.css";
-@import "@fontsource/barlow-condensed/600.css";
-@import "@fontsource/barlow-condensed/700.css";
-@import "@fontsource/barlow/400.css";
-@import "@fontsource/barlow/600.css";
+/* latin + latin-ext only (latin-ext covers names like Żubrówka); other subsets are never needed. */
+@import "@fontsource/mr-dafoe/latin-400.css";
+@import "@fontsource/mr-dafoe/latin-ext-400.css";
+@import "@fontsource/barlow-condensed/latin-400.css";
+@import "@fontsource/barlow-condensed/latin-ext-400.css";
+@import "@fontsource/barlow-condensed/latin-600.css";
+@import "@fontsource/barlow-condensed/latin-ext-600.css";
+@import "@fontsource/barlow-condensed/latin-700.css";
+@import "@fontsource/barlow-condensed/latin-ext-700.css";
+@import "@fontsource/barlow/latin-400.css";
+@import "@fontsource/barlow/latin-ext-400.css";
+@import "@fontsource/barlow/latin-600.css";
+@import "@fontsource/barlow/latin-ext-600.css";
 
 /* Tailwind scans the Scala sources for class names. */
 @source "../modules/app/src/main/scala";

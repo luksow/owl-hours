@@ -21,7 +21,8 @@ object UpdateToast:
               span("A new version of Owl Hours is ready."),
               button(
                 cls := "min-h-12 rounded-xl px-4 font-semibold text-ice",
-                onClick --> (_.foreach(_ => IO(js.Dynamic.global.ohApplyUpdate()).void)),
+                onClick --> (_.foreach(_ =>
+                  IO(if js.typeOf(js.Dynamic.global.ohApplyUpdate) == "function" then js.Dynamic.global.ohApplyUpdate()).void)),
                 "Reload"
               )
             )
