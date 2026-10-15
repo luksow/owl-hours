@@ -87,3 +87,17 @@ test("review: tapping Pick time again keeps the picked time", async ({ page }) =
   const intake = (await stored(page))[0].intakes[0];
   expect(Math.abs(new Date(intake.start).getTime() - started.getTime())).toBeLessThan(60_000);
 });
+
+test("a negroni can be adjusted ingredient by ingredient", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Drink" }).click();
+  await page.getByLabel("Search drinks").fill("negroni");
+  await page.getByRole("button", { name: /^Negroni/ }).click();
+  await page.getByRole("button", { name: "Adjust ingredients" }).click();
+  await page.getByLabel("Gin (London Dry) (ml)").fill("50");
+  await page.getByLabel("Sweet vermouth (ml)").fill("0");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const snapshot = (await stored(page))[0].intakes[0].snapshot;
+  expect(snapshot.name).toBe("Negroni (custom)");
+  expect(snapshot.components.map((c) => [c.name, c.volume])).toEqual([["Gin (London Dry)", 50], ["Campari", 30]]);
+});
