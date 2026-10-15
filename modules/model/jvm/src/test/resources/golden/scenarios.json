@@ -1,66 +1,544 @@
 [
-  {"name": "beer-fasted-male", "profile": {"sex": "male", "weightKg": 80, "heightM": 1.80, "age": 30},
-   "drinks": [{"startMin": 10, "durationMin": 20, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "beer-fasted-female", "profile": {"sex": "female", "weightKg": 65, "heightM": 1.68, "age": 30},
-   "drinks": [{"startMin": 10, "durationMin": 20, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "beer-with-meal", "profile": {"sex": "male", "weightKg": 80, "heightM": 1.80, "age": 30},
-   "drinks": [{"startMin": 10, "durationMin": 20, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430}],
-   "meals": [{"atMin": 5, "kcal": 700}], "horizonMin": 480, "stepMin": 5},
-  {"name": "wine-two-glasses-female", "profile": {"sex": "female", "weightKg": 62, "heightM": 1.65, "age": 35},
-   "drinks": [{"startMin": 10, "durationMin": 20, "volumeMl": 150, "abv": 13.0, "kcalPerLitre": 830},
-              {"startMin": 70, "durationMin": 20, "volumeMl": 150, "abv": 13.0, "kcalPerLitre": 830}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "three-fast-shots", "profile": {"sex": "male", "weightKg": 70, "heightM": 1.75, "age": 24},
-   "drinks": [{"startMin": 10, "durationMin": 1, "volumeMl": 40, "abv": 40.0, "kcalPerLitre": 2310},
-              {"startMin": 20, "durationMin": 1, "volumeMl": 40, "abv": 40.0, "kcalPerLitre": 2310},
-              {"startMin": 30, "durationMin": 1, "volumeMl": 40, "abv": 40.0, "kcalPerLitre": 2310}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "cocktail-evening", "profile": {"sex": "female", "weightKg": 70, "heightM": 1.72, "age": 28},
-   "drinks": [{"startMin": 30, "durationMin": 15, "volumeMl": 110, "abv": 20.0, "kcalPerLitre": 1700},
-              {"startMin": 90, "durationMin": 15, "volumeMl": 110, "abv": 20.0, "kcalPerLitre": 1700},
-              {"startMin": 120, "durationMin": 10, "volumeMl": 300, "abv": 0.0, "kcalPerLitre": 0},
-              {"startMin": 150, "durationMin": 15, "volumeMl": 110, "abv": 20.0, "kcalPerLitre": 1700},
-              {"startMin": 210, "durationMin": 15, "volumeMl": 110, "abv": 20.0, "kcalPerLitre": 1700}],
-   "meals": [{"atMin": 5, "kcal": 900}], "horizonMin": 720, "stepMin": 5},
-  {"name": "heavy-night-six-pints", "profile": {"sex": "male", "weightKg": 90, "heightM": 1.85, "age": 45},
-   "drinks": [{"startMin": 10, "durationMin": 30, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430},
-              {"startMin": 55, "durationMin": 30, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430},
-              {"startMin": 100, "durationMin": 30, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430},
-              {"startMin": 145, "durationMin": 30, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430},
-              {"startMin": 190, "durationMin": 30, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430},
-              {"startMin": 235, "durationMin": 30, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430}],
-   "meals": [], "horizonMin": 900, "stepMin": 5},
-  {"name": "overlap-beer-water", "profile": {"sex": "male", "weightKg": 80, "heightM": 1.80, "age": 30},
-   "drinks": [{"startMin": 10, "durationMin": 30, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430},
-              {"startMin": 20, "durationMin": 10, "volumeMl": 250, "abv": 0.0, "kcalPerLitre": 0}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "older-female-wine", "profile": {"sex": "female", "weightKg": 70, "heightM": 1.62, "age": 64},
-   "drinks": [{"startMin": 10, "durationMin": 25, "volumeMl": 175, "abv": 13.5, "kcalPerLitre": 850},
-              {"startMin": 60, "durationMin": 25, "volumeMl": 175, "abv": 13.5, "kcalPerLitre": 850}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "meal-mid-absorption", "profile": {"sex": "male", "weightKg": 75, "heightM": 1.78, "age": 33},
-   "drinks": [{"startMin": 10, "durationMin": 15, "volumeMl": 330, "abv": 6.5, "kcalPerLitre": 560}],
-   "meals": [{"atMin": 30, "kcal": 600}], "horizonMin": 480, "stepMin": 5},
-  {"name": "meal-only-then-drink-late", "profile": {"sex": "female", "weightKg": 58, "heightM": 1.60, "age": 26},
-   "drinks": [{"startMin": 600, "durationMin": 20, "volumeMl": 330, "abv": 5.0, "kcalPerLitre": 430}],
-   "meals": [{"atMin": 5, "kcal": 300}, {"atMin": 240, "kcal": 500}], "horizonMin": 1080, "stepMin": 5},
-  {"name": "large-male", "profile": {"sex": "male", "weightKg": 120, "heightM": 1.95, "age": 40},
-   "drinks": [{"startMin": 10, "durationMin": 20, "volumeMl": 500, "abv": 8.0, "kcalPerLitre": 650},
-              {"startMin": 60, "durationMin": 20, "volumeMl": 500, "abv": 8.0, "kcalPerLitre": 650}],
-   "meals": [], "horizonMin": 600, "stepMin": 5},
-  {"name": "small-female", "profile": {"sex": "female", "weightKg": 50, "heightM": 1.55, "age": 22},
-   "drinks": [{"startMin": 10, "durationMin": 15, "volumeMl": 250, "abv": 10.0, "kcalPerLitre": 900}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "sugary-then-beer", "profile": {"sex": "male", "weightKg": 80, "heightM": 1.80, "age": 30},
-   "drinks": [{"startMin": 10, "durationMin": 10, "volumeMl": 330, "abv": 0.0, "kcalPerLitre": 450},
-              {"startMin": 30, "durationMin": 20, "volumeMl": 500, "abv": 5.0, "kcalPerLitre": 430}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "long-sip", "profile": {"sex": "female", "weightKg": 68, "heightM": 1.70, "age": 31},
-   "drinks": [{"startMin": 10, "durationMin": 120, "volumeMl": 568, "abv": 4.5, "kcalPerLitre": 400}],
-   "meals": [], "horizonMin": 480, "stepMin": 5},
-  {"name": "strong-and-fast", "profile": {"sex": "male", "weightKg": 72, "heightM": 1.76, "age": 27},
-   "drinks": [{"startMin": 10, "durationMin": 5, "volumeMl": 200, "abv": 40.0, "kcalPerLitre": 2310}],
-   "meals": [], "horizonMin": 720, "stepMin": 5}
+ {
+  "name": "beer-fasted-male",
+  "profile": {
+   "sex": "male",
+   "weightKg": 80,
+   "heightM": 1.8,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 20,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "beer-fasted-female",
+  "profile": {
+   "sex": "female",
+   "weightKg": 65,
+   "heightM": 1.68,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 20,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "beer-with-meal",
+  "profile": {
+   "sex": "male",
+   "weightKg": 80,
+   "heightM": 1.8,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 20,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   }
+  ],
+  "meals": [
+   {
+    "atMin": 5,
+    "kcal": 700
+   }
+  ],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "wine-two-glasses-female",
+  "profile": {
+   "sex": "female",
+   "weightKg": 62,
+   "heightM": 1.65,
+   "age": 35
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 20,
+    "volumeMl": 150,
+    "abv": 13.0,
+    "kcalPerLitre": 830
+   },
+   {
+    "startMin": 70,
+    "durationMin": 20,
+    "volumeMl": 150,
+    "abv": 13.0,
+    "kcalPerLitre": 830
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "three-fast-shots",
+  "profile": {
+   "sex": "male",
+   "weightKg": 70,
+   "heightM": 1.75,
+   "age": 24
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 1,
+    "volumeMl": 40,
+    "abv": 40.0,
+    "kcalPerLitre": 2310
+   },
+   {
+    "startMin": 20,
+    "durationMin": 1,
+    "volumeMl": 40,
+    "abv": 40.0,
+    "kcalPerLitre": 2310
+   },
+   {
+    "startMin": 30,
+    "durationMin": 1,
+    "volumeMl": 40,
+    "abv": 40.0,
+    "kcalPerLitre": 2310
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "cocktail-evening",
+  "profile": {
+   "sex": "female",
+   "weightKg": 70,
+   "heightM": 1.72,
+   "age": 28
+  },
+  "drinks": [
+   {
+    "startMin": 30,
+    "durationMin": 15,
+    "volumeMl": 110,
+    "abv": 20.0,
+    "kcalPerLitre": 1700
+   },
+   {
+    "startMin": 90,
+    "durationMin": 15,
+    "volumeMl": 110,
+    "abv": 20.0,
+    "kcalPerLitre": 1700
+   },
+   {
+    "startMin": 120,
+    "durationMin": 10,
+    "volumeMl": 300,
+    "abv": 0.0,
+    "kcalPerLitre": 0
+   },
+   {
+    "startMin": 150,
+    "durationMin": 15,
+    "volumeMl": 110,
+    "abv": 20.0,
+    "kcalPerLitre": 1700
+   },
+   {
+    "startMin": 210,
+    "durationMin": 15,
+    "volumeMl": 110,
+    "abv": 20.0,
+    "kcalPerLitre": 1700
+   }
+  ],
+  "meals": [
+   {
+    "atMin": 5,
+    "kcal": 900
+   }
+  ],
+  "horizonMin": 720,
+  "stepMin": 5
+ },
+ {
+  "name": "heavy-night-six-pints",
+  "profile": {
+   "sex": "male",
+   "weightKg": 90,
+   "heightM": 1.85,
+   "age": 45
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 30,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   },
+   {
+    "startMin": 55,
+    "durationMin": 30,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   },
+   {
+    "startMin": 100,
+    "durationMin": 30,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   },
+   {
+    "startMin": 145,
+    "durationMin": 30,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   },
+   {
+    "startMin": 190,
+    "durationMin": 30,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   },
+   {
+    "startMin": 235,
+    "durationMin": 30,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   }
+  ],
+  "meals": [],
+  "horizonMin": 900,
+  "stepMin": 5
+ },
+ {
+  "name": "overlap-beer-water",
+  "profile": {
+   "sex": "male",
+   "weightKg": 80,
+   "heightM": 1.8,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 30,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   },
+   {
+    "startMin": 20,
+    "durationMin": 10,
+    "volumeMl": 250,
+    "abv": 0.0,
+    "kcalPerLitre": 0
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "older-female-wine",
+  "profile": {
+   "sex": "female",
+   "weightKg": 70,
+   "heightM": 1.62,
+   "age": 64
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 25,
+    "volumeMl": 175,
+    "abv": 13.5,
+    "kcalPerLitre": 850
+   },
+   {
+    "startMin": 60,
+    "durationMin": 25,
+    "volumeMl": 175,
+    "abv": 13.5,
+    "kcalPerLitre": 850
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "meal-mid-absorption",
+  "profile": {
+   "sex": "male",
+   "weightKg": 75,
+   "heightM": 1.78,
+   "age": 33
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 15,
+    "volumeMl": 330,
+    "abv": 6.5,
+    "kcalPerLitre": 560
+   }
+  ],
+  "meals": [
+   {
+    "atMin": 30,
+    "kcal": 600
+   }
+  ],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "meal-only-then-drink-late",
+  "profile": {
+   "sex": "female",
+   "weightKg": 58,
+   "heightM": 1.6,
+   "age": 26
+  },
+  "drinks": [
+   {
+    "startMin": 600,
+    "durationMin": 20,
+    "volumeMl": 330,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   }
+  ],
+  "meals": [
+   {
+    "atMin": 5,
+    "kcal": 300
+   },
+   {
+    "atMin": 240,
+    "kcal": 500
+   }
+  ],
+  "horizonMin": 1080,
+  "stepMin": 5
+ },
+ {
+  "name": "large-male",
+  "profile": {
+   "sex": "male",
+   "weightKg": 120,
+   "heightM": 1.95,
+   "age": 40
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 20,
+    "volumeMl": 500,
+    "abv": 8.0,
+    "kcalPerLitre": 650
+   },
+   {
+    "startMin": 60,
+    "durationMin": 20,
+    "volumeMl": 500,
+    "abv": 8.0,
+    "kcalPerLitre": 650
+   }
+  ],
+  "meals": [],
+  "horizonMin": 600,
+  "stepMin": 5
+ },
+ {
+  "name": "small-female",
+  "profile": {
+   "sex": "female",
+   "weightKg": 50,
+   "heightM": 1.55,
+   "age": 22
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 15,
+    "volumeMl": 250,
+    "abv": 10.0,
+    "kcalPerLitre": 900
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "sugary-then-beer",
+  "profile": {
+   "sex": "male",
+   "weightKg": 80,
+   "heightM": 1.8,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 10,
+    "volumeMl": 330,
+    "abv": 0.0,
+    "kcalPerLitre": 450
+   },
+   {
+    "startMin": 30,
+    "durationMin": 20,
+    "volumeMl": 500,
+    "abv": 5.0,
+    "kcalPerLitre": 430
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "long-sip",
+  "profile": {
+   "sex": "female",
+   "weightKg": 68,
+   "heightM": 1.7,
+   "age": 31
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 120,
+    "volumeMl": 568,
+    "abv": 4.5,
+    "kcalPerLitre": 400
+   }
+  ],
+  "meals": [],
+  "horizonMin": 480,
+  "stepMin": 5
+ },
+ {
+  "name": "strong-and-fast",
+  "profile": {
+   "sex": "male",
+   "weightKg": 72,
+   "heightM": 1.76,
+   "age": 27
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 5,
+    "volumeMl": 200,
+    "abv": 40.0,
+    "kcalPerLitre": 2310
+   }
+  ],
+  "meals": [],
+  "horizonMin": 720,
+  "stepMin": 5
+ },
+ {
+  "name": "three-pints-back-to-back",
+  "profile": {
+   "sex": "male",
+   "weightKg": 80,
+   "heightM": 1.8,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "durationMin": 30,
+    "volumeMl": 568,
+    "abv": 5.0,
+    "kcalPerLitre": 404,
+    "startMin": 10
+   },
+   {
+    "durationMin": 30,
+    "volumeMl": 568,
+    "abv": 5.0,
+    "kcalPerLitre": 404,
+    "startMin": 40
+   },
+   {
+    "durationMin": 30,
+    "volumeMl": 568,
+    "abv": 5.0,
+    "kcalPerLitre": 404,
+    "startMin": 70
+   }
+  ],
+  "meals": [],
+  "horizonMin": 600,
+  "stepMin": 5
+ },
+ {
+  "name": "pints-overlapping",
+  "profile": {
+   "sex": "male",
+   "weightKg": 80,
+   "heightM": 1.8,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "durationMin": 30,
+    "volumeMl": 568,
+    "abv": 5.0,
+    "kcalPerLitre": 404,
+    "startMin": 10
+   },
+   {
+    "durationMin": 30,
+    "volumeMl": 568,
+    "abv": 5.0,
+    "kcalPerLitre": 404,
+    "startMin": 20
+   },
+   {
+    "durationMin": 30,
+    "volumeMl": 568,
+    "abv": 5.0,
+    "kcalPerLitre": 404,
+    "startMin": 30
+   }
+  ],
+  "meals": [],
+  "horizonMin": 600,
+  "stepMin": 5
+ }
 ]

@@ -17,18 +17,29 @@ BAC = "Blood alcohol concentration (mg/dL)"
 BRAC = "Breath alcohol concentration (mg/L)"
 
 
+EPS = 1e-4  # minutes; a pause this short changes intake by microlitres
+
+
 def drink_series(drinks):
-    """Piecewise-constant series: f has one value before the first breakpoint and one after each."""
-    points = sorted({d["startMin"] for d in drinks} | {d["startMin"] + d["durationMin"] for d in drinks})
+    """Piecewise-constant series: f has one value before the first breakpoint and one after each.
+
+    Every drink is its own drinking episode, as in the authors' app: when a drink starts while another is still
+    running, a pause of EPS minutes is inserted before it so SUND's new_drink event (rising edge) fires.
+    """
+    def active(x):
+        return [d for d in drinks if d["startMin"] <= x < d["startMin"] + d["durationMin"]]
+
+    gaps = {d["startMin"] - EPS for d in drinks if active(d["startMin"] - EPS)}
+    points = sorted({d["startMin"] for d in drinks} | {d["startMin"] + d["durationMin"] for d in drinks} | gaps)
     conc, rate, kcal = [0.0], [0.0], [0.0]
     for i, a in enumerate(points):
         last = i == len(points) - 1
-        active = [] if last else [d for d in drinks if d["startMin"] <= a < d["startMin"] + d["durationMin"]]
-        rates = [d["volumeMl"] / 1000.0 / d["durationMin"] for d in active]
+        current = [] if last or a in gaps else active(a)
+        rates = [d["volumeMl"] / 1000.0 / d["durationMin"] for d in current]
         total = sum(rates)
         rate.append(total)
-        conc.append(sum(r * d["abv"] for r, d in zip(rates, active)) / total if total > 0 else 0.0)
-        kcal.append(sum(r * d["kcalPerLitre"] for r, d in zip(rates, active)) / total if total > 0 else 0.0)
+        conc.append(sum(r * d["abv"] for r, d in zip(rates, current)) / total if total > 0 else 0.0)
+        kcal.append(sum(r * d["kcalPerLitre"] for r, d in zip(rates, current)) / total if total > 0 else 0.0)
     return points, conc, rate, kcal
 
 

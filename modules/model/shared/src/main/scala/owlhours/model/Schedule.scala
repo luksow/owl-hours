@@ -7,7 +7,8 @@ final case class DrinkInput(startMin: Double, durationMin: Double, volumeL: Doub
 
 final case class MealInput(atMin: Double, kcal: Double)
 
-final case class Segment(start: Double, end: Double, inputs: Inputs, mealKcal: Double)
+/** `drinkStarts`: a drink begins at `start`, which re-bases the gastric calorie brake (new_drink). */
+final case class Segment(start: Double, end: Double, inputs: Inputs, mealKcal: Double, drinkStarts: Boolean)
 
 final case class Schedule(drinks: Seq[DrinkInput], meals: Seq[MealInput]):
   /** Drinks active at `t` combined into one input, weighted by volume rate (exact for the model's linear input terms). */
@@ -30,5 +31,5 @@ final case class Schedule(drinks: Seq[DrinkInput], meals: Seq[MealInput]):
       .sorted
     cuts
       .zip(cuts.tail)
-      .map((a, b) => Segment(a, b, inputsAt(a), meals.filter(_.atMin == a).map(_.kcal).sum))
+      .map((a, b) => Segment(a, b, inputsAt(a), meals.filter(_.atMin == a).map(_.kcal).sum, drinks.exists(_.startMin == a)))
       .toVector

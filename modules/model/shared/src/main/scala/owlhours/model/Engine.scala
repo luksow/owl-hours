@@ -26,18 +26,17 @@ object Engine:
     val grid = Array.tabulate(n)(i => from + i * stepMin)
     val out  = new Array[Array[Double]](n)
     out(0) = y.clone()
-    var next     = 1
-    var prevRate = 0.0
+    var next = 1
     for seg <- schedule.segments(from, to) do
-      // new_drink: rising edge of the combined drinking rate
-      if seg.inputs.volRateLPerMin > 0 && prevRate == 0 then y(State.KcalLiquid) = y(State.KcalRemain)
+      // new_drink: every drink is its own drinking episode, as in the authors' app (one on/off stimulus per drink).
+      // Firing only on a rising edge of the merged rate let the calorie brake accumulate across back-to-back drinks.
+      if seg.drinkStarts then y(State.KcalLiquid) = y(State.KcalRemain)
       // new_meal
       if seg.mealKcal > 0 then
         val total = seg.mealKcal + y(State.KcalSolid)
         y(State.MaxKcalSolid) = total
         y(State.KcalSolid) = total
         y(State.TimeElapsed) = 0
-      prevRate = seg.inputs.volRateLPerMin
       rhs.inputs = seg.inputs
       var t = seg.start
       while t < seg.end do
