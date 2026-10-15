@@ -43,7 +43,10 @@ object TonightScreen:
         cls := "mx-auto flex min-h-dvh max-w-md flex-col",
         headerTag(cls := "flex items-center justify-between px-5 pt-5",
           span(cls := "font-display text-4xl text-pink neon", "Owl Hours"),
-          span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight")),
+          div(cls := "flex items-center gap-3",
+            span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight"),
+            button(cls := "min-h-12 rounded-xl border border-line px-3 text-sm uppercase tracking-wider",
+              onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"))),
         div(view.map {
           case None => div(())
           case Some((t, s, unit, now)) => body(t, s, unit, now)

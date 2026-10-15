@@ -6,7 +6,7 @@ import cats.effect.*
 import cats.syntax.all.*
 import fs2.concurrent.Signal
 import fs2.dom.HtmlElement
-import owlhours.app.ui.{AddDrinkSheet, FoodSheet, LogScreen, Onboarding, TonightScreen, UpdateToast, WaterSheet}
+import owlhours.app.ui.{AddDrinkSheet, FoodSheet, LogScreen, Onboarding, TonightScreen, UndoBar, UpdateToast, WaterSheet}
 
 object Main extends IOWebApp:
   def render: Resource[IO, HtmlElement[IO]] =
@@ -26,7 +26,8 @@ object Main extends IOWebApp:
         cls := "min-h-dvh bg-wall text-ink font-ui",
         problemsBanner(app),
         div(screen),
-        UpdateToast()
+        UpdateToast(),
+        UndoBar(app)
       )
     }
 
