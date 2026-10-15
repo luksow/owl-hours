@@ -38,3 +38,14 @@ class SearchSuite extends munit.FunSuite:
   test("no match returns nothing") {
     assertEquals(ids("xyzzy"), Nil)
   }
+
+  test("review: a query that matches nothing returns nothing, even if it normalises to empty") {
+    assertEquals(ids("'"), Nil)
+    assertEquals(ids("водка"), Nil)
+  }
+
+  test("review: non-Latin aliases are searchable in their own script") {
+    assertEquals(ids("소주").head, "soju")
+    assertEquals(ids("白酒").head, "baijiu")
+  }
+

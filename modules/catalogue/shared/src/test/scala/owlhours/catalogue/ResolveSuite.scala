@@ -85,3 +85,16 @@ class ResolveSuite extends munit.FunSuite:
     assertEquals(Resolve(Choice.OfRecipe(negroni, volumes = Some(List(Millilitres(30), Millilitres(30))))),
       Left("Negroni needs 3 amounts, got 2"))
   }
+
+  test("review: extreme custom amounts return a Left instead of throwing") {
+    val huge = Resolve(Choice.OfRecipe(negroni, volumes = Some(List.fill(3)(Millilitres(2000)))))
+    assertEquals(huge, Left("Negroni: Volume must be above 0 and at most 5000 ml, got 6600"))
+    val tiny = Resolve(Choice.OfRecipe(daiquiri, volumes = Some(List(Millilitres(1), Millilitres(1)))))
+    assert(tiny.left.exists(_.startsWith("Daiquiri: Energy density must be between 0 and 10000 kcal/L")), tiny.toString)
+  }
+
+  test("review: a NaN strength is rejected, not passed through") {
+    assertEquals(Resolve(Choice.OfRecipe(negroni, strength = Double.NaN)),
+      Left("Strength must be between ×0.75 and ×2, got ×NaN"))
+  }
+

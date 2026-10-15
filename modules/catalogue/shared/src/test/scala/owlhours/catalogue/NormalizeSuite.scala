@@ -8,3 +8,9 @@ class NormalizeSuite extends munit.FunSuite:
     assertEquals(Search.normalize("  Crème  de   Mûre "), "creme de mure")
     assertEquals(Search.normalize("Weißbier Ærø Œuvre"), "weissbier aero oeuvre")
   }
+
+  test("review: letters outside the fold table are kept, not dropped") {
+    assertEquals(Search.normalize("소주"), "소주")
+    assertEquals(Search.normalize("Водка"), "водка")
+  }
+

@@ -20,7 +20,7 @@ object Search:
     val folded = s.toLowerCase.flatMap {
       case '&'                               => " and "
       case c if folds.contains(c)            => folds(c)
-      case c if c.isLetterOrDigit && c < 128 => c.toString
+      case c if c.isLetterOrDigit            => c.toString
       case _                                 => " "
     }
     folded.split(' ').filter(_.nonEmpty).mkString(" ")
@@ -28,7 +28,8 @@ object Search:
   def search(query: String, entries: Seq[Entry], boost: CatalogueId => Int = _ => 0, limit: Int = 30): List[Entry] =
     val q = normalize(query)
     val ranked =
-      if q.isEmpty then entries.map(e => (e, 0))
+      if q.isEmpty && query.trim.nonEmpty then Nil
+      else if q.isEmpty then entries.map(e => (e, 0))
       else entries.map(e => (e, score(q, e))).filter(_._2 > 0)
     ranked.sortBy((e, s) => (-s, -boost(e.id), e.name)).take(limit).map(_._1).toList
 
