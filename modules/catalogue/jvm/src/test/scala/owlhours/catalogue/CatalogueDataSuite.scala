@@ -64,3 +64,16 @@ class CatalogueDataSuite extends munit.FunSuite:
       assertEquals(volumes.distinct.size, volumes.size, s"${i.id.unwrap}: ${i.servings}")
   }
 
+
+  test("every beer, cider and seltzer offers 330, 500 and 568 ml") {
+    for s <- c.styles if Set(Category.Beer, Category.Cider, Category.Seltzer)(s.category) do
+      val volumes = s.servings.map(_.volume.unwrap).toSet
+      assert(Set(330.0, 500.0, 568.0).subsetOf(volumes), s"${s.id.unwrap}: ${s.servings.map(_.display)}")
+  }
+
+  test("every serving has a label and servings are sorted by volume") {
+    for i <- c.styles ++ c.products do
+      assert(i.servings.forall(_.label.trim.nonEmpty), s"${i.id.unwrap}: ${i.servings}")
+      val volumes = i.servings.map(_.volume.unwrap)
+      assertEquals(volumes, volumes.sorted, i.id.unwrap)
+  }
