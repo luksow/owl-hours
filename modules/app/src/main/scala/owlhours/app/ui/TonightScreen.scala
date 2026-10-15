@@ -39,6 +39,8 @@ object TonightScreen:
         Bundle(k.session, k.unit, k.profile.map(p => Tonight.project(p, k.session, Instant.ofEpochSecond(k.hour * 3600 + 1800))))
       }
       view = (bundle, app.now).mapN((b, now) => b.projected.map(pr => (Tonight.at(pr, now), b.session, b.unit, now)))
+      // Watt changes only with the state, so its animation is not restarted by the 30-second clock tick.
+      watt = view.map(_.fold(Impairment.Sober)(_._1.impairment)).changes(using Eq.fromUniversalEquals).map(WattSvg.render)
       screen <- div(
         cls := "mx-auto flex min-h-dvh max-w-md flex-col",
         headerTag(cls := "flex items-center justify-between px-5 pt-5",
@@ -47,6 +49,8 @@ object TonightScreen:
             span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight"),
             button(cls := "min-h-12 rounded-xl border border-line px-3 text-sm uppercase tracking-wider",
               onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"))),
+        div(dataAttr("testid") := "watt", cls := "mx-auto mt-4 w-40 overflow-hidden rounded-2xl border border-line",
+          InnerHtml(watt)),
         div(view.map {
           case None => div(())
           case Some((t, s, unit, now)) => body(t, s, unit, now)
