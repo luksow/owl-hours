@@ -69,3 +69,11 @@ class SimulationSuite extends munit.FunSuite:
       assert(curve.samples.map(_.bacMgDl).max > 5, s"k=$k")
   }
 
+  test("breath alcohol shows 0 below the back-to-~0 threshold (0.1 ‰)") {
+    val curve = Simulation.simulate(profile, Seq(Intake.Drink(lager, at(10), Minutes(20))), t0, at(600), stepMinutes = 5)
+    val (below, above) = curve.samples.partition(_.bacMgDl < Simulation.ZeroThresholdMgDl)
+    assert(below.exists(_.bacMgDl > 0), "expected some samples with a little alcohol below the threshold")
+    assert(below.forall(_.bracMgL == 0.0), below.filter(_.bracMgL != 0.0).take(3).toString)
+    assert(above.nonEmpty && above.forall(_.bracMgL > 0))
+  }
+

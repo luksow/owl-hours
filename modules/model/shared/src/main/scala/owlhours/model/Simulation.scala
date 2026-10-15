@@ -40,7 +40,9 @@ object Simulation:
     Curve(
       (leadSteps until result.size).map { i =>
         val bac = result.bacMgDl(i)
-        BacSample(origin.plusSeconds(math.round(result.times(i) * 60)), bac, if bac > 0 then result.bracMgL(i) else 0.0)
+        // Product rule: below "back to ~0" the breath figure is shown as 0 instead of the model's ~0.02 mg/L intercept.
+        val brac = if bac >= ZeroThresholdMgDl then result.bracMgL(i) else 0.0
+        BacSample(origin.plusSeconds(math.round(result.times(i) * 60)), bac, brac)
       }.toVector
     )
 
