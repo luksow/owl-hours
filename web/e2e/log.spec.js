@@ -72,3 +72,11 @@ test("review: the undo bar goes away when leaving the log, and on its own", asyn
   await expect(page.getByRole("button", { name: "+ Drink" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
 });
+
+test("a logged lager's ABV is limited to the style's range", async ({ page }) => {
+  await page.goto("/#/log");
+  await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).first().click();
+  await page.getByLabel("ABV (%)").fill("40");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText(/ABV for Pale lager \/ Pilsner must be between/)).toBeVisible();
+});

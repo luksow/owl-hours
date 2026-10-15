@@ -13,11 +13,18 @@ object LocalDateTime:
     s"${d.getFullYear().toInt}-${two(d.getMonth() + 1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}"
 
   /** ECMAScript reads a date-time without a zone suffix as local time. */
-  def parse(s: String): Option[Instant] =
-    if !Shape.matches(s.trim) then None
+  def parse(s: String): Option[Instant] = parseDetailed(s).toOption
+
+  def parseDetailed(s: String): Either[String, Instant] =
+    val text = s.trim
+    if !Shape.matches(text) then Left("Pick a date and time")
     else
-      val ms = new js.Date(s.trim).getTime()
-      Option.when(!ms.isNaN && format(Instant.ofEpochMilli(ms.toLong)) == s.trim)(Instant.ofEpochMilli(ms.toLong))
+      val ms = new js.Date(text).getTime()
+      if !ms.isNaN && format(Instant.ofEpochMilli(ms.toLong)) == text then Right(Instant.ofEpochMilli(ms.toLong))
+      // a real calendar date-time that the browser cannot represent locally is the hour skipped when clocks go forward
+      else if scala.util.Try(java.time.LocalDateTime.parse(text)).isSuccess then
+        Left("That time doesn't exist tonight: the clocks went forward")
+      else Left("Pick a date and time")
 
   def dayLabel(t: Instant): String =
     new js.Date(t.toEpochMilli.toDouble)

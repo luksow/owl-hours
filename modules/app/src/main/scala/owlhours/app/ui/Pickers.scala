@@ -31,7 +31,7 @@ object Pickers:
 
   def resolveWhen(w: When, now: Instant): Either[String, Instant] = w match
     case When.Ago(m) => Right(now.minusSeconds(m * 60L))
-    case When.At(s)  => LocalDateTime.parse(s).toRight("Pick a date and time").flatMap(Edits.notInFuture(_, now))
+    case When.At(s)  => LocalDateTime.parseDetailed(s).flatMap(Edits.notInFuture(_, now))
 
   private val Ago = List(0 -> "Now", 15 -> "15 min ago", 30 -> "30 min ago", 60 -> "60 min ago")
 

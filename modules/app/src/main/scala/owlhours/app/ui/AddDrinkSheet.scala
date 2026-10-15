@@ -102,8 +102,17 @@ object AddDrinkSheet:
       SignallingRef[IO].of(List.empty[String]),
       SignallingRef[IO].of(Option.empty[(String, List[String])]),
       SignallingRef[IO].of(false),
-      lines.traverse(_ => SignallingRef[IO].of(""))
-    ).tupled.toResource.flatMap { (amount, duration, when, abv, errors, preview, perIngredient, ingredients) =>
+      lines.traverse(_ => SignallingRef[IO].of("")),
+      SignallingRef[IO].of(duration0)
+    ).tupled.toResource.flatMap { (amount, duration, when, abv, errors, preview, perIngredient, ingredients, lastDefault) =>
+      // the drinking time follows the size until the person changes it
+      val followSize: Resource[IO, Unit] =
+        amount.discrete.changes.evalMap { a =>
+          Amount.drinkMl(a).toOption.fold(IO.unit) { v =>
+            val d = Format.number(Durations.default(entry, v).unwrap)
+            (duration.get, lastDefault.get).flatMapN((cur, last) => IO.whenA(cur == last)(duration.set(d))) *> lastDefault.set(d)
+          }
+        }.compile.drain.background.void
       val readIngredients: IO[Option[List[String]]] =
         perIngredient.get.ifM(ingredients.traverse(_.get).map(Some(_)), IO.pure(None))
       val adjust: Resource[IO, HtmlElement[IO]] = entry match
@@ -140,7 +149,7 @@ object AddDrinkSheet:
             }
           }
           .compile.drain.background.void
-      previewLoop *> div(
+      followSize *> previewLoop *> div(
         cls := "mt-4 space-y-4",
         h2(cls := "font-display text-4xl text-ice", entry.name),
         adjust,
@@ -202,7 +211,7 @@ object AddDrinkSheet:
           // A preset amount resolves at that strength exactly; any other amount scales the ×1 recipe proportionally.
           recipePresets(r).find(_._2 == amount.trim) match
             case Some((_, _, k)) => Resolve(Choice.OfRecipe(r, strength = k))
-            case None            => Resolve(Choice.OfRecipe(r)).map(Edits.rescale(_, v))
+            case None            => Resolve(Choice.OfRecipe(r)).map(s => Edits.rescale(s, v).copy(name = s"${r.name} (custom)"))
       ).toEitherNel
     }
     val snapshot: EitherNel[String, DrinkSnapshot] = (entry, ingredients) match

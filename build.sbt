@@ -85,6 +85,9 @@ lazy val app = project
     // munit on Node runs CommonJS; only the browser bundle is ES modules
     Test / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)
       .withModuleSplitStyle(ModuleSplitStyle.FewestModules)),
+    // Time-zone tests (DST) run in a fixed zone; the code itself uses the browser's zone.
+    Test / jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(
+      org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(Map("TZ" -> "Europe/Warsaw"))),
     libraryDependencies += "com.armanbilge" %%% "calico" % V.calico,
     testDeps
   )
