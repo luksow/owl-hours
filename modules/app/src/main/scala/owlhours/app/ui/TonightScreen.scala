@@ -2,9 +2,115 @@ package owlhours.app.ui
 
 import calico.html.io.{*, given}
 import cats.effect.{IO, Resource}
+import cats.syntax.all.*
+import fs2.concurrent.{Signal, SignallingRef}
 import fs2.dom.HtmlElement
-import owlhours.app.AppState
+import java.time.Instant
+import owlhours.app.{AppState, Route}
+import owlhours.app.logic.*
+import owlhours.app.platform.{Now, TimeFormat}
 import owlhours.catalogue.Catalogue
+import owlhours.domain.*
+import owlhours.model.{Impairment, Trend}
 
 object TonightScreen:
-  def apply(app: AppState, catalogue: Catalogue): Resource[IO, HtmlElement[IO]] = div(h1("Tonight"))
+  private val Meals = List("Snack" -> 250, "Light meal" -> 500, "Full meal" -> 900, "Feast" -> 1400)
+
+  def apply(app: AppState, catalogue: Catalogue): Resource[IO, HtmlElement[IO]] =
+    val session: Signal[IO, Option[Session]] = (app.persisted, app.now).mapN { (p, now) =>
+      p.profile.flatMap(Sessions.active(_, p.sessions, now))
+    }
+    val view: Signal[IO, Option[(Tonight, Option[Session], BacUnit, Instant)]] =
+      (app.persisted, session, app.now).mapN { (p, s, now) =>
+        p.profile.map(profile => (Tonight.of(profile, s, now), s, p.settings.bacUnit, now))
+      }
+    SignallingRef[IO].of(false).toResource.flatMap { foodOpen =>
+      div(
+        cls := "mx-auto flex min-h-dvh max-w-md flex-col",
+        headerTag(cls := "flex items-center justify-between px-5 pt-5",
+          span(cls := "font-display text-4xl text-pink neon", "Owl Hours"),
+          span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight")),
+        div(view.map {
+          case None => div(())
+          case Some((t, s, unit, now)) => body(t, s, unit, now)
+        }),
+        p(cls := "mt-3 px-5 text-center text-xs uppercase tracking-wider text-dim", "Estimate only · never a green light to drive"),
+        div(foodOpen.map {
+          case false => div(())
+          case true =>
+            div(
+              cls := "mx-4 mt-3 grid grid-cols-2 gap-2",
+              Meals.map { (name, kcal) =>
+                button(
+                  cls := "min-h-12 rounded-xl border border-amber/60 bg-surface text-amber",
+                  onClick --> (_.foreach(_ =>
+                    Now.instant.flatMap(now => app.addIntake(Intake.Meal(Kcal(kcal), now))) *> foodOpen.set(false))),
+                  s"$name · $kcal kcal"
+                )
+              }
+            )
+        }),
+        actionBar(app, session, foodOpen)
+      )
+    }
+
+  private def body(t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
+    val current = t.projection.curve.samples.findLast(!_.at.isAfter(now)).getOrElse(t.projection.curve.samples.head)
+    val trend = t.summary.trend match
+      case Trend.Rising  => "↗ rising"
+      case Trend.Falling => "↘ falling"
+      case Trend.Steady  => "→ steady"
+    val markers = s.toList.flatMap(_.intakes).map {
+      case d: Intake.Drink => Marker(d.start, MarkerKind.Drink)
+      case w: Intake.Water => Marker(w.start, MarkerKind.Water)
+      case m: Intake.Meal  => Marker(m.at, MarkerKind.Meal)
+    }
+    val chart = ChartSvg.render(t, now, markers, TimeFormat.hhmm)
+    div(
+      cls := "px-5",
+      div(cls := "mt-6 flex items-end gap-4",
+        span(dataAttr("testid") := "bac", cls := "font-ui text-7xl font-bold leading-none tabular-nums",
+          Display.bac(current.bacMgDl, current.bracMgL, unit)),
+        div(cls := "pb-2",
+          div(cls := "font-ui text-sm uppercase tracking-widest text-amber", trend),
+          div(cls := "font-display text-3xl text-ice", Display.impairment(t.impairment)))),
+      div(cls := "mt-4 rounded-2xl border border-line bg-surface p-2", InnerHtml(fs2.concurrent.Signal.constant(chart))),
+      div(cls := "mt-3 flex gap-2",
+        t.summary.peak.map(pk =>
+          div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2",
+            s"Peak ${Display.bac(pk.bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)} at ${TimeFormat.hhmm(pk.at)}")),
+        t.summary.backToZeroBy.map(b =>
+          div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2", s"Back to ~0 by ${TimeFormat.hhmm(b)}"))),
+      Option.when(t.impairment == Impairment.TakeCare)(takeCare)
+    )
+
+  private def takeCare: Resource[IO, HtmlElement[IO]] =
+    div(
+      cls := "mt-4 rounded-2xl border border-care/60 bg-surface p-4 font-body",
+      h2(cls := "font-ui text-2xl font-semibold text-care", "Let's slow everything down."),
+      p(cls := "mt-2", "Your estimate is above 3‰, where alcohol poisoning is a real risk. Stay with people you trust and sip water."),
+      p(cls := "mt-2", "If someone can't be woken, is breathing slowly or irregularly, is cold or pale, or is vomiting while drowsy, call emergency services now (112 in Europe, 911 in the US).")
+    )
+
+  private def actionBar(app: AppState, session: Signal[IO, Option[Session]], foodOpen: SignallingRef[IO, Boolean]) =
+    val lastDrink = session.map(_.flatMap(_.lastDrink))
+    div(
+      cls := "sticky bottom-0 mt-auto grid grid-cols-2 gap-2 bg-wall/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
+      button(cls := "col-span-2 min-h-16 rounded-2xl border border-pink bg-surface-2 text-2xl font-bold uppercase tracking-wider text-pink",
+        onClick --> (_.foreach(_ => app.go(Route.AddDrink))), "+ Drink"),
+      button(cls := "min-h-14 rounded-2xl border border-line bg-surface text-lg uppercase disabled:opacity-40",
+        disabled <-- lastDrink.map(_.isEmpty),
+        onClick --> (_.foreach(_ =>
+          (lastDrink.get, Now.instant).flatMapN {
+            case (Some(d), now) => app.addIntake(Intake.Drink(d.snapshot, now, d.duration))
+            case (None, _)      => IO.unit
+          })),
+        "Same again"),
+      div(cls := "grid grid-cols-2 gap-2",
+        button(cls := "min-h-14 rounded-2xl border border-ice/60 bg-surface text-lg uppercase text-ice",
+          onClick --> (_.foreach(_ =>
+            Now.instant.flatMap(now => app.addIntake(Intake.Water(Millilitres(250), now, Minutes(5)))))),
+          "Water"),
+        button(cls := "min-h-14 rounded-2xl border border-amber/60 bg-surface text-lg uppercase text-amber",
+          onClick --> (_.foreach(_ => foodOpen.update(!_))), "Food"))
+    )
