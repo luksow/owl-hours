@@ -4,6 +4,11 @@ import io.circe.Decoder
 import io.circe.parser.decode
 import scala.io.Source
 
+/**
+ * Each scenario's `kcalPerLitre` is the model's `kcal_liquid_per_vol` input, i.e. NON-alcohol energy (the app passes
+ * total energy minus ethanol). The older scenarios use larger values and exercise the engine's gastric brake; the
+ * `authors-*` scenarios use the authors' own drink specs, the regime the app actually runs in.
+ */
 class GoldenSuite extends munit.FunSuite:
   final case class P(sex: String, weightKg: Double, heightM: Double, age: Double) derives Decoder
   final case class D(startMin: Double, durationMin: Double, volumeMl: Double, abv: Double, kcalPerLitre: Double)

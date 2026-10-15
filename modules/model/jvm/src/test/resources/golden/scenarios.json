@@ -540,5 +540,124 @@
   "meals": [],
   "horizonMin": 600,
   "stepMin": 5
+ },
+ {
+  "name": "authors-four-beers",
+  "profile": {
+   "sex": "male",
+   "weightKg": 80,
+   "heightM": 1.8,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 20,
+    "volumeMl": 330,
+    "abv": 5.1,
+    "kcalPerLitre": 129.827
+   },
+   {
+    "startMin": 50,
+    "durationMin": 20,
+    "volumeMl": 330,
+    "abv": 5.1,
+    "kcalPerLitre": 129.827
+   },
+   {
+    "startMin": 90,
+    "durationMin": 20,
+    "volumeMl": 330,
+    "abv": 5.1,
+    "kcalPerLitre": 129.827
+   },
+   {
+    "startMin": 130,
+    "durationMin": 20,
+    "volumeMl": 330,
+    "abv": 5.1,
+    "kcalPerLitre": 129.827
+   }
+  ],
+  "meals": [],
+  "horizonMin": 600,
+  "stepMin": 5
+ },
+ {
+  "name": "authors-four-spirits",
+  "profile": {
+   "sex": "male",
+   "weightKg": 80,
+   "heightM": 1.8,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 1,
+    "volumeMl": 40,
+    "abv": 40,
+    "kcalPerLitre": 10
+   },
+   {
+    "startMin": 25,
+    "durationMin": 1,
+    "volumeMl": 40,
+    "abv": 40,
+    "kcalPerLitre": 10
+   },
+   {
+    "startMin": 40,
+    "durationMin": 1,
+    "volumeMl": 40,
+    "abv": 40,
+    "kcalPerLitre": 10
+   },
+   {
+    "startMin": 55,
+    "durationMin": 1,
+    "volumeMl": 40,
+    "abv": 40,
+    "kcalPerLitre": 10
+   }
+  ],
+  "meals": [],
+  "horizonMin": 600,
+  "stepMin": 5
+ },
+ {
+  "name": "authors-wine-female",
+  "profile": {
+   "sex": "female",
+   "weightKg": 62,
+   "heightM": 1.66,
+   "age": 30
+  },
+  "drinks": [
+   {
+    "startMin": 10,
+    "durationMin": 30,
+    "volumeMl": 150,
+    "abv": 12,
+    "kcalPerLitre": 133.25
+   },
+   {
+    "startMin": 55,
+    "durationMin": 30,
+    "volumeMl": 150,
+    "abv": 12,
+    "kcalPerLitre": 133.25
+   },
+   {
+    "startMin": 100,
+    "durationMin": 30,
+    "volumeMl": 150,
+    "abv": 12,
+    "kcalPerLitre": 133.25
+   }
+  ],
+  "meals": [],
+  "horizonMin": 600,
+  "stepMin": 5
  }
 ]

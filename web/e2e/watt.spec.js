@@ -71,3 +71,20 @@ test("reduced motion stops every animation", async ({ page }) => {
   expect(names.length).toBeGreaterThan(0);
   expect(names.every((n) => n === "none")).toBe(true);
 });
+
+test("review: nested animations never compose below 60 % (a flickering segment inside the humming sign)", async ({ page }) => {
+  await onboarded(page);
+  await page.goto("/");
+  const mins = await page.evaluate(() => {
+    const out = {};
+    for (const sheet of document.styleSheets)
+      for (const r of sheet.cssRules)
+        if (r instanceof CSSKeyframesRule && r.name.startsWith("watt-"))
+          out[r.name] = Math.min(1, ...[...r.cssRules].map((k) => (k.style.opacity === "" ? 1 : parseFloat(k.style.opacity))));
+    return out;
+  });
+  // whole-sign motions wrap the drawing; segment animations sit inside them
+  const whole = Math.min(...["watt-hum", "watt-jitter", "watt-sway", "watt-sway2"].map((n) => mins[n] ?? 1));
+  for (const n of ["watt-flick1", "watt-flick2", "watt-flick3", "watt-twinkle"])
+    expect(mins[n] * whole, n).toBeGreaterThanOrEqual(0.6);
+});
