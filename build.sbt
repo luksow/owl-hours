@@ -34,7 +34,13 @@ lazy val model = crossProject(JVMPlatform, JSPlatform)
   .settings(name := "owlhours-model", testDeps)
   .jvmSettings(libraryDependencies += "io.circe" %% "circe-parser" % V.circe % Test)
 
+lazy val catalogue = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("modules/catalogue"))
+  .dependsOn(domain)
+  .settings(name := "owlhours-catalogue", testDeps)
+
 lazy val root = project
   .in(file("."))
-  .aggregate(domain.jvm, domain.js, model.jvm, model.js)
+  .aggregate(domain.jvm, domain.js, model.jvm, model.js, catalogue.jvm, catalogue.js)
   .settings(name := "owlhours", publish / skip := true)
