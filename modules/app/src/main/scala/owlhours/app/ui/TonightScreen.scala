@@ -1,6 +1,7 @@
 package owlhours.app.ui
 
 import calico.html.io.{*, given}
+import cats.Eq
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
 import fs2.concurrent.{Signal, SignallingRef}
@@ -16,16 +17,31 @@ import owlhours.model.{Impairment, Trend}
 object TonightScreen:
   private val Meals = List("Snack" -> 250, "Light meal" -> 500, "Full meal" -> 900, "Feast" -> 1400)
 
+  /** Everything that needs a simulation, recomputed only when its inputs change (spec §7.4). */
+  private final case class Bundle(session: Option[Session], unit: BacUnit, projected: Option[Projected])
+  private final case class Key(profile: Option[Profile], session: Option[Session], unit: BacUnit, hour: Long)
+
+  /** A derived signal evaluated once per distinct input, shared by all subscribers. */
+  private def shared[A, B](sig: Signal[IO, A])(f: A => B): Resource[IO, Signal[IO, B]] =
+    sig.get.toResource.flatMap(a0 => sig.discrete.changes(using Eq.fromUniversalEquals).map(f).holdResource(f(a0)))
+
   def apply(app: AppState, catalogue: Catalogue): Resource[IO, HtmlElement[IO]] =
-    val session: Signal[IO, Option[Session]] = (app.persisted, app.now).mapN { (p, now) =>
-      p.profile.flatMap(Sessions.active(_, p.sessions, now))
-    }
-    val view: Signal[IO, Option[(Tonight, Option[Session], BacUnit, Instant)]] =
-      (app.persisted, session, app.now).mapN { (p, s, now) =>
-        p.profile.map(profile => (Tonight.of(profile, s, now), s, p.settings.bacUnit, now))
+    for
+      // closesAt runs a 24 h simulation: once per saved change, not per tick
+      night <- shared(app.persisted) { p =>
+        (p.profile, p.profile.flatMap(prof => p.sessions.lastOption.filter(_.intakes.nonEmpty).map(s => (s, Sessions.closesAt(prof, s)))),
+          p.settings.bacUnit)
       }
-    SignallingRef[IO].of(false).toResource.flatMap { foodOpen =>
-      div(
+      key = (night, app.now).mapN { case ((profile, last, unit), now) =>
+        val session = last.collect { case (s, closes) if !now.isAfter(closes) => s }
+        Key(profile, session, unit, if session.isEmpty then now.getEpochSecond / 3600 else 0L)
+      }
+      bundle <- shared(key) { k =>
+        Bundle(k.session, k.unit, k.profile.map(p => Tonight.project(p, k.session, Instant.ofEpochSecond(k.hour * 3600 + 1800))))
+      }
+      foodOpen <- SignallingRef[IO].of(false).toResource
+      view = (bundle, app.now).mapN((b, now) => b.projected.map(pr => (Tonight.at(pr, now), b.session, b.unit, now)))
+      screen <- div(
         cls := "mx-auto flex min-h-dvh max-w-md flex-col",
         headerTag(cls := "flex items-center justify-between px-5 pt-5",
           span(cls := "font-display text-4xl text-pink neon", "Owl Hours"),
@@ -50,9 +66,9 @@ object TonightScreen:
               }
             )
         }),
-        actionBar(app, session, foodOpen)
+        actionBar(app, bundle.map(_.session), foodOpen)
       )
-    }
+    yield screen
 
   private def body(t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
     val current = t.projection.curve.samples.findLast(!_.at.isAfter(now)).getOrElse(t.projection.curve.samples.head)

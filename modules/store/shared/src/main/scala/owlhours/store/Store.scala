@@ -11,6 +11,10 @@ import owlhours.domain.*
 trait KeyValue[F[_]]:
   def get(key: String): F[Option[String]]
   def set(key: String, value: String): F[Unit]
+  def remove(key: String): F[Unit]
+
+  /** False when storage is blocked (private mode, disabled site data); nothing will survive a reload. */
+  def available: F[Boolean]
 
 final case class Persisted(disclaimerAccepted: Boolean, profile: Option[Profile], settings: Settings, sessions: Vector[Session])
 
@@ -24,6 +28,7 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
 
   def load: F[Loaded] =
     for
+      usable     <- kv.available
       now        <- F.realTime.map(d => Instant.ofEpochMilli(d.toMillis)) // realTimeInstant is JVM-only
       disclaimer <- read(Keys.disclaimer, "your disclaimer choice", now)(using Decoder.decodeBoolean)
       profile    <- read(Keys.profile, "your profile", now)(using Codecs.profileCodec)
@@ -36,7 +41,8 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
         settings._1.getOrElse(Settings.default),
         sessions._1.getOrElse(Vector.empty)
       ),
-      List(disclaimer._2, profile._2, settings._2, sessions._2).flatten
+      (if usable then Nil else List(Store.StorageUnavailable)) ++
+        List(disclaimer._2, profile._2, settings._2, sessions._2).flatten
     )
 
   def saveDisclaimer(accepted: Boolean): F[Unit] = kv.set(Keys.disclaimer, accepted.asJson.noSpaces)
@@ -53,10 +59,15 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
           case Right(a) => F.pure((Some(a), None))
           case Left(e) =>
             val backup = s"oh.recovery.$key.${now.toEpochMilli}"
-            kv.set(backup, raw).as((None, Some(s"Could not read $what, so it was reset. A copy was kept as $backup (${e.getMessage}).")))
+            // Copy, then remove the original so the problem is reported once, not on every launch.
+            (kv.set(backup, raw) *> kv.remove(key))
+              .as((None, Some(s"Could not read $what, so it was reset. A copy was kept as $backup (${e.getMessage}).")))
     }
 
 object Store:
+  val StorageUnavailable: String =
+    "Owl Hours can't save on this device or browser (storage is blocked), so tonight will be forgotten when you close the app."
+
   object Keys:
     val disclaimer = "oh.v1.disclaimer"
     val profile    = "oh.v1.profile"

@@ -10,6 +10,8 @@ class StoreSuite extends munit.FunSuite:
     val data = mutable.Map.from(initial)
     def get(key: String)                = SyncIO(data.get(key))
     def set(key: String, value: String) = SyncIO(data.update(key, value))
+    def remove(key: String)             = SyncIO(data.remove(key)).void
+    def available                       = SyncIO.pure(true)
 
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val profile = Profile(Sex.Female, Age(29), BodyWeight(64.5), Height(168))
@@ -58,3 +60,23 @@ class StoreSuite extends munit.FunSuite:
     assertEquals(loaded.persisted.sessions, Vector.empty)
     assert(loaded.problems.exists(_.contains("unknown intake type 'snack'")), loaded.problems.toString)
   }
+
+  test("review: a corrupt value is removed after its recovery copy, so it is reported only once") {
+    val kv    = Memory(Store.Keys.settings -> """{"bacUnit":"Furlongs"}""")
+    val store = Store(kv)
+    assertEquals(store.load.unsafeRunSync().problems.size, 1)
+    assertEquals(kv.data.get(Store.Keys.settings), None)
+    assertEquals(store.load.unsafeRunSync(), Loaded(Persisted.empty, Nil))
+    assertEquals(kv.data.keys.count(_.startsWith("oh.recovery.")), 1)
+  }
+
+  test("review: storage that cannot be used is reported to the user") {
+    val blocked = new KeyValue[SyncIO]:
+      def get(key: String)                = SyncIO.pure(None)
+      def set(key: String, value: String) = SyncIO.unit
+      def remove(key: String)             = SyncIO.unit
+      def available                       = SyncIO.pure(false)
+    val loaded = Store(blocked).load.unsafeRunSync()
+    assertEquals(loaded.problems, List(Store.StorageUnavailable))
+  }
+

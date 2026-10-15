@@ -12,7 +12,7 @@ object Main extends IOWebApp:
   def render: Resource[IO, HtmlElement[IO]] =
     AppState.resource(window).flatMap { app =>
       val screen: Signal[IO, Resource[IO, HtmlElement[IO]]] =
-        (app.catalogue, app.persisted.map(p => p.disclaimerAccepted && p.profile.isDefined), app.route).mapN {
+        (app.catalogue, app.persisted.map(p => p.disclaimerAccepted && p.profile.isDefined).changes, app.route).mapN {
           case (CatalogueState.Loading, _, _)        => splash
           case (CatalogueState.Failed(errors), _, _) => catalogueFailed(errors)
           case (CatalogueState.Ready(_), false, _)   => Onboarding(app)
