@@ -15,7 +15,7 @@ class SimulationSuite extends munit.FunSuite:
 
   test("matches the engine for the same beer") {
     val curve  = Simulation.simulate(profile, Seq(Intake.Drink(lager, at(10), Minutes(20))), t0, at(240), stepMinutes = 5)
-    val engine = Engine.run(Anthropometrics(1, 80, 1.8, 30), Schedule(Seq(DrinkInput(10, 20, 0.5, 5, 430)), Nil), 0, 240, 5)
+    val engine = Engine.run(Anthropometrics(1, 80, 1.8, 30), Schedule(Seq(DrinkInput(10, 20, 0.5, 5, lager.nonAlcoholKcalPerLitre)), Nil), 0, 240, 5)
     assertEquals(curve.samples.size, engine.size)
     assertEquals(curve.samples.head.at, t0)
     for i <- 0 until engine.size do assertEqualsDouble(curve.samples(i).bacMgDl, engine.bacMgDl(i), 1e-9)
@@ -77,3 +77,25 @@ class SimulationSuite extends munit.FunSuite:
     assert(above.nonEmpty && above.forall(_.bracMgL > 0))
   }
 
+
+  test("the model's liquid-calorie input is the drink's non-alcohol energy, as in the authors' examples") {
+    // SUND Alcoholmodel2024 example: a 5.1 % drink with kcal_liquid_per_vol = 129.82 (its ethanol alone is ~282 kcal/L)
+    val ethanolKcal = 5.1 * 10 * DrinkSnapshot.EthanolDensity * DrinkSnapshot.EthanolKcalPerGram
+    val drink       = DrinkSnapshot(None, "Example", Millilitres(500), Abv(5.1), KcalPerLitre(129.82 + ethanolKcal), Nil)
+    val input       = Simulation.schedule(Seq(Intake.Drink(drink, t0, Minutes(20))), t0).drinks.head
+    assertEqualsDouble(input.kcalPerLitre, 129.82, 1e-6)
+    assertEquals(DrinkSnapshot(None, "Vodka", Millilitres(40), Abv(40), KcalPerLitre(0), Nil).nonAlcoholKcalPerLitre, 0.0)
+  }
+
+  test("more drinks never lower the peak: four pints over two hours peak well above one") {
+    def peak(n: Int) = Simulation
+      .simulate(profile, (0 until n).map(i => Intake.Drink(lager, at(i * 30L), Minutes(30))), t0, at(600))
+      .samples.map(_.bacMgDl).max
+    assert(peak(4) > 2.5 * peak(1), s"one: ${peak(1)}, four: ${peak(4)}")
+  }
+
+  test("a litre and a half of vodka is far above 3 per mille") {
+    val vodka = DrinkSnapshot(None, "Vodka", Millilitres(1500), Abv(40), KcalPerLitre(2210), Nil)
+    val peak  = Simulation.simulate(profile, Seq(Intake.Drink(vodka, t0, Minutes(30))), t0, at(600)).samples.map(_.bacMgDl).max
+    assert(peak / BacUnit.MgDlPerPermille > 3.0, peak.toString)
+  }

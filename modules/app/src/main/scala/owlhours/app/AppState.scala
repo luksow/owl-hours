@@ -1,13 +1,14 @@
 package owlhours.app
 
 import cats.effect.{IO, Resource}
+import cats.effect.std.Mutex
 import cats.syntax.all.*
 import fs2.Stream
 import fs2.concurrent.{Signal, SignallingRef}
 import fs2.dom.Window
 import java.time.Instant
 import org.scalajs.dom
-import owlhours.app.logic.Sessions
+import owlhours.app.logic.{Saving, Sessions}
 import owlhours.app.platform.{BrowserKeyValue, CatalogueLoader, Now}
 import owlhours.catalogue.Catalogue
 import owlhours.domain.*
@@ -39,7 +40,8 @@ final class AppState(
     val now: Signal[IO, Instant],
     val route: Signal[IO, Route],
     store: Store[IO],
-    window: Window[IO]
+    window: Window[IO],
+    lock: Mutex[IO]
 ):
   def acceptDisclaimer: IO[Unit] = persisted.update(_.copy(disclaimerAccepted = true)) *> store.saveDisclaimer(true)
 
@@ -51,29 +53,28 @@ final class AppState(
     updateSessions((p, ss) => Sessions.replace(p, ss, old, updated)) *> undo.set(None)
 
   def deleteIntake(old: Intake): IO[Unit] =
-    persisted.get.flatMap { before =>
+    // the snapshot for undo is taken inside the lock, so it is exactly the state the delete applied to
+    lock.lock.surround(persisted.get.flatMap { before =>
       // only a delete that removed something replaces the undo snapshot
       IO.whenA(before.sessions.exists(_.intakes.contains(old)))(
-        updateSessions((p, ss) => Sessions.delete(p, ss, old)) *> {
+        persisted.updateAndGet(withSessions((p, ss) => Sessions.delete(p, ss, old))).flatMap(p => store.saveSessions(p.sessions)) *> {
           val u = Undo("Entry deleted", before.sessions)
           // a snackbar, not a fixture: it hides itself unless a newer one replaced it
           undo.set(Some(u)) *> (IO.sleep(UndoFor) *> undo.update(_.filterNot(_ eq u))).start.void
         })
-    }
+    })
 
   def undoLast: IO[Unit] =
-    undo.getAndSet(None).flatMap(_.traverse_(u => persisted.update(_.copy(sessions = u.sessions)) *> store.saveSessions(u.sessions)))
+    undo.getAndSet(None).flatMap(_.traverse_(u => saved(_.copy(sessions = u.sessions))))
 
-  private def updateSessions(f: (Profile, Vector[Session]) => Vector[Session]): IO[Unit] =
-    persisted
-      .modify { p =>
-        p.profile match
-          case Some(profile) =>
-            val next = f(profile, p.sessions)
-            (p.copy(sessions = next), Some(next))
-          case None => (p, None)
-      }
-      .flatMap(_.traverse_(store.saveSessions))
+  private def withSessions(f: (Profile, Vector[Session]) => Vector[Session])(p: Persisted): Persisted =
+    p.profile.fold(p)(profile => p.copy(sessions = f(profile, p.sessions)))
+
+  /** Update-then-save, one at a time: a slow save can never overwrite a newer state. */
+  private def saved(f: Persisted => Persisted): IO[Unit] =
+    Saving.serialised(persisted, lock, p => store.saveSessions(p.sessions))(f).void
+
+  private def updateSessions(f: (Profile, Vector[Session]) => Vector[Session]): IO[Unit] = saved(withSessions(f))
 
   private val UndoFor = 8.seconds
 
@@ -105,4 +106,5 @@ object AppState:
         .holdResource(Route.parse(hash0))
       // leaving a screen dismisses its undo bar
       _ <- route.discrete.drop(1).foreach(_ => undo.set(None)).compile.drain.background
-    yield AppState(persisted, catalogue, problems, undo, now, route, store, window)
+      lock <- Mutex[IO].toResource
+    yield AppState(persisted, catalogue, problems, undo, now, route, store, window, lock)

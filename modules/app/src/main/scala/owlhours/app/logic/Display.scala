@@ -1,6 +1,6 @@
 package owlhours.app.logic
 
-import owlhours.domain.BacUnit
+import owlhours.domain.{BacUnit, Format}
 import owlhours.model.Impairment
 
 object Display:
@@ -11,6 +11,15 @@ object Display:
       case BacUnit.PercentBac   => f"$v%.3f%%"
       case BacUnit.MgPer100ml   => f"$v%.0f mg/100 ml"
       case BacUnit.BreathMgPerL => f"$v%.2f mg/L"
+
+  /** Peaks are blood figures; with the breath unit they are shown in ‰, as on Tonight. */
+  def peak(bacMgDl: Double, unit: BacUnit): String = bac(bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)
+
+  /** Labels for whole-‰ grid lines in the chosen unit; the chart is a blood curve, so breath users see ‰. */
+  def gridLabel(permille: Int, unit: BacUnit): String = unit match
+    case BacUnit.PercentBac => s"${Format.number(permille / 10.0)}%"
+    case BacUnit.MgPer100ml => s"${permille * 100} mg"
+    case _                  => s"$permille‰"
 
   def impairment(i: Impairment): String = i match
     case Impairment.Sober     => "Sober"

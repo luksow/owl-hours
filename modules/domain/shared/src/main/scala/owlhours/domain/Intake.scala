@@ -15,9 +15,16 @@ final case class DrinkSnapshot(
 ):
   def ethanolGrams: Double = volume.unwrap * abv.unwrap / 100.0 * DrinkSnapshot.EthanolDensity
 
+  /** Energy other than the ethanol's own (sugars, dextrins…), kcal/L: what the model's gastric brake responds to. */
+  def nonAlcoholKcalPerLitre: Double =
+    math.max(0.0, kcalPerLitre.unwrap - abv.unwrap * 10 * DrinkSnapshot.EthanolDensity * DrinkSnapshot.EthanolKcalPerGram)
+
 object DrinkSnapshot:
   /** g/ml at 20 °C. */
   val EthanolDensity: Double = 0.789
+
+  /** EU Reg. 1169/2011 Annex XIV; spirit labels use this factor (40 % → 221 kcal/100 ml). */
+  val EthanolKcalPerGram: Double = 7.0
 
 enum Intake:
   case Drink(snapshot: DrinkSnapshot, start: Instant, duration: Minutes)

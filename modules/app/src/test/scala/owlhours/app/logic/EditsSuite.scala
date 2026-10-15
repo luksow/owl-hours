@@ -1,6 +1,7 @@
 package owlhours.app.logic
 
 import java.time.Instant
+import owlhours.catalogue.*
 import owlhours.domain.*
 
 class EditsSuite extends munit.FunSuite:
@@ -56,4 +57,22 @@ class EditsSuite extends munit.FunSuite:
     assertEquals(Edits.notInFuture(t0.plusSeconds(600), t0),
       Left("That's later than now — for last night, pick yesterday's date"))
     assertEquals(Edits.notInFuture(t0.plusSeconds(30 * 3600), t0), Left("That time is in the future"))
+  }
+
+  test("rescaling never throws, even when one ingredient is the whole drink and the total hits the maximum") {
+    for total <- (1 to 20000).map(_ / 4.0) do
+      val solo = DrinkSnapshot(None, "Solo", Millilitres(total), Abv(40), KcalPerLitre(2200), List(ComponentLine("Gin", Millilitres(total), Abv(40))))
+      val big  = Edits.rescale(solo, Millilitres(5000))
+      assert(big.components.forall(_.volume.unwrap <= 5000), total.toString)
+  }
+
+  test("ABV can be edited within the style's range, freely for unknown drinks, and not at all for fixed products") {
+    val style = Style(CatalogueId("pale-lager"), "Pale lager", Category.Beer, Abv(5), Abv(4), Abv(6), CarbsPerLitre(30),
+      List(Serving("can", Millilitres(500))), Nil, "test", false)
+    val aperol = Product(CatalogueId("aperol"), "Aperol", Category.Aperitif, Abv(11), KcalPerLitre(1200), false,
+      List(Serving("glass", Millilitres(50))), Nil, "test", false)
+    assertEquals(Edits.abvRange(Some(style)), Some((Abv(4), Abv(6))))
+    assertEquals(Edits.abvRange(Some(aperol)), None)
+    assertEquals(Edits.abvRange(None), Some((Abv(0), Abv(100))))
+    assertEquals(Edits.checkAbv(Abv(7), (Abv(4), Abv(6)), "Pale lager"), Left("ABV for Pale lager must be between 4 and 6 %, got 7"))
   }

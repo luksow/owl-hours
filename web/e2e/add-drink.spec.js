@@ -87,3 +87,39 @@ test("review: tapping Pick time again keeps the picked time", async ({ page }) =
   const intake = (await stored(page))[0].intakes[0];
   expect(Math.abs(new Date(intake.start).getTime() - started.getTime())).toBeLessThan(60_000);
 });
+
+test("a negroni can be adjusted ingredient by ingredient", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Drink" }).click();
+  await page.getByLabel("Search drinks").fill("negroni");
+  await page.getByRole("button", { name: /^Negroni/ }).click();
+  await page.getByRole("button", { name: "Adjust ingredients" }).click();
+  await page.getByLabel("Gin (London Dry) (ml)").fill("50");
+  await page.getByLabel("Sweet vermouth (ml)").fill("0");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const snapshot = (await stored(page))[0].intakes[0].snapshot;
+  expect(snapshot.name).toBe("Negroni (custom)");
+  expect(snapshot.components.map((c) => [c.name, c.volume])).toEqual([["Gin (London Dry)", 50], ["Campari", 30]]);
+});
+
+test("the drinking time follows the size until you change it", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Drink" }).click();
+  await page.getByLabel("Search drinks").fill("pils");
+  await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).click();
+  await page.getByRole("button", { name: "UK pint · 568 ml" }).click();
+  await expect(page.getByLabel("Drinking time (min)")).toHaveValue("30");
+  await page.getByLabel("Drinking time (min)").fill("45");
+  await page.getByRole("button", { name: "bottle · 330 ml" }).click();
+  await expect(page.getByLabel("Drinking time (min)")).toHaveValue("45");
+});
+
+test("a custom cocktail amount is named as custom", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Drink" }).click();
+  await page.getByLabel("Search drinks").fill("negroni");
+  await page.getByRole("button", { name: /^Negroni/ }).click();
+  await page.getByLabel("Amount (ml)").fill("120");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  expect((await stored(page))[0].intakes[0].snapshot.name).toBe("Negroni (custom)");
+});

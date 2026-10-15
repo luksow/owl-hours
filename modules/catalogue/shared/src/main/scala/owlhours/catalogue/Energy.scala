@@ -3,8 +3,7 @@ package owlhours.catalogue
 import owlhours.domain.DrinkSnapshot
 
 object Energy:
-  /** EU Reg. 1169/2011 Annex XIV; spirit labels use this factor (40 % → 221 kcal/100 ml). */
-  val EthanolKcalPerGram: Double = 7.0
+  val EthanolKcalPerGram: Double = DrinkSnapshot.EthanolKcalPerGram
   val CarbKcalPerGram: Double    = 4.0
 
   def ethanolKcalPerLitre(abv: Double): Double = abv * 10 * DrinkSnapshot.EthanolDensity * EthanolKcalPerGram

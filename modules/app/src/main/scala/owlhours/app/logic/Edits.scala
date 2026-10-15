@@ -1,7 +1,7 @@
 package owlhours.app.logic
 
 import java.time.Instant
-import owlhours.catalogue.Energy
+import owlhours.catalogue.*
 import owlhours.domain.*
 
 final case class IntakeEdit(start: Instant, duration: Option[Minutes], volume: Option[Millilitres], abv: Option[Abv], kcal: Option[Kcal])
@@ -10,7 +10,21 @@ object Edits:
   /** Proportional: every ingredient scales with the total; concentration (ABV, kcal/L) is unchanged. */
   def rescale(s: DrinkSnapshot, volume: Millilitres): DrinkSnapshot =
     val k = volume.unwrap / s.volume.unwrap
-    s.copy(volume = volume, components = s.components.map(c => c.copy(volume = Millilitres(c.volume.unwrap * k))))
+    // a component can never exceed the drink; clamping also absorbs floating-point overshoot at the 5000 ml limit
+    s.copy(volume = volume, components = s.components.map(c =>
+      c.copy(volume = Millilitres.from(math.min(c.volume.unwrap * k, volume.unwrap)).getOrElse(volume))))
+
+  /** How far a logged drink's ABV may be edited; `None` means it is fixed (a product with a set ABV, or a cocktail). */
+  def abvRange(entry: Option[Entry]): Option[(Abv, Abv)] = entry match
+    case Some(s: Style)                      => Some((s.abvMin, s.abvMax))
+    case Some(p: Product) if p.abvAdjustable => Some((Abv(0), Abv(100)))
+    case Some(_)                             => None
+    case None                                => Some((Abv(0), Abv(100)))
+
+  def checkAbv(abv: Abv, range: (Abv, Abv), name: String): Either[String, Abv] =
+    if abv.unwrap < range._1.unwrap || abv.unwrap > range._2.unwrap then
+      Left(s"ABV for $name must be between ${Format.number(range._1.unwrap)} and ${Format.number(range._2.unwrap)} %, got ${Format.number(abv.unwrap)}")
+    else Right(abv)
 
   def withAbv(s: DrinkSnapshot, abv: Abv): Either[String, DrinkSnapshot] =
     if s.components.nonEmpty then Left("The ABV of a mixed drink follows its ingredients")

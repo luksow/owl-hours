@@ -39,6 +39,8 @@ object TonightScreen:
         Bundle(k.session, k.unit, k.profile.map(p => Tonight.project(p, k.session, Instant.ofEpochSecond(k.hour * 3600 + 1800))))
       }
       view = (bundle, app.now).mapN((b, now) => b.projected.map(pr => (Tonight.at(pr, now), b.session, b.unit, now)))
+      // Watt changes only with the state, so its animation is not restarted by the 30-second clock tick.
+      watt = view.map(_.fold(Impairment.Sober)(_._1.impairment)).changes(using Eq.fromUniversalEquals).map(WattSvg.render)
       screen <- div(
         cls := "mx-auto flex min-h-dvh max-w-md flex-col",
         headerTag(cls := "flex items-center justify-between px-5 pt-5",
@@ -47,6 +49,8 @@ object TonightScreen:
             span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight"),
             button(cls := "min-h-12 rounded-xl border border-line px-3 text-sm uppercase tracking-wider",
               onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"))),
+        div(dataAttr("testid") := "watt", cls := "mx-auto mt-4 w-40 overflow-hidden rounded-2xl border border-line",
+          InnerHtml(watt)),
         div(view.map {
           case None => div(())
           case Some((t, s, unit, now)) => body(t, s, unit, now)
@@ -62,12 +66,8 @@ object TonightScreen:
       case Trend.Rising  => "↗ rising"
       case Trend.Falling => "↘ falling"
       case Trend.Steady  => "→ steady"
-    val markers = s.toList.flatMap(_.intakes).map {
-      case d: Intake.Drink => Marker(d.start, MarkerKind.Drink)
-      case w: Intake.Water => Marker(w.start, MarkerKind.Water)
-      case m: Intake.Meal  => Marker(m.at, MarkerKind.Meal)
-    }
-    val chart = ChartSvg.render(t, now, markers, at => -new scala.scalajs.js.Date(at.toEpochMilli.toDouble).getTimezoneOffset().toInt, TimeFormat.hhmm)
+    val chart = ChartSvg.render(t, now, Marker.of(s.toList.flatMap(_.intakes)), TimeFormat.utcOffsetMinutes, TimeFormat.hhmm,
+      bacLabel = p => Display.gridLabel(p.toInt, unit))
     div(
       cls := "px-5",
       div(cls := "mt-6 flex items-end gap-4",
@@ -80,7 +80,7 @@ object TonightScreen:
       div(cls := "mt-3 flex gap-2",
         t.summary.peak.map(pk =>
           div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2",
-            s"Peak ${Display.bac(pk.bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)} at ${TimeFormat.hhmm(pk.at)}")),
+            s"Peak ${Display.peak(pk.bacMgDl, unit)} at ${TimeFormat.hhmm(pk.at)}")),
         t.summary.backToZeroBy.map(b =>
           div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2", s"Back to ~0 by ${TimeFormat.hhmm(b)}"))),
       Option.when(t.impairment == Impairment.TakeCare)(takeCare)
