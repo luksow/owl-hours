@@ -26,10 +26,13 @@ enum CatalogueState:
   case Ready(c: Catalogue)
   case Failed(errors: List[String])
 
+final case class Undo(message: String, sessions: Vector[Session])
+
 final class AppState(
     val persisted: SignallingRef[IO, Persisted],
     val catalogue: SignallingRef[IO, CatalogueState],
     val problems: SignallingRef[IO, List[String]],
+    val undo: SignallingRef[IO, Option[Undo]],
     val now: Signal[IO, Instant],
     val route: Signal[IO, Route],
     store: Store[IO],
@@ -39,19 +42,30 @@ final class AppState(
 
   def saveProfile(p: Profile): IO[Unit] = persisted.update(_.copy(profile = Some(p))) *> store.saveProfile(p)
 
-  def addIntake(i: Intake): IO[Unit] =
-    for
-      now <- Now.instant
-      id   = SessionId(s"night-${now.toEpochMilli}")
-      next <- persisted.modify { p =>
+  def addIntake(i: Intake): IO[Unit] = updateSessions((p, ss) => Sessions.add(p, ss, i)) *> undo.set(None)
+
+  def replaceIntake(night: Int, index: Int, updated: Intake): IO[Unit] =
+    updateSessions((p, ss) => Sessions.replace(p, ss, night, index, updated)) *> undo.set(None)
+
+  def deleteIntake(night: Int, index: Int): IO[Unit] =
+    persisted.get.flatMap { before =>
+      updateSessions((p, ss) => Sessions.delete(p, ss, night, index)) *>
+        undo.set(Some(Undo("Entry deleted", before.sessions)))
+    }
+
+  def undoLast: IO[Unit] =
+    undo.getAndSet(None).flatMap(_.traverse_(u => persisted.update(_.copy(sessions = u.sessions)) *> store.saveSessions(u.sessions)))
+
+  private def updateSessions(f: (Profile, Vector[Session]) => Vector[Session]): IO[Unit] =
+    persisted
+      .modify { p =>
         p.profile match
           case Some(profile) =>
-            val sessions = Sessions.addIntake(profile, p.sessions, i, now, id)
-            (p.copy(sessions = sessions), Some(sessions))
+            val next = f(profile, p.sessions)
+            (p.copy(sessions = next), Some(next))
           case None => (p, None)
       }
-      _ <- next.traverse_(store.saveSessions)
-    yield ()
+      .flatMap(_.traverse_(store.saveSessions))
 
   def go(r: Route): IO[Unit] = window.location.hash.set(r.hash)
 
@@ -65,6 +79,7 @@ object AppState:
       persisted <- SignallingRef[IO].of(loaded.persisted).toResource
       catalogue <- SignallingRef[IO].of[CatalogueState](CatalogueState.Loading).toResource
       problems  <- SignallingRef[IO].of(loaded.problems).toResource
+      undo      <- SignallingRef[IO].of(Option.empty[Undo]).toResource
       _ <- CatalogueLoader.load
         .flatMap(r => catalogue.set(r.fold(CatalogueState.Failed(_), CatalogueState.Ready(_))))
         .background
@@ -76,4 +91,4 @@ object AppState:
         .evalMap(_ => window.location.hash.get)
         .map(Route.parse)
         .holdResource(Route.parse(hash0))
-    yield AppState(persisted, catalogue, problems, now, route, store, window)
+    yield AppState(persisted, catalogue, problems, undo, now, route, store, window)
