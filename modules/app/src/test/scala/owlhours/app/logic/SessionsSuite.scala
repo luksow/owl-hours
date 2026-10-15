@@ -30,16 +30,22 @@ class SessionsSuite extends munit.FunSuite:
 
   test("moving a drink to the next evening splits the night") {
     val ss    = List(drink(0), drink(60)).foldLeft(Vector.empty[Session])(Sessions.add(profile, _, _))
-    val moved = Sessions.replace(profile, ss, night = 0, index = 1, drink(24 * 60))
+    val moved = Sessions.replace(profile, ss, drink(60), drink(24 * 60))
     assertEquals(nights(moved), Vector(Vector(at(0)), Vector(at(24 * 60))))
   }
 
   test("deleting removes exactly one of two identical intakes; an emptied night disappears") {
     val ss  = List(drink(0), water(10), water(10)).foldLeft(Vector.empty[Session])(Sessions.add(profile, _, _))
-    val one = Sessions.delete(profile, ss, night = 0, index = 1)
+    val one = Sessions.delete(profile, ss, water(10))
     assertEquals(nights(one), Vector(Vector(at(0), at(10))))
     val solo = Sessions.add(profile, Vector.empty, drink(0))
-    assertEquals(Sessions.delete(profile, solo, 0, 0), Vector.empty)
+    assertEquals(Sessions.delete(profile, solo, drink(0)), Vector.empty)
+  }
+
+  test("review: an entry that is no longer there is left alone (stale taps never hit a neighbour)") {
+    val ss = List(drink(0), water(10)).foldLeft(Vector.empty[Session])(Sessions.add(profile, _, _))
+    assert(Sessions.delete(profile, ss, water(99)) eq ss)
+    assert(Sessions.replace(profile, ss, water(99), water(20)) eq ss)
   }
 
   test("nights that closed long before a change are kept as they are") {

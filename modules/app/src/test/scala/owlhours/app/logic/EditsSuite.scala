@@ -11,7 +11,9 @@ class EditsSuite extends munit.FunSuite:
 
   test("amounts are parsed the way people type them") {
     assertEquals(Amount.ml(" 500 "), Right(Millilitres(500)))
-    assertEquals(Amount.ml("0,5"), Right(Millilitres(0.5)))
+    assertEquals(Amount.drinkMl("0,5"), Left("Amounts are in ml — did you mean 500 ml?"))
+    assertEquals(Amount.drinkMl("4"), Left("Amounts are in ml — did you mean 4000 ml?"))
+    assertEquals(Amount.drinkMl("25"), Right(Millilitres(25)))
     assertEquals(Amount.ml(""), Left("Amount must be a number"))
     assertEquals(Amount.ml("abc"), Left("Amount must be a number"))
     assertEquals(Amount.ml("0"), Left("Volume must be above 0 and at most 5000 ml, got 0"))
@@ -51,5 +53,7 @@ class EditsSuite extends munit.FunSuite:
 
   test("start times in the future are rejected (one minute of slack)") {
     assertEquals(Edits.notInFuture(t0.plusSeconds(30), t0), Right(t0.plusSeconds(30)))
-    assertEquals(Edits.notInFuture(t0.plusSeconds(600), t0), Left("That time is in the future"))
+    assertEquals(Edits.notInFuture(t0.plusSeconds(600), t0),
+      Left("That's later than now — for last night, pick yesterday's date"))
+    assertEquals(Edits.notInFuture(t0.plusSeconds(30 * 3600), t0), Left("That time is in the future"))
   }

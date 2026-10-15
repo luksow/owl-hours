@@ -130,7 +130,7 @@ object AddDrinkSheet:
   private def add(app: AppState, entry: Entry, abv: Option[Double], amount: String, duration: String, when: Pickers.When,
       errors: SignallingRef[IO, List[String]]): IO[Unit] =
     Now.instant.flatMap { now =>
-      val volume  = Amount.ml(amount).toEitherNel
+      val volume  = Amount.drinkMl(amount).toEitherNel
       val minutes = Amount.minutes(duration).toEitherNel
       val start   = Pickers.resolveWhen(when, now).toEitherNel
       val snapshot: EitherNel[String, DrinkSnapshot] = volume.flatMap { v =>

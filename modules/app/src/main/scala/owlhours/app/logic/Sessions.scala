@@ -39,13 +39,14 @@ object Sessions:
   def add(p: Profile, ss: Vector[Session], i: Intake): Vector[Session] =
     regroup(p, ss, i.startsAt)(_ :+ i)
 
-  def replace(p: Profile, ss: Vector[Session], night: Int, index: Int, updated: Intake): Vector[Session] =
-    val old = ss(night).intakes(index)
-    regroup(p, ss, earlier(old.startsAt, updated.startsAt))(xs => removeFirst(xs, old) :+ updated)
+  /** Entries are addressed by value: an entry that is no longer there (a stale tap) leaves the nights unchanged. */
+  def replace(p: Profile, ss: Vector[Session], old: Intake, updated: Intake): Vector[Session] =
+    if !contains(ss, old) then ss else regroup(p, ss, earlier(old.startsAt, updated.startsAt))(xs => removeFirst(xs, old) :+ updated)
 
-  def delete(p: Profile, ss: Vector[Session], night: Int, index: Int): Vector[Session] =
-    val old = ss(night).intakes(index)
-    regroup(p, ss, old.startsAt)(removeFirst(_, old))
+  def delete(p: Profile, ss: Vector[Session], old: Intake): Vector[Session] =
+    if !contains(ss, old) then ss else regroup(p, ss, old.startsAt)(removeFirst(_, old))
+
+  private def contains(ss: Vector[Session], i: Intake): Boolean = ss.exists(_.intakes.contains(i))
 
   /**
    * Grouping is a left fold over time, so nights that closed before the change are unaffected and kept as they are.

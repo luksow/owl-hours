@@ -55,3 +55,20 @@ test("moving a drink to another evening regroups the nights", async ({ page }) =
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { level: 2 })).toHaveCount(3);
 });
+
+test("review: the undo bar goes away when leaving the log, and on its own", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/#/log");
+  await page.getByRole("button", { name: /Water · 250 ml/ }).click();
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+  await page.clock.runFor(10_000);
+  await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).first().click();
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByRole("button", { name: "+ Drink" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
+});

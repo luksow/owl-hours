@@ -22,7 +22,7 @@ object WaterSheet:
         Sheet.addButton {
           (amount.get, duration.get, when.get, Now.instant).flatMapN { (a, d, w, now) =>
             val intake: EitherNel[String, Intake] =
-              (Amount.ml(a).toEitherNel, Pickers.resolveWhen(w, now).toEitherNel, Amount.minutes(d).toEitherNel)
+              (Amount.drinkMl(a).toEitherNel, Pickers.resolveWhen(w, now).toEitherNel, Amount.minutes(d).toEitherNel)
                 .parMapN(Intake.Water.apply)
             intake.fold(es => errors.set(es.toList), i => errors.set(Nil) *> app.addIntake(i) *> app.go(Route.Tonight))
           }

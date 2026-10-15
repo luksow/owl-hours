@@ -68,6 +68,22 @@ test("bad input is explained and nothing is logged", async ({ page }) => {
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Amount must be a number")).toBeVisible();
   await expect(page.getByText("Duration must be a number")).toBeVisible();
-  await expect(page.getByText("That time is in the future")).toBeVisible();
+  await expect(page.getByText("That's later than now — for last night, pick yesterday's date")).toBeVisible();
   expect(await stored(page)).toEqual([]);
+});
+
+test("review: tapping Pick time again keeps the picked time", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Drink" }).click();
+  await page.getByLabel("Search drinks").fill("pils");
+  await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).click();
+  await page.getByRole("button", { name: "Pick time" }).click();
+  const started = new Date(Date.now() - 120 * 60_000);
+  await page.getByLabel("Started at").fill(localInput(started));
+  await page.getByRole("button", { name: "Pick time" }).click();
+  await expect(page.getByLabel("Started at")).toHaveValue(localInput(started));
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByTestId("bac")).toBeVisible();
+  const intake = (await stored(page))[0].intakes[0];
+  expect(Math.abs(new Date(intake.start).getTime() - started.getTime())).toBeLessThan(60_000);
 });

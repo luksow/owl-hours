@@ -76,14 +76,14 @@ object LogScreen:
         (start.get, volume.get, duration.get, abv.get, kcal.get, Now.instant).flatMapN { (st, v, d, a, k, now) =>
           val edit: EitherNel[String, IntakeEdit] = (
             LocalDateTime.parse(st).toRight("Pick a date and time").flatMap(Edits.notInFuture(_, now)).toEitherNel,
-            volume0.traverse(_ => Amount.ml(v)).toEitherNel,
+            volume0.traverse(_ => Amount.drinkMl(v)).toEitherNel,
             duration0.traverse(_ => Amount.minutes(d)).toEitherNel,
             abv0.traverse(_ => Amount.abv(a)).toEitherNel,
             kcal0.traverse(_ => Amount.kcal(k)).toEitherNel
           ).parMapN((start, volume, duration, abv, kcal) => IntakeEdit(start, duration, volume, abv, kcal))
           edit.flatMap(e => Edits(intake, e).toEitherNel) match
             case Left(es)       => errors.set(es.toList)
-            case Right(updated) => editing.set(None) *> app.replaceIntake(n, i, updated)
+            case Right(updated) => editing.set(None) *> app.replaceIntake(intake, updated)
         }
       div(
         cls := "mt-2 space-y-3 rounded-xl border border-line bg-surface-2 p-3",
@@ -95,7 +95,7 @@ object LogScreen:
         Sheet.errors(errors),
         div(cls := "flex gap-2",
           button(cls := "min-h-12 flex-1 rounded-xl border border-warn/60 text-warn",
-            onClick --> (_.foreach(_ => editing.set(None) *> app.deleteIntake(n, i))), "Delete"),
+            onClick --> (_.foreach(_ => editing.set(None) *> app.deleteIntake(intake))), "Delete"),
           button(cls := "min-h-12 flex-[2] rounded-xl border border-pink bg-surface text-pink font-bold uppercase",
             onClick --> (_.foreach(_ => save)), "Save"))
       )

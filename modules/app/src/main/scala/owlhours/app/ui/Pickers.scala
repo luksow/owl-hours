@@ -42,7 +42,11 @@ object Pickers:
       span(cls := caption, "When"),
       div(cls := "mt-1 flex flex-wrap gap-2",
         Ago.map((m, t) => chip(t, state.map(_ == When.Ago(m)), state.set(When.Ago(m)))),
-        chip("Pick time", picking, Now.instant.flatMap(now => state.set(When.At(LocalDateTime.format(now)))))),
+        chip("Pick time", picking, // idempotent: tapping it again must not replace a time already picked
+          Now.instant.flatMap(now => state.update {
+            case picked: When.At => picked
+            case _               => When.At(LocalDateTime.format(now))
+          }))),
       div(picking.map {
         case false => div(())
         case true =>

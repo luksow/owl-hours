@@ -29,4 +29,7 @@ object Edits:
       Right(Intake.Meal(e.kcal.getOrElse(kcal), e.start))
 
   def notInFuture(start: Instant, now: Instant): Either[String, Instant] =
-    if start.isAfter(now.plusSeconds(60)) then Left("That time is in the future") else Right(start)
+    // A time later today is almost always last night with today's (prefilled) date, e.g. 23:50 picked at 00:20.
+    if !start.isAfter(now.plusSeconds(60)) then Right(start)
+    else if start.isBefore(now.plusSeconds(24 * 3600)) then Left("That's later than now — for last night, pick yesterday's date")
+    else Left("That time is in the future")

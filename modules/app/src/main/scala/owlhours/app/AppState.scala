@@ -47,13 +47,18 @@ final class AppState(
 
   def addIntake(i: Intake): IO[Unit] = updateSessions((p, ss) => Sessions.add(p, ss, i)) *> undo.set(None)
 
-  def replaceIntake(night: Int, index: Int, updated: Intake): IO[Unit] =
-    updateSessions((p, ss) => Sessions.replace(p, ss, night, index, updated)) *> undo.set(None)
+  def replaceIntake(old: Intake, updated: Intake): IO[Unit] =
+    updateSessions((p, ss) => Sessions.replace(p, ss, old, updated)) *> undo.set(None)
 
-  def deleteIntake(night: Int, index: Int): IO[Unit] =
+  def deleteIntake(old: Intake): IO[Unit] =
     persisted.get.flatMap { before =>
-      updateSessions((p, ss) => Sessions.delete(p, ss, night, index)) *>
-        undo.set(Some(Undo("Entry deleted", before.sessions)))
+      // only a delete that removed something replaces the undo snapshot
+      IO.whenA(before.sessions.exists(_.intakes.contains(old)))(
+        updateSessions((p, ss) => Sessions.delete(p, ss, old)) *> {
+          val u = Undo("Entry deleted", before.sessions)
+          // a snackbar, not a fixture: it hides itself unless a newer one replaced it
+          undo.set(Some(u)) *> (IO.sleep(UndoFor) *> undo.update(_.filterNot(_ eq u))).start.void
+        })
     }
 
   def undoLast: IO[Unit] =
@@ -69,6 +74,8 @@ final class AppState(
           case None => (p, None)
       }
       .flatMap(_.traverse_(store.saveSessions))
+
+  private val UndoFor = 8.seconds
 
   def go(r: Route): IO[Unit] = window.location.hash.set(r.hash)
 
@@ -96,4 +103,6 @@ object AppState:
         .evalMap(_ => window.location.hash.get)
         .map(Route.parse)
         .holdResource(Route.parse(hash0))
+      // leaving a screen dismisses its undo bar
+      _ <- route.discrete.drop(1).foreach(_ => undo.set(None)).compile.drain.background
     yield AppState(persisted, catalogue, problems, undo, now, route, store, window)
