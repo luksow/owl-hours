@@ -61,7 +61,7 @@ object Onboarding:
           span(cls := "font-ui text-sm uppercase tracking-wider text-dim", labelText),
           input.withSelf { self =>
             (cls := "mt-1 min-h-12 w-full rounded-xl border border-line bg-surface px-3 text-lg text-ink",
-              typ := tpe, inputMode := mode, maxAttr := max.getOrElse(""),
+              typ := tpe, Option.when(tpe != "date")(inputMode := mode), max.map(m => maxAttr := m),
               onInput --> (_.foreach(_ => self.value.get.flatMap(v => fields.update(update(_, v))))))
           }
         )
@@ -83,7 +83,7 @@ object Onboarding:
         text("Date of birth", (f, v) => f.copy(born = v), "numeric", "date", Some(today.minusYears(18).toString)),
         text("Weight (kg)", (f, v) => f.copy(weightKg = v), "decimal"),
         text("Height (cm)", (f, v) => f.copy(heightCm = v), "decimal"),
-        ul(cls := "mt-4 space-y-1 text-sm text-warn", children <-- errors.map(_.map(e => li(e)))),
+        ul(role := List("alert"), cls := "mt-4 space-y-1 text-sm text-warn", children <-- errors.map(_.map(e => li(e)))),
         button(
           cls := "mt-4 min-h-14 w-full rounded-2xl border border-pink bg-surface-2 text-xl font-bold uppercase tracking-wider text-pink",
           onClick --> (_.foreach(_ =>

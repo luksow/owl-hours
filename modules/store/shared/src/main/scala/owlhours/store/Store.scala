@@ -39,7 +39,7 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
         disclaimer._1.getOrElse(false),
         profile._1,
         settings._1.getOrElse(Settings.default),
-        sessions._1.getOrElse(Vector.empty)
+        sessions._1.getOrElse(Vector.empty).filter(_.intakes.nonEmpty) // a night without intakes has no meaning
       ),
       (if usable then Nil else List(Store.StorageUnavailable)) ++
         List(disclaimer._2, profile._2, settings._2, sessions._2).flatten

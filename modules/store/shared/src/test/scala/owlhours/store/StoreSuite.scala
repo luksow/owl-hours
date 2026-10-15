@@ -82,3 +82,7 @@ class StoreSuite extends munit.FunSuite:
     assertEquals(loaded.problems, List(Store.StorageUnavailable))
   }
 
+  test("review: a stored night without intakes is dropped on load instead of crashing later") {
+    val kv = Memory(Store.Keys.sessions -> """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[]}]""")
+    assertEquals(Store(kv).load.unsafeRunSync().persisted.sessions, Vector.empty)
+  }

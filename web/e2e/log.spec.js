@@ -80,3 +80,11 @@ test("a logged lager's ABV is limited to the style's range", async ({ page }) =>
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText(/ABV for Pale lager \/ Pilsner must be between/)).toBeVisible();
 });
+
+test("opening an editor does not rebuild the other rows", async ({ page }) => {
+  await page.goto("/#/log");
+  await page.getByRole("button", { name: /Water · 250 ml/ }).evaluate((el) => el.setAttribute("data-probe", "kept"));
+  await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).first().click();
+  await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
+  await expect(page.locator("button[data-probe=kept]")).toHaveCount(1);
+});

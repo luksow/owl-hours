@@ -32,3 +32,11 @@ test("profile errors are shown together", async ({ page }) => {
   await expect(page.getByText("Weight must be a number")).toBeVisible();
   await expect(page.getByText("Height must be a number")).toBeVisible();
 });
+
+test("profile errors are announced to screen readers", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("I understand").check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("alert")).toContainText("Choose the sex the model should use");
+});

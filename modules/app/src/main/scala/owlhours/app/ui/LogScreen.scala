@@ -1,6 +1,7 @@
 package owlhours.app.ui
 
 import calico.html.io.{*, given}
+import cats.Eq
 import cats.data.EitherNel
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
@@ -25,7 +26,8 @@ object LogScreen:
         div(cls := "flex items-center justify-between",
           h1(cls := "font-ui text-2xl font-semibold uppercase tracking-wide", "Log"),
           button(cls := "min-h-12 px-3 text-dim", onClick --> (_.foreach(_ => app.go(Route.Tonight))), "Done")),
-        div((app.persisted.map(_.sessions), editing).mapN { (sessions, open) =>
+        // rebuilt only when the nights change; opening an editor re-renders just that row's slot
+        div(app.persisted.map(_.sessions).changes(using Eq.fromUniversalEquals).map { sessions =>
           if sessions.isEmpty then p(cls := "text-dim", "Nothing logged yet.")
           else
             div(
@@ -40,7 +42,10 @@ object LogScreen:
                         onClick --> (_.foreach(_ => editing.update(cur => if cur.contains(Ref(n, i)) then None else Some(Ref(n, i))))),
                         span(s"${TimeFormat.hhmm(intake.startsAt)} · ${describe(intake)}")
                       ),
-                      Option.when(open.contains(Ref(n, i)))(editor(app, catalogue, n, i, intake, editing))
+                      div(editing.map(_.contains(Ref(n, i))).changes(using Eq.fromUniversalEquals).map {
+                        case true  => editor(app, catalogue, n, i, intake, editing)
+                        case false => div(())
+                      })
                     )
                   })
                 )

@@ -18,7 +18,7 @@ object Sheet:
     )
 
   def errors(es: SignallingRef[IO, List[String]]): Resource[IO, HtmlElement[IO]] =
-    ul(cls := "space-y-1 text-warn", children <-- es.map(_.map(e => li(e))))
+    ul(role := List("alert"), cls := "space-y-1 text-warn", children <-- es.map(_.map(e => li(e))))
 
   def addButton(action: IO[Unit]): Resource[IO, HtmlElement[IO]] =
     button(
