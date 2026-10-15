@@ -1,3 +1,5 @@
+import org.scalajs.linker.interface.{ModuleKind, ModuleSplitStyle}
+
 ThisBuild / scalaVersion := "3.3.8"
 ThisBuild / organization := "app.owlhours"
 ThisBuild / scalacOptions ++= Seq("-deprecation", "-feature", "-Wunused:imports")
@@ -9,6 +11,7 @@ val V = new {
   val scalaJavaTime   = "2.7.0"
   val circe           = "0.14.17"
   val catsEffect      = "3.5.7"
+  val calico          = "0.2.3"
 }
 
 val testDeps = Def.settings(
@@ -68,7 +71,25 @@ lazy val store = crossProject(JVMPlatform, JSPlatform)
     testDeps
   )
 
+lazy val app = project
+  .in(file("modules/app"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(domain.js, model.js, catalogue.js, store.js)
+  .settings(
+    name := "owlhours-app",
+    scalaJSUseMainModuleInitializer := true,
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("owlhours.app")))
+    },
+    // munit on Node runs CommonJS; only the browser bundle is ES modules
+    Test / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)
+      .withModuleSplitStyle(ModuleSplitStyle.FewestModules)),
+    libraryDependencies += "com.armanbilge" %%% "calico" % V.calico,
+    testDeps
+  )
+
 lazy val root = project
   .in(file("."))
-  .aggregate(domain.jvm, domain.js, model.jvm, model.js, catalogue.jvm, catalogue.js, store.jvm, store.js)
+  .aggregate(domain.jvm, domain.js, model.jvm, model.js, catalogue.jvm, catalogue.js, store.jvm, store.js, app)
   .settings(name := "owlhours", publish / skip := true)

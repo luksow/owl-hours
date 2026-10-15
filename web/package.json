@@ -1,0 +1,26 @@
+{
+  "name": "owlhours-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "icons": "pwa-assets-generator",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@fontsource/barlow": "5.3.0",
+    "@fontsource/barlow-condensed": "5.3.0",
+    "@fontsource/mr-dafoe": "5.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@scala-js/vite-plugin-scalajs": "1.1.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@vite-pwa/assets-generator": "2.0.0",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.4",
+    "vite-plugin-pwa": "2.0.0"
+  }
+}

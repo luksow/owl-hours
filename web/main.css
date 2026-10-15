@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@import "@fontsource/mr-dafoe/400.css";
+@import "@fontsource/barlow-condensed/400.css";
+@import "@fontsource/barlow-condensed/600.css";
+@import "@fontsource/barlow-condensed/700.css";
+@import "@fontsource/barlow/400.css";
+@import "@fontsource/barlow/600.css";
+
+/* Tailwind scans the Scala sources for class names. */
+@source "../modules/app/src/main/scala";
+
+/* Brand tokens: spec §8.2 / §8.4 */
+@theme {
+  --color-wall: #120a0e;
+  --color-surface: #1f1218;
+  --color-surface-2: #2b1a21;
+  --color-line: #3d2630;
+  --color-ink: #fff3e4;
+  --color-dim: #c7a6ae;
+  --color-pink: #ff3f8e;
+  --color-amber: #ffb03b;
+  --color-ice: #5ce1ff;
+  --color-warn: #ff6a3d;
+  --color-care: #ffe7c2;
+  --font-display: "Mr Dafoe", cursive;
+  --font-ui: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-wall);
+  color: var(--color-ink);
+  color-scheme: dark;
+}
+
+.neon {
+  text-shadow: 0 0 1px #fff, 0 0 6px var(--color-pink), 0 0 16px var(--color-pink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

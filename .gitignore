@@ -10,3 +10,9 @@ reference/.venv/
 reference/__pycache__/
 .superpowers/
 *.class
+web/node_modules/
+web/dist/
+web/dev-dist/
+web/test-results/
+web/playwright-report/
+.playwright-mcp/
