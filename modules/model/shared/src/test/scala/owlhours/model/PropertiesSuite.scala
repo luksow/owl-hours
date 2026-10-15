@@ -79,9 +79,9 @@ class PropertiesSuite extends munit.ScalaCheckSuite:
   }
 
   test("a 12-hour night with 10 drinks and the variation band runs within budget") {
-    import java.time.Instant
+    import java.time.{Instant, LocalDate}
     import owlhours.domain.*
-    val profile = Profile(Sex.Male, Age(35), BodyWeight(85), Height(182))
+    val profile = Profile(Sex.Male, LocalDate.of(1991, 1, 1), BodyWeight(85), Height(182))
     val t0      = Instant.parse("2026-10-14T19:00:00Z")
     val beer    = DrinkSnapshot(None, "IPA", Millilitres(500), Abv(6.5), KcalPerLitre(560), Nil)
     val intakes = (0 until 10).map(i => Intake.Drink(beer, t0.plusSeconds(i * 40L * 60), Minutes(25))) :+

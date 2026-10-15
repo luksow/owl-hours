@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const profile = { sex: "Female", age: 30, weight: 62, height: 166 };
+const profile = { sex: "Female", born: "1996-01-01", weight: 62, height: 166 };
 test.beforeEach(async ({ page }) => {
   await page.addInitScript((p) => {
     localStorage.setItem("oh.v1.disclaimer", "true");

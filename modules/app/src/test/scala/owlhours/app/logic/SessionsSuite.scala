@@ -1,10 +1,10 @@
 package owlhours.app.logic
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
 class SessionsSuite extends munit.FunSuite:
-  private val profile = Profile(Sex.Male, Age(30), BodyWeight(80), Height(180))
+  private val profile = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
   private val pint    = DrinkSnapshot(None, "Pale lager", Millilitres(568), Abv(5), KcalPerLitre(404), Nil)

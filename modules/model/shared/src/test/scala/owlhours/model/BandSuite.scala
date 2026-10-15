@@ -1,10 +1,10 @@
 package owlhours.model
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
 class BandSuite extends munit.FunSuite:
-  private val profile = Profile(Sex.Female, Age(28), BodyWeight(65), Height(168))
+  private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(65), Height(168))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val wine    = DrinkSnapshot(None, "Red wine", Millilitres(150), Abv(13), KcalPerLitre(830), Nil)
   private val intakes = Seq(Intake.Drink(wine, t0.plusSeconds(600), Minutes(20)), Intake.Drink(wine, t0.plusSeconds(4200), Minutes(20)))

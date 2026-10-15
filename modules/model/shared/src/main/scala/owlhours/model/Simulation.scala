@@ -14,12 +14,12 @@ object Simulation:
   /** Shortest drinking duration the model is fed; a 0-minute shot would otherwise divide by zero. */
   val MinDrinkMinutes: Double = 0.5
 
-  def anthropometrics(p: Profile): Anthropometrics =
+  def anthropometrics(p: Profile, at: Instant): Anthropometrics =
     Anthropometrics(
       sex = if p.sex == Sex.Male then 1.0 else 0.0,
       weightKg = p.weight.unwrap,
       heightM = p.height.unwrap / 100.0,
-      ageYears = p.age.unwrap.toDouble
+      ageYears = p.ageAt(at).toDouble
     )
 
   def simulate(
@@ -36,7 +36,7 @@ object Simulation:
     val leadSteps = math.ceil(leadMin / stepMinutes).toInt
     val origin    = from.minusSeconds(leadSteps.toLong * stepMinutes * 60)
     val result =
-      Engine.run(anthropometrics(profile), schedule(intakes, origin), 0.0, minutesBetween(origin, to), stepMinutes, params)
+      Engine.run(anthropometrics(profile, from), schedule(intakes, origin), 0.0, minutesBetween(origin, to), stepMinutes, params)
     Curve(
       (leadSteps until result.size).map { i =>
         val bac = result.bacMgDl(i)

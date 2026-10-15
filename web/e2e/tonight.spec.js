@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const profile = { sex: "Male", age: 30, weight: 80, height: 180 };
+const profile = { sex: "Male", born: "1996-01-01", weight: 80, height: 180 };
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript((p) => {

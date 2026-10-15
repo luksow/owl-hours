@@ -1,10 +1,10 @@
 package owlhours.app.logic
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
 class ChartSvgSuite extends munit.FunSuite:
-  private val profile = Profile(Sex.Female, Age(28), BodyWeight(62), Height(165))
+  private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
   private val wine    = DrinkSnapshot(None, "Red wine", Millilitres(175), Abv(13.5), KcalPerLitre(860), Nil)

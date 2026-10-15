@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const profile = { sex: "Male", age: 30, weight: 80, height: 180 };
+const profile = { sex: "Male", born: "1996-01-01", weight: 80, height: 180 };
 const iso = (minAgo) => new Date(Date.now() - minAgo * 60_000).toISOString();
 const pint = { catalogueId: "pale-lager", name: "Pale lager / Pilsner", volume: 568, abv: 5, kcalPerLitre: 404.15, components: [] };
 

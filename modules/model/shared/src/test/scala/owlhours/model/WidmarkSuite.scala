@@ -1,11 +1,11 @@
 package owlhours.model
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
 class WidmarkSuite extends munit.FunSuite:
-  private val male   = Profile(Sex.Male, Age(30), BodyWeight(80), Height(180))
-  private val female = Profile(Sex.Female, Age(30), BodyWeight(80), Height(180))
+  private val male   = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
+  private val female = Profile(Sex.Female, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val t0     = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
   private val pint   = DrinkSnapshot(None, "Lager", Millilitres(568), Abv(5), KcalPerLitre(404), Nil)
