@@ -58,11 +58,15 @@ object Simulation:
     val widmark = Widmark.curveMgDl(profile, intakes, base.samples.map(_.at))
     Projection(base, runs.transpose.map(_.min).toVector, runs.transpose.map(_.max).zip(widmark).map((a, b) => math.max(a, b)).toVector)
 
-  private def schedule(intakes: Seq[Intake], origin: Instant): Schedule =
+  /**
+   * The model's `kcal_liquid_per_vol` is non-alcohol energy: the authors' example gives a 5.1 % drink 129.82 kcal/L,
+   * less than its ethanol alone (~282). Feeding total energy would brake gastric emptying ever harder as people drink.
+   */
+  private[model] def schedule(intakes: Seq[Intake], origin: Instant): Schedule =
     val drinks = intakes.collect {
       case Intake.Drink(s, start, dur) =>
         DrinkInput(minutesBetween(origin, start), math.max(dur.unwrap, MinDrinkMinutes), s.volume.unwrap / 1000,
-          s.abv.unwrap, s.kcalPerLitre.unwrap)
+          s.abv.unwrap, s.nonAlcoholKcalPerLitre)
       case Intake.Water(vol, start, dur) =>
         DrinkInput(minutesBetween(origin, start), math.max(dur.unwrap, MinDrinkMinutes), vol.unwrap / 1000, 0, 0)
     }
