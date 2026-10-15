@@ -10,3 +10,6 @@ object TimeFormat:
       .asInstanceOf[js.Dynamic]
       .toLocaleTimeString(js.undefined, js.Dynamic.literal(hour = "2-digit", minute = "2-digit"))
       .asInstanceOf[String]
+
+  /** Local offset from UTC at `at`, in minutes (JS reports it with the opposite sign). */
+  def utcOffsetMinutes(at: Instant): Int = -new js.Date(at.toEpochMilli.toDouble).getTimezoneOffset().toInt

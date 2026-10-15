@@ -66,12 +66,7 @@ object TonightScreen:
       case Trend.Rising  => "↗ rising"
       case Trend.Falling => "↘ falling"
       case Trend.Steady  => "→ steady"
-    val markers = s.toList.flatMap(_.intakes).map {
-      case d: Intake.Drink => Marker(d.start, MarkerKind.Drink)
-      case w: Intake.Water => Marker(w.start, MarkerKind.Water)
-      case m: Intake.Meal  => Marker(m.at, MarkerKind.Meal)
-    }
-    val chart = ChartSvg.render(t, now, markers, at => -new scala.scalajs.js.Date(at.toEpochMilli.toDouble).getTimezoneOffset().toInt, TimeFormat.hhmm)
+    val chart = ChartSvg.render(t, now, Marker.of(s.toList.flatMap(_.intakes)), TimeFormat.utcOffsetMinutes, TimeFormat.hhmm)
     div(
       cls := "px-5",
       div(cls := "mt-6 flex items-end gap-4",
@@ -84,7 +79,7 @@ object TonightScreen:
       div(cls := "mt-3 flex gap-2",
         t.summary.peak.map(pk =>
           div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2",
-            s"Peak ${Display.bac(pk.bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)} at ${TimeFormat.hhmm(pk.at)}")),
+            s"Peak ${Display.peak(pk.bacMgDl, unit)} at ${TimeFormat.hhmm(pk.at)}")),
         t.summary.backToZeroBy.map(b =>
           div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2", s"Back to ~0 by ${TimeFormat.hhmm(b)}"))),
       Option.when(t.impairment == Impairment.TakeCare)(takeCare)

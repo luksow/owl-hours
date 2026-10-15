@@ -1,12 +1,20 @@
 package owlhours.app.logic
 
 import java.time.Instant
-import owlhours.domain.BacUnit
+import owlhours.domain.{BacUnit, Intake}
+import owlhours.model.Curve
 
 enum MarkerKind:
   case Drink, Water, Meal
 
 final case class Marker(at: Instant, kind: MarkerKind)
+
+object Marker:
+  def of(intakes: Seq[Intake]): List[Marker] = intakes.toList.map {
+    case d: Intake.Drink => Marker(d.start, MarkerKind.Drink)
+    case w: Intake.Water => Marker(w.start, MarkerKind.Water)
+    case m: Intake.Meal  => Marker(m.at, MarkerKind.Meal)
+  }
 
 /** The light-trail BAC chart (spec §8.3) as SVG markup; mounted with InnerHtml. */
 object ChartSvg:
@@ -19,7 +27,8 @@ object ChartSvg:
   private val MgDl12 = 1.2 * BacUnit.MgDlPerPermille
 
   /** `utcOffsetMinutes` gives the local offset at an instant, so hour ticks land on local wall-clock hours. */
-  def render(t: Tonight, now: Instant, markers: List[Marker], utcOffsetMinutes: Instant => Int, timeLabel: Instant => String): String =
+  def render(t: Tonight, now: Instant, markers: List[Marker], utcOffsetMinutes: Instant => Int, timeLabel: Instant => String,
+      ghost: Option[Curve] = None): String =
     val from    = t.viewFrom.toEpochMilli.toDouble
     val to      = t.viewTo.toEpochMilli.toDouble
     val samples = t.projection.curve.samples
@@ -48,6 +57,10 @@ object ChartSvg:
     sb ++= s"""<line x1="${n(x0)}" x2="${n(x1)}" y1="${n(yBottom)}" y2="${n(yBottom)}" stroke="$Dim" stroke-opacity="0.3"/>"""
     if bandTop.nonEmpty then
       sb ++= s"""<path class="oh-band" d="${path(bandTop ++ bandLow)} Z" fill="url(#oh-trail)" fill-opacity="0.16"/>"""
+    for g <- ghost do
+      val pts = g.samples.filter(s => s.at.toEpochMilli >= from && s.at.toEpochMilli <= to).map(s => (x(s.at), y(s.bacMgDl)))
+      if pts.size > 1 then
+        sb ++= s"""<path class="oh-ghost" d="${path(pts)}" fill="none" stroke="$Dim" stroke-width="1.5" stroke-dasharray="2 4" stroke-opacity="0.7"/>"""
     if future.size > 1 then
       sb ++= s"""<path class="oh-projection" stroke-dasharray="5 6" d="${path(future)}" fill="none" stroke="url(#oh-trail)" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>"""
     if past.size > 1 then

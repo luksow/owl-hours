@@ -12,6 +12,9 @@ object Display:
       case BacUnit.MgPer100ml   => f"$v%.0f mg/100 ml"
       case BacUnit.BreathMgPerL => f"$v%.2f mg/L"
 
+  /** Peaks are blood figures; with the breath unit they are shown in ‰, as on Tonight. */
+  def peak(bacMgDl: Double, unit: BacUnit): String = bac(bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)
+
   def impairment(i: Impairment): String = i match
     case Impairment.Sober     => "Sober"
     case Impairment.WarmingUp => "Warming up"

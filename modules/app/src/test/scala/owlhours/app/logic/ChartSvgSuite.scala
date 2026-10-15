@@ -51,3 +51,15 @@ class ChartSvgSuite extends munit.FunSuite:
     assert(seen.nonEmpty)
     assert(seen.forall(t => (t.getEpochSecond / 60 + 330) % 60 == 0), seen.toString)
   }
+
+  test("a ghost curve is drawn faintly when given, and not otherwise") {
+    val t = Tonight.of(profile, Some(session), at(60))
+    assert(!ChartSvg.render(t, at(60), Nil, _ => 0, label).contains("oh-ghost"))
+    val withGhost = ChartSvg.render(t, at(60), Nil, _ => 0, label, ghost = Some(t.projection.curve))
+    assert(withGhost.contains("""class="oh-ghost""""))
+  }
+
+  test("markers come from intakes: a drink, a water, a meal") {
+    val ms = Marker.of(Seq(Intake.Drink(wine, at(0), Minutes(20)), Intake.Water(Millilitres(250), at(5), Minutes(5)), Intake.Meal(Kcal(500), at(10))))
+    assertEquals(ms.map(_.at), List(at(0), at(5), at(10)))
+  }
