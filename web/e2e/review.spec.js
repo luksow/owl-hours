@@ -23,11 +23,15 @@ async function countChartRenders(page) {
 test("a tap renders the chart once and keeps the screen (no rebuild)", async ({ page }) => {
   await onboarded(page);
   await page.goto("/");
-  await expect(page.getByTestId("bac")).toBeVisible();
+  await page.getByRole("button", { name: "+ Drink" }).click();
+  await page.getByLabel("Search drinks").fill("pils");
+  await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.locator("svg .oh-marker")).toHaveCount(1);
   await page.evaluate(() => document.querySelector("header").setAttribute("data-probe", "kept"));
   await countChartRenders(page);
-  await page.getByRole("button", { name: "Water" }).click();
-  await expect(page.locator("svg .oh-marker")).toHaveCount(1);
+  await page.getByRole("button", { name: "Same again" }).click();
+  await expect(page.locator("svg .oh-marker")).toHaveCount(2);
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => window.__chartRenders)).toBe(1);
   await expect(page.locator("header[data-probe=kept]")).toHaveCount(1);
@@ -39,6 +43,7 @@ test("a clock tick renders the chart once", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("bac")).toBeVisible();
   await page.getByRole("button", { name: "Water" }).click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.locator("svg .oh-marker")).toHaveCount(1);
   await countChartRenders(page);
   await page.clock.runFor(31_000);

@@ -17,9 +17,12 @@ import scala.concurrent.duration.*
 enum Route(val hash: String):
   case Tonight  extends Route("#/")
   case AddDrink extends Route("#/add")
+  case Water    extends Route("#/water")
+  case Food     extends Route("#/food")
+  case Log      extends Route("#/log")
 
 object Route:
-  def parse(hash: String): Route = if hash.startsWith("#/add") then AddDrink else Tonight
+  def parse(hash: String): Route = Route.values.filter(_ != Tonight).find(r => hash.startsWith(r.hash)).getOrElse(Tonight)
 
 enum CatalogueState:
   case Loading
