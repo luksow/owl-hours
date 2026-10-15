@@ -1,9 +1,7 @@
 package owlhours.domain
 
 private[domain] object Validate:
-  /** Formats a number the same way on JVM and Scala.js ("5", not "5.0"). */
-  def fmt(x: Double): String =
-    if x == math.rint(x) && math.abs(x) < 1e15 then x.toLong.toString else x.toString
+  def fmt(x: Double): String = Format.number(x)
 
   def range(label: String, lo: Double, hi: Double, unit: String, loExclusive: Boolean = false)(
       x: Double
