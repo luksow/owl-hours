@@ -9,7 +9,7 @@ import fs2.concurrent.{Signal, SignallingRef}
 import fs2.dom.HtmlElement
 import java.time.Instant
 import owlhours.app.{AppState, Route}
-import owlhours.app.logic.{Amount, ChartSvg, Durations, Edits, RecipeEdit, WhatIf}
+import owlhours.app.logic.{Amount, ChartSvg, Display, Durations, Edits, RecipeEdit, WhatIf}
 import owlhours.app.platform.{Now, TimeFormat}
 import owlhours.catalogue.*
 import owlhours.domain.*
@@ -134,7 +134,8 @@ object AddDrinkSheet:
                 drink   <- candidate(entry, x, a, d, w, ing, now).toOption
               yield
                 val wi = WhatIf.of(profile, p.sessions, drink, now)
-                (ChartSvg.render(wi.tonight, now, wi.markers, TimeFormat.utcOffsetMinutes, TimeFormat.hhmm, wi.ghost),
+                (ChartSvg.render(wi.tonight, now, wi.markers, TimeFormat.utcOffsetMinutes, TimeFormat.hhmm, wi.ghost,
+                  p0 => Display.gridLabel(p0.toInt, p.settings.bacUnit)),
                   WhatIf.describe(wi, p.settings.bacUnit, TimeFormat.hhmm)))
             }
           }

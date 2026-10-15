@@ -16,7 +16,7 @@ class ChartSvgSuite extends munit.FunSuite:
 
   test("an svg with the data-space gradient, a band, a past tube and a dashed projection") {
     val s = svg(at(60))
-    assert(s.startsWith("""<svg viewBox="0 0 358 220""""), s.take(80))
+    assert(s.startsWith("""<svg viewBox="0 0 358 232""""), s.take(80))
     assert(s.contains("""gradientUnits="userSpaceOnUse""""))
     assert(s.contains("""stop offset="0.6667" stop-color="#FFB03B""""), "amber stop at 0.8 / 1.2")
     assert(s.contains("""class="oh-band""""))
@@ -30,9 +30,9 @@ class ChartSvgSuite extends munit.FunSuite:
   }
 
   test("markers inside the view are drawn on the time axis with their kind's colour") {
-    val s = svg(at(60), List(Marker(at(0), MarkerKind.Drink), Marker(at(15), MarkerKind.Water), Marker(at(-600), MarkerKind.Meal)))
+    val s = svg(at(60), List(Marker(at(0), MarkerKind.Wine), Marker(at(15), MarkerKind.Water), Marker(at(-600), MarkerKind.Meal)))
     assertEquals("""class="oh-marker"""".r.findAllIn(s).size, 2)
-    assert(s.contains("""fill="#5CE1FF""""))
+    assert(s.contains("""fill="none" stroke="#5CE1FF""""), "the water pictogram is an ice-blue line")
   }
 
   test("text is escaped before it enters the markup") {
@@ -62,4 +62,26 @@ class ChartSvgSuite extends munit.FunSuite:
   test("markers come from intakes: a drink, a water, a meal") {
     val ms = Marker.of(Seq(Intake.Drink(wine, at(0), Minutes(20)), Intake.Water(Millilitres(250), at(5), Minutes(5)), Intake.Meal(Kcal(500), at(10))))
     assertEquals(ms.map(_.at), List(at(0), at(5), at(10)))
+  }
+
+  test("markers are neon pictograms on the time axis, in a second row when they would overlap") {
+    val s = svg(at(60), List(Marker(at(0), MarkerKind.Beer), Marker(at(1), MarkerKind.Water), Marker(at(30), MarkerKind.Shot)))
+    assertEquals("""class="oh-marker"""".r.findAllMatchIn(s).size, 3)
+    val rows = """class="oh-marker" transform="translate\([\d.]+ ([\d.]+)\)"""".r.findAllMatchIn(s).map(_.group(1)).toList
+    assertEquals(rows.distinct.size, 2) // the water a minute after the beer moves down a row
+  }
+
+  test("a faint grid line at each whole per mille, never at 0.5") {
+    val s = svg(at(60))
+    assert(s.contains("""class="oh-grid"""") && s.contains(">1‰<"), s)
+    assert(!s.contains(">0.5"))
+  }
+
+  test("hour ticks stay on local hours across a DST change") {
+    val change = at(120)
+    val offset = (t: Instant) => if t.isBefore(change) then 60 else 120
+    val seen   = scala.collection.mutable.ListBuffer.empty[Instant]
+    ChartSvg.render(Tonight.of(profile, Some(session), at(60)), at(60), Nil, offset, t => { seen += t; "x" })
+    assert(seen.size >= 2)
+    assert(seen.forall(t => (t.getEpochSecond / 60 + offset(t)) % 60 == 0), seen.toString)
   }
