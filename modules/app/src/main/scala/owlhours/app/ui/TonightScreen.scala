@@ -4,7 +4,7 @@ import calico.html.io.{*, given}
 import cats.Eq
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
-import fs2.concurrent.{Signal, SignallingRef}
+import fs2.concurrent.Signal
 import fs2.dom.HtmlElement
 import java.time.Instant
 import owlhours.app.{AppState, Route}
@@ -15,7 +15,6 @@ import owlhours.domain.*
 import owlhours.model.{Impairment, Trend}
 
 object TonightScreen:
-  private val Meals = List("Snack" -> 250, "Light meal" -> 500, "Full meal" -> 900, "Feast" -> 1400)
 
   /** Everything that needs a simulation, recomputed only when its inputs change (spec §7.4). */
   private final case class Bundle(session: Option[Session], unit: BacUnit, projected: Option[Projected])
@@ -39,34 +38,21 @@ object TonightScreen:
       bundle <- shared(key) { k =>
         Bundle(k.session, k.unit, k.profile.map(p => Tonight.project(p, k.session, Instant.ofEpochSecond(k.hour * 3600 + 1800))))
       }
-      foodOpen <- SignallingRef[IO].of(false).toResource
       view = (bundle, app.now).mapN((b, now) => b.projected.map(pr => (Tonight.at(pr, now), b.session, b.unit, now)))
       screen <- div(
         cls := "mx-auto flex min-h-dvh max-w-md flex-col",
         headerTag(cls := "flex items-center justify-between px-5 pt-5",
           span(cls := "font-display text-4xl text-pink neon", "Owl Hours"),
-          span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight")),
+          div(cls := "flex items-center gap-3",
+            span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight"),
+            button(cls := "min-h-12 rounded-xl border border-line px-3 text-sm uppercase tracking-wider",
+              onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"))),
         div(view.map {
           case None => div(())
           case Some((t, s, unit, now)) => body(t, s, unit, now)
         }),
         p(cls := "mt-3 px-5 text-center text-xs uppercase tracking-wider text-dim", "Estimate only · never a green light to drive"),
-        div(foodOpen.map {
-          case false => div(())
-          case true =>
-            div(
-              cls := "mx-4 mt-3 grid grid-cols-2 gap-2",
-              Meals.map { (name, kcal) =>
-                button(
-                  cls := "min-h-12 rounded-xl border border-amber/60 bg-surface text-amber",
-                  onClick --> (_.foreach(_ =>
-                    Now.instant.flatMap(now => app.addIntake(Intake.Meal(Kcal(kcal), now))) *> foodOpen.set(false))),
-                  s"$name · $kcal kcal"
-                )
-              }
-            )
-        }),
-        actionBar(app, bundle.map(_.session), foodOpen)
+        actionBar(app, bundle.map(_.session))
       )
     yield screen
 
@@ -81,7 +67,7 @@ object TonightScreen:
       case w: Intake.Water => Marker(w.start, MarkerKind.Water)
       case m: Intake.Meal  => Marker(m.at, MarkerKind.Meal)
     }
-    val chart = ChartSvg.render(t, now, markers, TimeFormat.hhmm)
+    val chart = ChartSvg.render(t, now, markers, at => -new scala.scalajs.js.Date(at.toEpochMilli.toDouble).getTimezoneOffset().toInt, TimeFormat.hhmm)
     div(
       cls := "px-5",
       div(cls := "mt-6 flex items-end gap-4",
@@ -108,7 +94,7 @@ object TonightScreen:
       p(cls := "mt-2", "If someone can't be woken, is breathing slowly or irregularly, is cold or pale, or is vomiting while drowsy, call emergency services now (112 in Europe, 911 in the US).")
     )
 
-  private def actionBar(app: AppState, session: Signal[IO, Option[Session]], foodOpen: SignallingRef[IO, Boolean]) =
+  private def actionBar(app: AppState, session: Signal[IO, Option[Session]]) =
     val lastDrink = session.map(_.flatMap(_.lastDrink))
     div(
       cls := "sticky bottom-0 mt-auto grid grid-cols-2 gap-2 bg-wall/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
@@ -124,9 +110,7 @@ object TonightScreen:
         "Same again"),
       div(cls := "grid grid-cols-2 gap-2",
         button(cls := "min-h-14 rounded-2xl border border-ice/60 bg-surface text-lg uppercase text-ice",
-          onClick --> (_.foreach(_ =>
-            Now.instant.flatMap(now => app.addIntake(Intake.Water(Millilitres(250), now, Minutes(5)))))),
-          "Water"),
+          onClick --> (_.foreach(_ => app.go(Route.Water))), "Water"),
         button(cls := "min-h-14 rounded-2xl border border-amber/60 bg-surface text-lg uppercase text-amber",
-          onClick --> (_.foreach(_ => foodOpen.update(!_))), "Food"))
+          onClick --> (_.foreach(_ => app.go(Route.Food))), "Food"))
     )

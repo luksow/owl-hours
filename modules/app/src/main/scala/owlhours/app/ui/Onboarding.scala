@@ -6,7 +6,9 @@ import cats.syntax.all.*
 import fs2.concurrent.SignallingRef
 import fs2.dom.HtmlElement
 import owlhours.app.AppState
+import java.time.ZoneOffset
 import owlhours.app.logic.ProfileForm
+import owlhours.app.platform.Now
 
 object Onboarding:
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
@@ -49,15 +51,17 @@ object Onboarding:
   private def profile(app: AppState): Resource[IO, HtmlElement[IO]] =
     (
       SignallingRef[IO].of(ProfileForm.Fields("", "", "", "")),
-      SignallingRef[IO].of(List.empty[String])
-    ).tupled.toResource.flatMap { (fields, errors) =>
-      def text(labelText: String, update: (ProfileForm.Fields, String) => ProfileForm.Fields, mode: String) =
+      SignallingRef[IO].of(List.empty[String]),
+      Now.instant.map(_.atOffset(ZoneOffset.UTC).toLocalDate)
+    ).tupled.toResource.flatMap { (fields, errors, today) =>
+      def text(labelText: String, update: (ProfileForm.Fields, String) => ProfileForm.Fields, mode: String,
+          tpe: String = "text", max: Option[String] = None) =
         label(
           cls := "mt-4 block",
           span(cls := "font-ui text-sm uppercase tracking-wider text-dim", labelText),
           input.withSelf { self =>
             (cls := "mt-1 min-h-12 w-full rounded-xl border border-line bg-surface px-3 text-lg text-ink",
-              typ := "text", inputMode := mode,
+              typ := tpe, inputMode := mode, maxAttr := max.getOrElse(""),
               onInput --> (_.foreach(_ => self.value.get.flatMap(v => fields.update(update(_, v))))))
           }
         )
@@ -76,14 +80,14 @@ object Onboarding:
         p(cls := "mt-2 text-dim", "The model uses these to size your blood, body water and liver. They stay on this device."),
         div(cls := "mt-4 flex gap-3", sexOption("female", "Female"), sexOption("male", "Male")),
         p(cls := "mt-1 text-xs text-dim", "Sex is used only by the blood-volume and body-water formulas."),
-        text("Age", (f, v) => f.copy(age = v), "numeric"),
+        text("Date of birth", (f, v) => f.copy(born = v), "numeric", "date", Some(today.minusYears(18).toString)),
         text("Weight (kg)", (f, v) => f.copy(weightKg = v), "decimal"),
         text("Height (cm)", (f, v) => f.copy(heightCm = v), "decimal"),
         ul(cls := "mt-4 space-y-1 text-sm text-warn", children <-- errors.map(_.map(e => li(e)))),
         button(
           cls := "mt-4 min-h-14 w-full rounded-2xl border border-pink bg-surface-2 text-xl font-bold uppercase tracking-wider text-pink",
           onClick --> (_.foreach(_ =>
-            fields.get.map(ProfileForm.validate).flatMap {
+            fields.get.map(ProfileForm.validate(_, today)).flatMap {
               case Right(p)   => errors.set(Nil) *> app.saveProfile(p)
               case Left(errs) => errors.set(errs.toList)
             })),

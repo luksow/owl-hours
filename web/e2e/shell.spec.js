@@ -15,3 +15,12 @@ test("the manifest makes the app installable", async ({ request }) => {
   expect(manifest.name).toBe("Owl Hours");
   expect(manifest.icons.some((i) => i.purpose === "maskable")).toBeTruthy();
 });
+
+test("the service worker precaches the app bundle and only latin fonts; iOS tags exist", async ({ page, request }) => {
+  const sw = await (await request.get("/sw.js")).text();
+  expect(sw).toMatch(/assets\/index-[^"']+\.js/);
+  expect(sw).not.toMatch(/vietnamese|cyrillic|greek/);
+  await page.goto("/");
+  await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute("content", "yes");
+  await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute("content", "black-translucent");
+});

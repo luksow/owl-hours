@@ -1,43 +1,65 @@
 package owlhours.app.logic
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
 class SessionsSuite extends munit.FunSuite:
-  private val profile = Profile(Sex.Male, Age(30), BodyWeight(80), Height(180))
+  private val profile = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
   private val pint    = DrinkSnapshot(None, "Pale lager", Millilitres(568), Abv(5), KcalPerLitre(404), Nil)
   private def drink(min: Long) = Intake.Drink(pint, at(min), Minutes(30))
+  private def water(min: Long) = Intake.Water(Millilitres(250), at(min), Minutes(5))
 
-  test("the first intake starts a night") {
-    val ss = Sessions.addIntake(profile, Vector.empty, drink(0), at(5), SessionId("a"))
-    assertEquals(ss.map(_.id.unwrap), Vector("a"))
-    assertEquals(ss.head.startedAt, at(0))
+  private def nights(ss: Vector[Session]) = ss.map(_.intakes.map(_.startsAt))
+
+  test("the first intake starts a night named after it") {
+    val ss = Sessions.add(profile, Vector.empty, drink(0))
+    assertEquals(ss.map(_.id.unwrap), Vector(s"night-${at(0).toEpochMilli}"))
   }
 
-  test("later intakes the same night join it, including drinks logged in the past") {
-    val one = Sessions.addIntake(profile, Vector.empty, drink(0), at(5), SessionId("a"))
-    val two = Sessions.addIntake(profile, one, drink(60), at(70), SessionId("b"))
-    val three = Sessions.addIntake(profile, two, Intake.Water(Millilitres(250), at(20), Minutes(5)), at(75), SessionId("c"))
-    assertEquals(three.size, 1)
-    assertEquals(three.head.intakes.size, 3)
-  }
-
-  test("a night closes two hours after blood alcohol is back to ~0") {
-    val s     = Session(SessionId("a"), at(0), Vector(drink(0)))
-    val close = Sessions.closesAt(profile, s)
-    assert(close.isAfter(at(30 + 120)), s"closes at $close")
-    assert(close.isBefore(at(12 * 60)), s"closes at $close")
-    assertEquals(Sessions.active(profile, Vector(s), close.minusSeconds(60)).map(_.id), Some(SessionId("a")))
-    assertEquals(Sessions.active(profile, Vector(s), close.plusSeconds(60)), None)
+  test("later intakes the same night join it, in time order, including ones logged in the past") {
+    val ss = List(drink(0), drink(60), water(20)).foldLeft(Vector.empty[Session])(Sessions.add(profile, _, _))
+    assertEquals(nights(ss), Vector(Vector(at(0), at(20), at(60))))
   }
 
   test("the next evening starts a new night") {
-    val one = Sessions.addIntake(profile, Vector.empty, drink(0), at(5), SessionId("a"))
-    val nextDay = at(24 * 60)
-    val two = Sessions.addIntake(profile, one, drink(24 * 60), nextDay, SessionId("b"))
-    assertEquals(two.map(_.id.unwrap), Vector("a", "b"))
+    val ss = List(drink(0), drink(24 * 60)).foldLeft(Vector.empty[Session])(Sessions.add(profile, _, _))
+    assertEquals(nights(ss), Vector(Vector(at(0)), Vector(at(24 * 60))))
+  }
+
+  test("moving a drink to the next evening splits the night") {
+    val ss    = List(drink(0), drink(60)).foldLeft(Vector.empty[Session])(Sessions.add(profile, _, _))
+    val moved = Sessions.replace(profile, ss, drink(60), drink(24 * 60))
+    assertEquals(nights(moved), Vector(Vector(at(0)), Vector(at(24 * 60))))
+  }
+
+  test("deleting removes exactly one of two identical intakes; an emptied night disappears") {
+    val ss  = List(drink(0), water(10), water(10)).foldLeft(Vector.empty[Session])(Sessions.add(profile, _, _))
+    val one = Sessions.delete(profile, ss, water(10))
+    assertEquals(nights(one), Vector(Vector(at(0), at(10))))
+    val solo = Sessions.add(profile, Vector.empty, drink(0))
+    assertEquals(Sessions.delete(profile, solo, drink(0)), Vector.empty)
+  }
+
+  test("review: an entry that is no longer there is left alone (stale taps never hit a neighbour)") {
+    val ss = List(drink(0), water(10)).foldLeft(Vector.empty[Session])(Sessions.add(profile, _, _))
+    assert(Sessions.delete(profile, ss, water(99)) eq ss)
+    assert(Sessions.replace(profile, ss, water(99), water(20)) eq ss)
+  }
+
+  test("nights that closed long before a change are kept as they are") {
+    val old   = Sessions.add(profile, Vector.empty, drink(-7 * 24 * 60))
+    val today = Sessions.add(profile, old, drink(0))
+    assert(today.head eq old.head)
+  }
+
+  test("a night closes two hours after blood alcohol is back to ~0") {
+    val s     = Sessions.add(profile, Vector.empty, drink(0)).head
+    val close = Sessions.closesAt(profile, s)
+    assert(close.isAfter(at(30 + 120)) && close.isBefore(at(12 * 60)), close.toString)
+    assertEquals(Sessions.active(profile, Vector(s), close.minusSeconds(60)).map(_.id), Some(s.id))
+    assertEquals(Sessions.active(profile, Vector(s), close.plusSeconds(60)), None)
   }
 
   test("an intake ends when it has been drunk; a meal ends when it is eaten") {

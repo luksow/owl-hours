@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const profile = { sex: "Male", age: 30, weight: 80, height: 180 };
+const profile = { sex: "Male", born: "1996-01-01", weight: 80, height: 180 };
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript((p) => {
@@ -27,11 +27,13 @@ test("log a pint an hour ago: BAC above zero, peak chip, Same again enabled", as
   await expect(page.locator("svg .oh-past")).toHaveCount(1);
 });
 
-test("water and food are one tap away", async ({ page }) => {
+test("water and food are two taps away", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Water" }).click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByRole("button", { name: "Food" }).click();
   await page.getByRole("button", { name: /Full meal/ }).click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.locator("svg .oh-marker")).toHaveCount(2);
 });
 

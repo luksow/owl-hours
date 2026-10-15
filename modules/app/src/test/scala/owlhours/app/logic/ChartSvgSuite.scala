@@ -1,10 +1,10 @@
 package owlhours.app.logic
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
 class ChartSvgSuite extends munit.FunSuite:
-  private val profile = Profile(Sex.Female, Age(28), BodyWeight(62), Height(165))
+  private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
   private val wine    = DrinkSnapshot(None, "Red wine", Millilitres(175), Abv(13.5), KcalPerLitre(860), Nil)
@@ -12,7 +12,7 @@ class ChartSvgSuite extends munit.FunSuite:
   private val label   = (t: Instant) => t.toString.substring(11, 16)
 
   private def svg(now: Instant, markers: List[Marker] = Nil) =
-    ChartSvg.render(Tonight.of(profile, Some(session), now), now, markers, label)
+    ChartSvg.render(Tonight.of(profile, Some(session), now), now, markers, _ => 0, label)
 
   test("an svg with the data-space gradient, a band, a past tube and a dashed projection") {
     val s = svg(at(60))
@@ -36,11 +36,18 @@ class ChartSvgSuite extends munit.FunSuite:
   }
 
   test("text is escaped before it enters the markup") {
-    val s = ChartSvg.render(Tonight.of(profile, Some(session), at(60)), at(60), Nil, _ => """<b>"&'""")
+    val s = ChartSvg.render(Tonight.of(profile, Some(session), at(60)), at(60), Nil, _ => 0, _ => """<b>"&'""")
     assert(!s.contains("<b>"))
     assert(s.contains("&lt;b&gt;&quot;&amp;&#39;"))
   }
 
   test("Markup.escape covers the five special characters") {
     assertEquals(Markup.escape("""<a href="x">Tom & Jerry's</a>"""), "&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&#39;s&lt;/a&gt;")
+  }
+
+  test("hour ticks are placed on local hours (UTC+5:30)") {
+    val seen = scala.collection.mutable.ListBuffer.empty[Instant]
+    ChartSvg.render(Tonight.of(profile, Some(session), at(60)), at(60), Nil, _ => 330, t => { seen += t; "x" })
+    assert(seen.nonEmpty)
+    assert(seen.forall(t => (t.getEpochSecond / 60 + 330) % 60 == 0), seen.toString)
   }

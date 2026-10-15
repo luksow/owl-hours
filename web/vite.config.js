@@ -48,7 +48,11 @@ export default defineConfig({
           { src: "maskable-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
-      workbox: { globPatterns: ["**/*.{js,css,html,json,woff,woff2,svg,png,ico,webmanifest}"] },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,json,woff,woff2,svg,png,ico,webmanifest}"],
+        // Workbox silently skips files above 2 MiB; the Scala.js bundle is close to that, so leave headroom
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      },
     }),
   ],
 });

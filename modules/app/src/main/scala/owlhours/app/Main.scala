@@ -6,7 +6,7 @@ import cats.effect.*
 import cats.syntax.all.*
 import fs2.concurrent.Signal
 import fs2.dom.HtmlElement
-import owlhours.app.ui.{Onboarding, TonightScreen, AddDrinkSheet, UpdateToast}
+import owlhours.app.ui.{AddDrinkSheet, FoodSheet, LogScreen, Onboarding, TonightScreen, UndoBar, UpdateToast, WaterSheet}
 
 object Main extends IOWebApp:
   def render: Resource[IO, HtmlElement[IO]] =
@@ -18,12 +18,16 @@ object Main extends IOWebApp:
           case (CatalogueState.Ready(_), false, _)   => Onboarding(app)
           case (CatalogueState.Ready(c), true, Route.Tonight)  => TonightScreen(app, c)
           case (CatalogueState.Ready(c), true, Route.AddDrink) => AddDrinkSheet(app, c)
+          case (CatalogueState.Ready(_), true, Route.Water)    => WaterSheet(app)
+          case (CatalogueState.Ready(_), true, Route.Food)     => FoodSheet(app)
+          case (CatalogueState.Ready(_), true, Route.Log)      => LogScreen(app)
         }
       div(
         cls := "min-h-dvh bg-wall text-ink font-ui",
         problemsBanner(app),
         div(screen),
-        UpdateToast()
+        UpdateToast(),
+        UndoBar(app)
       )
     }
 

@@ -14,12 +14,12 @@ object Simulation:
   /** Shortest drinking duration the model is fed; a 0-minute shot would otherwise divide by zero. */
   val MinDrinkMinutes: Double = 0.5
 
-  def anthropometrics(p: Profile): Anthropometrics =
+  def anthropometrics(p: Profile, at: Instant): Anthropometrics =
     Anthropometrics(
       sex = if p.sex == Sex.Male then 1.0 else 0.0,
       weightKg = p.weight.unwrap,
       heightM = p.height.unwrap / 100.0,
-      ageYears = p.age.unwrap.toDouble
+      ageYears = p.ageAt(at).toDouble
     )
 
   def simulate(
@@ -36,7 +36,7 @@ object Simulation:
     val leadSteps = math.ceil(leadMin / stepMinutes).toInt
     val origin    = from.minusSeconds(leadSteps.toLong * stepMinutes * 60)
     val result =
-      Engine.run(anthropometrics(profile), schedule(intakes, origin), 0.0, minutesBetween(origin, to), stepMinutes, params)
+      Engine.run(anthropometrics(profile, from), schedule(intakes, origin), 0.0, minutesBetween(origin, to), stepMinutes, params)
     Curve(
       (leadSteps until result.size).map { i =>
         val bac = result.bacMgDl(i)
@@ -46,13 +46,17 @@ object Simulation:
       }.toVector
     )
 
-  /** Central curve plus the person-to-person variation band (pointwise min/max of three runs). */
+  /**
+   * Central curve plus the person-to-person variation band (pointwise min/max of three runs). The upper edge also
+   * includes a classic Widmark estimate (never lower than the model runs).
+   */
   def project(profile: Profile, intakes: Seq[Intake], from: Instant, to: Instant, stepMinutes: Int = 1): Projection =
     val base = simulate(profile, intakes, from, to, stepMinutes, Params.published)
     val slow = simulate(profile, intakes, from, to, stepMinutes, Params.slowMetaboliser(Params.published))
     val fast = simulate(profile, intakes, from, to, stepMinutes, Params.fastMetaboliser(Params.published))
     val runs = Seq(base, slow, fast).map(_.samples.map(_.bacMgDl))
-    Projection(base, runs.transpose.map(_.min).toVector, runs.transpose.map(_.max).toVector)
+    val widmark = Widmark.curveMgDl(profile, intakes, base.samples.map(_.at))
+    Projection(base, runs.transpose.map(_.min).toVector, runs.transpose.map(_.max).zip(widmark).map((a, b) => math.max(a, b)).toVector)
 
   private def schedule(intakes: Seq[Intake], origin: Instant): Schedule =
     val drinks = intakes.collect {

@@ -1,16 +1,16 @@
 package owlhours.model
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
 class SimulationSuite extends munit.FunSuite:
-  private val profile = Profile(Sex.Male, Age(30), BodyWeight(80), Height(180))
+  private val profile = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
   private val lager   = DrinkSnapshot(None, "Lager", Millilitres(500), Abv(5), KcalPerLitre(430), Nil)
 
   test("profile converts to model units") {
-    assertEquals(Simulation.anthropometrics(profile), Anthropometrics(1, 80, 1.8, 30))
+    assertEquals(Simulation.anthropometrics(profile, Instant.parse("2026-10-14T20:00:00Z")), Anthropometrics(1, 80, 1.8, 30))
   }
 
   test("matches the engine for the same beer") {

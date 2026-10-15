@@ -1,7 +1,7 @@
 package owlhours.store
 
 import cats.effect.SyncIO
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 import scala.collection.mutable
 
@@ -14,7 +14,7 @@ class StoreSuite extends munit.FunSuite:
     def available                       = SyncIO.pure(true)
 
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
-  private val profile = Profile(Sex.Female, Age(29), BodyWeight(64.5), Height(168))
+  private val profile = Profile(Sex.Female, LocalDate.of(1997, 1, 1), BodyWeight(64.5), Height(168))
   private val beer    = DrinkSnapshot(Some(CatalogueId("pale-lager")), "Pale lager / Pilsner", Millilitres(500), Abv(5),
     KcalPerLitre(404.15), Nil)
   private val negroni = DrinkSnapshot(Some(CatalogueId("negroni")), "Negroni (×1.5)", Millilitres(148.5), Abv(24.5),
@@ -52,6 +52,8 @@ class StoreSuite extends munit.FunSuite:
     val copies = kv.data.keys.filter(_.startsWith(s"oh.recovery.${Store.Keys.profile}."))
     assertEquals(copies.size, 1)
     assertEquals(kv.data(copies.head), """{"sex":"Female","age":12}""")
+    // no decoder internals in a message meant for people
+    assert(!loaded.problems.head.contains("DecodingFailure") && !loaded.problems.head.contains("DownField"), loaded.problems.head)
   }
 
   test("an unknown intake type is a readable problem, not a crash") {
