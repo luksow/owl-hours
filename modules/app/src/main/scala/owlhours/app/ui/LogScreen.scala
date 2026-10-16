@@ -8,7 +8,7 @@ import cats.syntax.all.*
 import fs2.concurrent.SignallingRef
 import fs2.dom.HtmlElement
 import owlhours.app.{AppState, CatalogueState, Route}
-import owlhours.app.logic.{Amount, Edits, IntakeEdit}
+import owlhours.app.logic.{Amount, Display, Edits, IntakeEdit}
 import owlhours.app.platform.{LocalDateTime, Now, TimeFormat}
 import owlhours.catalogue.Catalogue
 import owlhours.domain.*
@@ -40,7 +40,7 @@ object LogScreen:
                       button(
                         cls := "flex min-h-12 w-full items-center justify-between rounded-xl border border-line bg-surface px-3 text-left",
                         onClick --> (_.foreach(_ => editing.update(cur => if cur.contains(Ref(n, i)) then None else Some(Ref(n, i))))),
-                        span(s"${TimeFormat.hhmm(intake.startsAt)} · ${describe(intake)}")
+                        span(s"${TimeFormat.hhmm(intake.startsAt)} · ${Display.intake(intake)}")
                       ),
                       div(editing.map(_.contains(Ref(n, i))).changes(using Eq.fromUniversalEquals).map {
                         case true  => editor(app, catalogue, n, i, intake, editing)
@@ -55,10 +55,6 @@ object LogScreen:
       )
     }
 
-  private def describe(i: Intake): String = i match
-    case Intake.Drink(s, _, d) => s"${s.name} · ${Format.number(s.volume.unwrap)} ml · ${Format.number(s.abv.unwrap)} % · ${Format.number(d.unwrap)} min"
-    case Intake.Water(v, _, d) => s"Water · ${Format.number(v.unwrap)} ml · ${Format.number(d.unwrap)} min"
-    case Intake.Meal(k, _)     => s"Food · ${Format.number(k.unwrap)} kcal"
 
   private def editor(app: AppState, catalogue: Option[Catalogue], n: Int, i: Int, intake: Intake,
       editing: SignallingRef[IO, Option[Ref]]) =

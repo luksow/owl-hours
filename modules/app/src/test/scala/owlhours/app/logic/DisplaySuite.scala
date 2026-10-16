@@ -24,3 +24,9 @@ class DisplaySuite extends munit.FunSuite:
     assertEquals(Display.night(n.copy(peak = None, drinks = 1, standardDrinks = 1.0), BacUnit.Permille),
       "Peak ~0 · 1 drink · 1.0 standard drink · 3 h 10 min")
   }
+
+  test("an intake reads as a short line") {
+    val at = java.time.Instant.EPOCH
+    assertEquals(Display.intake(Intake.Water(Millilitres(250), at, Minutes(5))), "Water · 250 ml · 5 min")
+    assertEquals(Display.intake(Intake.Meal(Kcal(700), at)), "Food · 700 kcal")
+  }

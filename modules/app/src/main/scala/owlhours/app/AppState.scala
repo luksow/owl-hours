@@ -16,14 +16,21 @@ import owlhours.store.{Persisted, Store}
 import scala.concurrent.duration.*
 
 enum Route(val hash: String):
-  case Tonight  extends Route("#/")
-  case AddDrink extends Route("#/add")
-  case Water    extends Route("#/water")
-  case Food     extends Route("#/food")
-  case Log      extends Route("#/log")
+  case Tonight              extends Route("#/")
+  case AddDrink             extends Route("#/add")
+  case Water                extends Route("#/water")
+  case Food                 extends Route("#/food")
+  case Log                  extends Route("#/log")
+  case History              extends Route("#/history")
+  case Night(id: SessionId) extends Route(s"#/history/${id.unwrap}")
 
 object Route:
-  def parse(hash: String): Route = Route.values.filter(_ != Tonight).find(r => hash.startsWith(r.hash)).getOrElse(Tonight)
+  // an enum with a parameterised case has no `values`, so the fixed routes are listed here
+  private val fixed = List(AddDrink, Water, Food, Log, History)
+
+  def parse(hash: String): Route =
+    if hash.startsWith("#/history/") then SessionId.from(hash.stripPrefix("#/history/")).fold(_ => History, Night(_))
+    else fixed.find(r => hash.startsWith(r.hash)).getOrElse(Tonight)
 
 enum CatalogueState:
   case Loading

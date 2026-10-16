@@ -1,7 +1,7 @@
 package owlhours.app.logic
 
 import java.time.Duration
-import owlhours.domain.{BacUnit, Format, StandardDrink}
+import owlhours.domain.*
 import owlhours.model.Impairment
 
 object Display:
@@ -51,3 +51,8 @@ object Display:
     case StandardDrink.Grams10 => "10 g — most of Europe, Australia"
     case StandardDrink.Grams8  => "8 g — UK unit"
     case StandardDrink.Grams14 => "14 g — US"
+
+  def intake(i: Intake): String = i match
+    case Intake.Drink(s, _, d) => s"${s.name} · ${Format.number(s.volume.unwrap)} ml · ${Format.number(s.abv.unwrap)} % · ${Format.number(d.unwrap)} min"
+    case Intake.Water(v, _, d) => s"Water · ${Format.number(v.unwrap)} ml · ${Format.number(d.unwrap)} min"
+    case Intake.Meal(k, _)     => s"Food · ${Format.number(k.unwrap)} kcal"

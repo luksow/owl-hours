@@ -21,6 +21,8 @@ object TonightScreen:
   private final case class Key(profile: Option[Profile], session: Option[Session], unit: BacUnit, hour: Long)
 
   /** A derived signal evaluated once per distinct input, shared by all subscribers. */
+  private val Nav = "min-h-12 flex-1 rounded-xl border border-line px-3 text-sm uppercase tracking-wider"
+
   private def shared[A, B](sig: Signal[IO, A])(f: A => B): Resource[IO, Signal[IO, B]] =
     sig.get.toResource.flatMap(a0 => sig.discrete.changes(using Eq.fromUniversalEquals).map(f).holdResource(f(a0)))
 
@@ -45,10 +47,10 @@ object TonightScreen:
         cls := "mx-auto flex min-h-dvh max-w-md flex-col",
         headerTag(cls := "flex items-center justify-between px-5 pt-5",
           span(cls := "font-display text-4xl text-pink neon", "Owl Hours"),
-          div(cls := "flex items-center gap-3",
-            span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight"),
-            button(cls := "min-h-12 rounded-xl border border-line px-3 text-sm uppercase tracking-wider",
-              onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"))),
+          span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight")),
+        navTag(aria.label := "Sections", cls := "flex flex-wrap gap-2 px-5 pt-3",
+          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"),
+          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.History))), "History")),
         div(dataAttr("testid") := "watt", cls := "mx-auto mt-4 w-40 overflow-hidden rounded-2xl border border-line",
           InnerHtml(watt)),
         div(view.map {
