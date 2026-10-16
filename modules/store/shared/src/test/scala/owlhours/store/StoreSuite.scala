@@ -86,3 +86,13 @@ class StoreSuite extends munit.FunSuite:
     val kv = Memory(Store.Keys.sessions -> """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[]}]""")
     assertEquals(Store(kv).load.unsafeRunSync().persisted.sessions, Vector.empty)
   }
+
+  test("instants saved in every form older versions wrote still load") {
+    val kv = Memory("oh.v1.sessions" -> """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[
+      {"type":"meal","kcal":900,"at":"2026-10-14T20:00:00.123Z"},
+      {"type":"meal","kcal":500,"at":"2026-10-14T20:30:00.123456Z"}]}]""")
+    val loaded = Store(kv).load.unsafeRunSync()
+    assertEquals(loaded.problems, Nil)
+    assertEquals(loaded.persisted.sessions.head.intakes.map(_.startsAt),
+      Vector(Instant.parse("2026-10-14T20:00:00.123Z"), Instant.parse("2026-10-14T20:30:00.123456Z")))
+  }

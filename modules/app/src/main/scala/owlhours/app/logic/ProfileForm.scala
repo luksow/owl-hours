@@ -4,7 +4,6 @@ import cats.data.EitherNel
 import cats.syntax.all.*
 import java.time.{LocalDate, Period}
 import owlhours.domain.*
-import scala.util.Try
 
 object ProfileForm:
   final case class Fields(sex: String, born: String, weightKg: String, heightCm: String)
@@ -20,7 +19,7 @@ object ProfileForm:
     case _        => Left("Choose the sex the model should use").toEitherNel
 
   private def born(s: String, today: LocalDate): Either[String, LocalDate] =
-    Try(LocalDate.parse(s.trim)).toOption.toRight("Enter your date of birth").flatMap { d =>
+    IsoTime.parseDate(s.trim).toRight("Enter your date of birth").flatMap { d =>
       val years = Period.between(d, today).getYears
       if years < 18 then Left("Owl Hours is for adults (18+)") else Age.from(years).map(_ => d)
     }

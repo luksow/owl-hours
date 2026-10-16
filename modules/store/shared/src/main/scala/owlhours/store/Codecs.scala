@@ -2,7 +2,7 @@ package owlhours.store
 
 import io.circe.*
 import io.circe.syntax.*
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 import pl.iterators.kebs.circe.*
 
@@ -15,6 +15,12 @@ object Codecs:
   given Decoder[Sex]     = byName(Sex.values, "sex")
   given Encoder[BacUnit] = Encoder.encodeString.contramap(_.toString)
   given Decoder[BacUnit] = byName(BacUnit.values, "BAC unit")
+
+  // hand-written ISO text keeps java.time's formatter out of the Scala.js bundle (IsoTime)
+  given Encoder[Instant]   = Encoder.encodeString.contramap(IsoTime.formatInstant)
+  given Decoder[Instant]   = Decoder.decodeString.emap(s => IsoTime.parseInstant(s).toRight(s"'$s' is not a time"))
+  given Encoder[LocalDate] = Encoder.encodeString.contramap(IsoTime.formatDate)
+  given Decoder[LocalDate] = Decoder.decodeString.emap(s => IsoTime.parseDate(s).toRight(s"'$s' is not a date"))
 
   given Encoder[Intake] = Encoder.instance {
     case Intake.Drink(snapshot, start, duration) =>

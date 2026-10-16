@@ -9,6 +9,7 @@ import owlhours.app.AppState
 import java.time.ZoneOffset
 import owlhours.app.logic.ProfileForm
 import owlhours.app.platform.Now
+import owlhours.domain.IsoTime
 
 object Onboarding:
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
@@ -80,7 +81,7 @@ object Onboarding:
         p(cls := "mt-2 text-dim", "The model uses these to size your blood, body water and liver. They stay on this device."),
         div(cls := "mt-4 flex gap-3", sexOption("female", "Female"), sexOption("male", "Male")),
         p(cls := "mt-1 text-xs text-dim", "Sex is used only by the blood-volume and body-water formulas."),
-        text("Date of birth", (f, v) => f.copy(born = v), "numeric", "date", Some(today.minusYears(18).toString)),
+        text("Date of birth", (f, v) => f.copy(born = v), "numeric", "date", Some(IsoTime.formatDate(today.minusYears(18)))),
         text("Weight (kg)", (f, v) => f.copy(weightKg = v), "decimal"),
         text("Height (cm)", (f, v) => f.copy(heightCm = v), "decimal"),
         ul(role := List("alert"), cls := "mt-4 space-y-1 text-sm text-warn", children <-- errors.map(_.map(e => li(e)))),
