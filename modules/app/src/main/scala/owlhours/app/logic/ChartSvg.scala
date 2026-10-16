@@ -50,7 +50,8 @@ object ChartSvg:
 
   /** `utcOffsetMinutes` gives the local offset at an instant, so hour ticks land on local wall-clock hours. */
   def render(t: Tonight, now: Instant, markers: List[Marker], utcOffsetMinutes: Instant => Int, timeLabel: Instant => String,
-      ghost: Option[Curve] = None, bacLabel: Double => String = p => s"${Format.number(p)}‰"): String =
+      ghost: Option[Curve] = None, bacLabel: Double => String = p => s"${Format.number(p)}‰",
+      label: String = "Blood alcohol estimate over tonight", showNow: Boolean = true): String =
     val from    = t.viewFrom.toEpochMilli.toDouble
     val to      = t.viewTo.toEpochMilli.toDouble
     val samples = t.projection.curve.samples
@@ -71,7 +72,7 @@ object ChartSvg:
     val bandLow = inView.reverse.map(i => (x(samples(i).at), y(t.projection.low(i))))
 
     val sb = new StringBuilder
-    sb ++= s"""<svg viewBox="0 0 358 232" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Blood alcohol estimate over tonight">"""
+    sb ++= s"""<svg viewBox="0 0 358 232" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${Markup.escape(label)}">"""
     sb ++= s"""<defs><linearGradient id="oh-trail" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="${n(y(0))}" y2="${n(y(MgDl12))}">"""
     sb ++= s"""<stop offset="0" stop-color="$Ice"/><stop offset="0.6667" stop-color="$Amber"/><stop offset="1" stop-color="$Pink"/></linearGradient>"""
     sb ++= """<filter id="oh-glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/>"""
@@ -81,7 +82,9 @@ object ChartSvg:
     for k <- 1 to (yMax / BacUnit.MgDlPerPermille).toInt do
       val gy = y(k * BacUnit.MgDlPerPermille)
       sb ++= s"""<g class="oh-grid"><line x1="${n(x0)}" x2="${n(x1)}" y1="${n(gy)}" y2="${n(gy)}" stroke="$Dim" stroke-opacity="0.18" stroke-dasharray="1 5"/>"""
-      sb ++= s"""<text x="${n(x1)}" y="${n(gy - 3)}" text-anchor="end" font-size="9" fill="$Dim">${Markup.escape(bacLabel(k))}</text></g>"""
+      // the now pill occupies the top 13 px, so a label that would sit there goes below its line instead
+      val ly = if gy - 3 < 16 then gy + 10 else gy - 3
+      sb ++= s"""<text x="${n(x1)}" y="${n(ly)}" text-anchor="end" font-size="9" fill="$Dim">${Markup.escape(bacLabel(k))}</text></g>"""
     if bandTop.nonEmpty then
       sb ++= s"""<path class="oh-band" d="${path(bandTop ++ bandLow)} Z" fill="url(#oh-trail)" fill-opacity="0.16"/>"""
     for g <- ghost do
@@ -92,7 +95,7 @@ object ChartSvg:
       sb ++= s"""<path class="oh-projection" stroke-dasharray="5 6" d="${path(future)}" fill="none" stroke="url(#oh-trail)" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>"""
     if past.size > 1 then
       sb ++= s"""<path class="oh-past" d="${path(past)}" fill="none" stroke="url(#oh-trail)" stroke-width="3" stroke-linecap="round" filter="url(#oh-glow)"/>"""
-    if nowMs >= from && nowMs <= to then
+    if showNow && nowMs >= from && nowMs <= to then
       val nx = x(now)
       sb ++= s"""<g class="oh-now"><line x1="${n(nx)}" x2="${n(nx)}" y1="${n(yTop)}" y2="${n(yBottom)}" stroke="$Ink" stroke-width="1.2" stroke-opacity="0.8"/>"""
       sb ++= s"""<rect x="${n(nx - 16)}" y="0" width="32" height="13" rx="6.5" fill="$Ink"/>"""

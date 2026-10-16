@@ -2,6 +2,7 @@ package owlhours.app.logic
 
 import java.time.{Instant, LocalDate}
 import owlhours.domain.*
+import owlhours.model.*
 
 class ChartSvgSuite extends munit.FunSuite:
   private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
@@ -84,4 +85,21 @@ class ChartSvgSuite extends munit.FunSuite:
     ChartSvg.render(Tonight.of(profile, Some(session), at(60)), at(60), Nil, offset, t => { seen += t; "x" })
     assert(seen.size >= 2)
     assert(seen.forall(t => (t.getEpochSecond / 60 + offset(t)) % 60 == 0), seen.toString)
+  }
+
+  test("review: a grid label near the top moves below its line, clear of the now pill") {
+    val peak    = 2 * BacUnit.MgDlPerPermille / 1.15 + 1e-6 // puts the 2‰ line on the chart's top edge
+    val samples = (0 to 120 by 2).map(m => BacSample(at(m), peak, 0.0)).toVector
+    val t = Tonight(Projection(Curve(samples), samples.map(_.bacMgDl), samples.map(_.bacMgDl)),
+      Summary(peak, Trend.Steady, None, None), Impairment.Drunk, at(0), at(120))
+    val ys = """<g class="oh-grid">.*?<text x="[^"]+" y="([^"]+)"""".r
+      .findAllMatchIn(ChartSvg.render(t, at(60), Nil, _ => 0, label)).map(_.group(1).toDouble).toList
+    assert(ys.size == 2 && ys.forall(_ >= 16), ys.toString)
+  }
+
+  test("a past night's chart has its own label and no now marker") {
+    val s = ChartSvg.render(Tonight.of(profile, Some(session), at(60)), at(60), Nil, _ => 0, label,
+      label = "Blood alcohol estimate on Tue 14 Oct & co", showNow = false)
+    assert(s.contains("""aria-label="Blood alcohol estimate on Tue 14 Oct &amp; co""""), s.take(200))
+    assert(!s.contains("oh-now"))
   }
