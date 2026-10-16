@@ -15,7 +15,8 @@ object Files:
     dom.document.body.appendChild(a) // some browsers ignore clicks on detached anchors
     a.click()
     a.remove()
-    dom.window.setTimeout(() => dom.URL.revokeObjectURL(url), 0)
+    // Safari (and iOS standalone apps) cancel a download whose URL is revoked at once; FileSaver.js waits 40 s too
+    dom.window.setTimeout(() => dom.URL.revokeObjectURL(url), 40000)
   }
 
   /** The chosen file's text; the input is cleared so choosing the same file again fires again. */

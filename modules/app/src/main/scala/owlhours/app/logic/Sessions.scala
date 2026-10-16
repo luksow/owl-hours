@@ -49,11 +49,14 @@ object Sessions:
 
   /**
    * Groups intakes into nights: a new night starts when an intake begins after the current night has closed by rule,
-   * or after a manual end. An end belongs to the night it falls in; one that falls in no night is dropped.
+   * or after a manual end. An end belongs to the night it falls in, and holds only while that night is back to ~0 at
+   * it (as `canEnd` requires): a drink re-timed to before the end reopens the night. Other ends are dropped.
    */
   def group(p: Profile, intakes: Vector[Intake], ends: Vector[Instant] = Vector.empty): Vector[Session] =
     val sortedEnds = ends.sortBy(_.toEpochMilli)
-    def endBefore(s: Session, limit: Instant) = sortedEnds.find(e => !e.isBefore(s.startedAt) && e.isBefore(limit))
+    def endBefore(s: Session, limit: Instant) =
+      val close = ruleClose(p, s)
+      sortedEnds.find(e => !e.isBefore(close.minus(CloseAfter)) && e.isBefore(limit))
     def open(i: Intake) = Session(SessionId(s"night-${i.startsAt.toEpochMilli}"), i.startsAt, Vector(i))
     val (done, current) = intakes.sortBy(_.startsAt.toEpochMilli).foldLeft((Vector.empty[Session], Option.empty[Session])) {
       case ((done, None), i) => (done, Some(open(i)))

@@ -9,29 +9,34 @@ import owlhours.app.{AppState, Route}
 import owlhours.app.logic.Display
 import owlhours.app.platform.{Files, LocalDateTime, Now}
 import owlhours.domain.*
-import owlhours.store.Backup
+import owlhours.store.{Backup, Persisted}
 
 object SettingsScreen:
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
-    app.persisted.get.toResource.flatMap { p0 =>
-      div(
-        cls := Screen.frame,
-        Screen.header("Settings", app.go(Route.Tonight)),
-        Screen.section("Profile")(
-          p(cls := "text-sm text-dim", "Changing these re-estimates every night, past ones included."),
-          ProfileFields(p0.profile, "Save profile", app.updateProfile)),
-        Screen.section("Units")(
-          choice("Blood alcohol unit", BacUnit.values.toList.map(u => u -> Display.unitName(u)), p0.settings.bacUnit,
-            u => app.updateSettings(_.copy(bacUnit = u)))),
-        Screen.section("Standard drink")(
-          p(cls := "text-sm text-dim", "Used to count standard drinks in History."),
-          choice("Standard drink", StandardDrink.values.toList.map(s => s -> Display.standardDrinkName(s)), p0.settings.standardDrink,
-            s => app.updateSettings(_.copy(standardDrink = s)))),
-        Screen.section("Your data")(data(app)),
-        button(cls := Wide, onClick --> (_.foreach(_ => app.go(Route.About))), "About the science"),
-        Screen.makersPlate
-      )
-    }
+    div(
+      cls := Screen.frame,
+      Screen.header("Settings", app.go(Route.Tonight)),
+      // the forms copy the saved state, so they are rebuilt when an import or an undo replaces it
+      div(cls := "flex flex-col gap-4", app.replaced.map(_ => app.persisted.get.toResource.flatMap(choices(app, _)))),
+      Screen.section("Your data")(data(app)),
+      button(cls := Wide, onClick --> (_.foreach(_ => app.go(Route.About))), "About the science"),
+      Screen.makersPlate
+    )
+
+  private def choices(app: AppState, p0: Persisted): Resource[IO, HtmlElement[IO]] =
+    div(
+      cls := "flex flex-col gap-4",
+      Screen.section("Profile")(
+        p(cls := "text-sm text-dim", "Changing these re-estimates every night, past ones included."),
+        ProfileFields(p0.profile, "Save profile", app.updateProfile)),
+      Screen.section("Units")(
+        choice("Blood alcohol unit", BacUnit.values.toList.map(u => u -> Display.unitName(u)), p0.settings.bacUnit,
+          u => app.updateSettings(_.copy(bacUnit = u)))),
+      Screen.section("Standard drink")(
+        p(cls := "text-sm text-dim", "Used to count standard drinks in History."),
+        choice("Standard drink", StandardDrink.values.toList.map(s => s -> Display.standardDrinkName(s)), p0.settings.standardDrink,
+          s => app.updateSettings(_.copy(standardDrink = s))))
+    )
 
   private val Wide = "min-h-12 w-full rounded-xl border border-line bg-surface px-3 font-semibold"
 

@@ -95,7 +95,8 @@ class SessionsSuite extends munit.FunSuite:
     val next  = Sessions.add(profile, endedAfterOnePint, drink(250))
     val moved = Sessions.replace(profile, next, drink(250), drink(60))
     assertEquals(nights(moved), Vector(Vector(at(0), at(60))))
-    assertEquals(moved.map(_.endedAt), Vector(Some(at(240))))
+    // two pints are still above ~0 at the old end, so the end no longer holds and the night is open again
+    assertEquals(moved.map(_.endedAt), Vector(None))
   }
 
   test("regrouping everything keeps manual ends") {
@@ -106,4 +107,19 @@ class SessionsSuite extends munit.FunSuite:
   test("an ended night is closed at once, even to a clock that has not yet passed the end") {
     assertEquals(Sessions.active(profile, endedAfterOnePint, at(239)), None)
     assertEquals(Sessions.active(profile, endedAfterOnePint, at(240)), None)
+  }
+
+
+  test("review: a drink logged as starting before the end reopens the night, so Tonight keeps counting it") {
+    val ss = Sessions.add(profile, endedAfterOnePint, drink(225))
+    assertEquals(nights(ss), Vector(Vector(at(0), at(225))))
+    assertEquals(ss.map(_.endedAt), Vector(None))
+    assert(Sessions.active(profile, ss, at(250)).isDefined)
+  }
+
+  test("review: an end that no longer holds does not split off a later drink") {
+    val next  = Sessions.add(profile, endedAfterOnePint, drink(250))
+    val moved = Sessions.add(profile, next, drink(225))
+    assertEquals(nights(moved), Vector(Vector(at(0), at(225), at(250))))
+    assertEquals(moved.map(_.endedAt), Vector(None))
   }

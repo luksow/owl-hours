@@ -64,3 +64,16 @@ test("delete all data asks once more, then removes everything and returns to the
   await page.reload();
   await expect(page.getByRole("heading", { name: "Before we start" })).toBeVisible();
 });
+
+test("review: after an import or its undo, Settings shows the data now stored", async ({ page }) => {
+  await page.goto("/#/settings");
+  const backup = await exported(page);
+  backup.profile.weight = 70;
+  backup.settings.bacUnit = "MgPer100ml";
+  await page.getByLabel("Import a backup").setInputFiles({ name: "b.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+  await expect(page.getByLabel("Weight (kg)")).toHaveValue("70");
+  await expect(page.getByLabel("mg/100 ml of blood")).toBeChecked();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByLabel("Weight (kg)")).toHaveValue("80");
+  await expect(page.getByLabel("‰ (per mille, blood)")).toBeChecked();
+});

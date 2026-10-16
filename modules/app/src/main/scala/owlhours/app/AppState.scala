@@ -46,6 +46,8 @@ final class AppState(
     val catalogue: SignallingRef[IO, CatalogueState],
     val problems: SignallingRef[IO, List[String]],
     val undo: SignallingRef[IO, Option[Undo]],
+    /** Counts whole-state replacements (import, undo), so forms that copy the state can read it afresh. */
+    val replaced: SignallingRef[IO, Int],
     val now: Signal[IO, Instant],
     val route: Signal[IO, Route],
     store: Store[IO],
@@ -66,7 +68,8 @@ final class AppState(
 
   /** Replaces everything with a backup's contents, regrouped with its profile; Undo puts the previous data back. */
   def importBackup(next: Persisted): IO[Unit] =
-    undoable("Data imported")(cur => next.profile.fold(cur)(p => next.copy(sessions = Sessions.regroupAll(p, next.sessions))))
+    undoable("Data imported")(cur => next.profile.fold(cur)(p => next.copy(sessions = Sessions.regroupAll(p, next.sessions)))) *>
+      replaced.update(_ + 1)
 
   /** Not undoable on purpose: people who delete their data expect it gone. */
   def deleteEverything: IO[Unit] =
@@ -82,7 +85,8 @@ final class AppState(
   def endNight(at: Instant): IO[Unit] = undoable("Night ended")(withSessions((p, ss) => Sessions.end(p, ss, at)))
 
   def undoLast: IO[Unit] =
-    undo.getAndSet(None).flatMap(_.traverse_(u => lock.lock.surround(persisted.set(u.before) *> store.saveAll(u.before))))
+    undo.getAndSet(None).flatMap(_.traverse_(u =>
+      lock.lock.surround(persisted.set(u.before) *> store.saveAll(u.before)) *> replaced.update(_ + 1)))
 
   /** A change that offers Undo. The snapshot is taken inside the lock, so it is exactly the state the change applied to. */
   private def undoable(message: String)(f: Persisted => Persisted): IO[Unit] =
@@ -120,6 +124,7 @@ object AppState:
       catalogue <- SignallingRef[IO].of[CatalogueState](CatalogueState.Loading).toResource
       problems  <- SignallingRef[IO].of(loaded.problems).toResource
       undo      <- SignallingRef[IO].of(Option.empty[Undo]).toResource
+      replaced  <- SignallingRef[IO].of(0).toResource
       _ <- CatalogueLoader.load
         .flatMap(r => catalogue.set(r.fold(CatalogueState.Failed(_), CatalogueState.Ready(_))))
         .background
@@ -136,4 +141,4 @@ object AppState:
       // leaving a screen dismisses its undo bar
       _ <- route.discrete.drop(1).foreach(_ => undo.set(None)).compile.drain.background
       lock <- Mutex[IO].toResource
-    yield AppState(persisted, catalogue, problems, undo, now, route, store, window, lock)
+    yield AppState(persisted, catalogue, problems, undo, replaced, now, route, store, window, lock)
