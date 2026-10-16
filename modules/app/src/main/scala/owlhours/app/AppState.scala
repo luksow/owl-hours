@@ -22,11 +22,12 @@ enum Route(val hash: String):
   case Food                 extends Route("#/food")
   case Log                  extends Route("#/log")
   case History              extends Route("#/history")
+  case Settings             extends Route("#/settings")
   case Night(id: SessionId) extends Route(s"#/history/${id.unwrap}")
 
 object Route:
   // an enum with a parameterised case has no `values`, so the fixed routes are listed here
-  private val fixed = List(AddDrink, Water, Food, Log, History)
+  private val fixed = List(AddDrink, Water, Food, Log, History, Settings)
 
   def parse(hash: String): Route =
     if hash.startsWith("#/history/") then SessionId.from(hash.stripPrefix("#/history/")).fold(_ => History, Night(_))
@@ -53,6 +54,14 @@ final class AppState(
   def acceptDisclaimer: IO[Unit] = persisted.update(_.copy(disclaimerAccepted = true)) *> store.saveDisclaimer(true)
 
   def saveProfile(p: Profile): IO[Unit] = persisted.update(_.copy(profile = Some(p))) *> store.saveProfile(p)
+
+  /** From Settings: nights are regrouped, because when a night closes depends on the body. */
+  def updateProfile(p: Profile): IO[Unit] =
+    lock.lock.surround(persisted.updateAndGet(x => x.copy(profile = Some(p), sessions = Sessions.regroupAll(p, x.sessions)))
+      .flatMap(x => store.saveProfile(p) *> store.saveSessions(x.sessions)))
+
+  def updateSettings(f: Settings => Settings): IO[Unit] =
+    lock.lock.surround(persisted.updateAndGet(x => x.copy(settings = f(x.settings))).flatMap(x => store.saveSettings(x.settings)))
 
   def addIntake(i: Intake): IO[Unit] = updateSessions((p, ss) => Sessions.add(p, ss, i)) *> undo.set(None)
 

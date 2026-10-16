@@ -8,6 +8,10 @@ import owlhours.domain.*
 object ProfileForm:
   final case class Fields(sex: String, born: String, weightKg: String, heightCm: String)
 
+  object Fields:
+    def of(p: Profile): Fields =
+      Fields(p.sex.toString.toLowerCase, IsoTime.formatDate(p.born), Format.number(p.weight.unwrap), Format.number(p.height.unwrap))
+
   def validate(f: Fields, today: LocalDate): EitherNel[String, Profile] =
     (sex(f.sex), born(f.born, today).toEitherNel,
       number("Weight", f.weightKg).flatMap(BodyWeight.from).toEitherNel,
