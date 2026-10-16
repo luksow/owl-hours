@@ -118,3 +118,12 @@ class StoreSuite extends munit.FunSuite:
     store.saveAll(all.copy(profile = None)).unsafeRunSync()
     assertEquals(kv.data.get("oh.v1.profile"), None)
   }
+
+  test("settings saved before the standard drink existed load with the 10 g default; a choice round-trips") {
+    val store = Store(Memory("oh.v1.settings" -> """{"bacUnit":"MgPer100ml"}"""))
+    val loaded = store.load.unsafeRunSync()
+    assertEquals(loaded.problems, Nil)
+    assertEquals(loaded.persisted.settings, Settings(BacUnit.MgPer100ml, StandardDrink.Grams10))
+    store.saveSettings(Settings(BacUnit.Permille, StandardDrink.Grams14)).unsafeRunSync()
+    assertEquals(store.load.unsafeRunSync().persisted.settings, Settings(BacUnit.Permille, StandardDrink.Grams14))
+  }
