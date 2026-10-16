@@ -28,6 +28,7 @@ object SettingsScreen:
           choice("Standard drink", StandardDrink.values.toList.map(s => s -> Display.standardDrinkName(s)), p0.settings.standardDrink,
             s => app.updateSettings(_.copy(standardDrink = s)))),
         Screen.section("Your data")(data(app)),
+        button(cls := Wide, onClick --> (_.foreach(_ => app.go(Route.About))), "About the science"),
         Screen.makersPlate
       )
     }

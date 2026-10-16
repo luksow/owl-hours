@@ -23,11 +23,12 @@ enum Route(val hash: String):
   case Log                  extends Route("#/log")
   case History              extends Route("#/history")
   case Settings             extends Route("#/settings")
+  case About                extends Route("#/about")
   case Night(id: SessionId) extends Route(s"#/history/${id.unwrap}")
 
 object Route:
   // an enum with a parameterised case has no `values`, so the fixed routes are listed here
-  private val fixed = List(AddDrink, Water, Food, Log, History, Settings)
+  private val fixed = List(AddDrink, Water, Food, Log, History, Settings, About)
 
   def parse(hash: String): Route =
     if hash.startsWith("#/history/") then SessionId.from(hash.stripPrefix("#/history/")).fold(_ => History, Night(_))

@@ -51,7 +51,8 @@ object TonightScreen:
         navTag(aria.label := "Sections", cls := "flex flex-wrap gap-2 px-5 pt-3",
           button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"),
           button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.History))), "History"),
-          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.Settings))), "Settings")),
+          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.Settings))), "Settings"),
+          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.About))), "About")),
         div(dataAttr("testid") := "watt", cls := "mx-auto mt-4 w-40 overflow-hidden rounded-2xl border border-line",
           InnerHtml(watt)),
         div(view.map {
