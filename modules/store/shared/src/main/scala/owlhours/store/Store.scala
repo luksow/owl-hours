@@ -50,6 +50,11 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
   def saveSettings(s: Settings): F[Unit]        = kv.set(Keys.settings, Codecs.settingsCodec(s).noSpaces)
   def saveSessions(ss: Vector[Session]): F[Unit] = kv.set(Keys.sessions, Codecs.sessionsCodec(ss).noSpaces)
 
+  /** Every key at once (undo of a whole-state change, import). */
+  def saveAll(p: Persisted): F[Unit] =
+    saveDisclaimer(p.disclaimerAccepted) *> p.profile.fold(kv.remove(Keys.profile))(saveProfile) *>
+      saveSettings(p.settings) *> saveSessions(p.sessions)
+
   /** Unreadable values are copied to a recovery key and reported; nothing is silently discarded. */
   private def read[A](key: String, what: String, now: Instant)(using d: Decoder[A]): F[(Option[A], Option[String])] =
     kv.get(key).flatMap {

@@ -30,7 +30,7 @@ enum CatalogueState:
   case Ready(c: Catalogue)
   case Failed(errors: List[String])
 
-final case class Undo(message: String, sessions: Vector[Session])
+final case class Undo(message: String, before: Persisted)
 
 final class AppState(
     val persisted: SignallingRef[IO, Persisted],
@@ -52,20 +52,24 @@ final class AppState(
   def replaceIntake(old: Intake, updated: Intake): IO[Unit] =
     updateSessions((p, ss) => Sessions.replace(p, ss, old, updated)) *> undo.set(None)
 
-  def deleteIntake(old: Intake): IO[Unit] =
-    // the snapshot for undo is taken inside the lock, so it is exactly the state the delete applied to
-    lock.lock.surround(persisted.get.flatMap { before =>
-      // only a delete that removed something replaces the undo snapshot
-      IO.whenA(before.sessions.exists(_.intakes.contains(old)))(
-        persisted.updateAndGet(withSessions((p, ss) => Sessions.delete(p, ss, old))).flatMap(p => store.saveSessions(p.sessions)) *> {
-          val u = Undo("Entry deleted", before.sessions)
-          // a snackbar, not a fixture: it hides itself unless a newer one replaced it
-          undo.set(Some(u)) *> (IO.sleep(UndoFor) *> undo.update(_.filterNot(_ eq u))).start.void
-        })
-    })
+  def deleteIntake(old: Intake): IO[Unit] = undoable("Entry deleted")(withSessions((p, ss) => Sessions.delete(p, ss, old)))
+
+  def endNight(at: Instant): IO[Unit] = undoable("Night ended")(withSessions((p, ss) => Sessions.end(p, ss, at)))
 
   def undoLast: IO[Unit] =
-    undo.getAndSet(None).flatMap(_.traverse_(u => saved(_.copy(sessions = u.sessions))))
+    undo.getAndSet(None).flatMap(_.traverse_(u => lock.lock.surround(persisted.set(u.before) *> store.saveAll(u.before))))
+
+  /** A change that offers Undo. The snapshot is taken inside the lock, so it is exactly the state the change applied to. */
+  private def undoable(message: String)(f: Persisted => Persisted): IO[Unit] =
+    lock.lock.surround(persisted.get.flatMap { before =>
+      val after = f(before)
+      // only a change that changed something replaces the undo snapshot
+      IO.whenA(after != before)(persisted.set(after) *> store.saveAll(after) *> {
+        val u = Undo(message, before)
+        // a snackbar, not a fixture: it hides itself unless a newer one replaced it
+        undo.set(Some(u)) *> (IO.sleep(UndoFor) *> undo.update(_.filterNot(_ eq u))).start.void
+      })
+    })
 
   private def withSessions(f: (Profile, Vector[Session]) => Vector[Session])(p: Persisted): Persisted =
     p.profile.fold(p)(profile => p.copy(sessions = f(profile, p.sessions)))

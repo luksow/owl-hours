@@ -19,22 +19,53 @@ object Sessions:
     case Intake.Water(_, start, d) => start.plusSeconds(math.round(d.unwrap * 60))
     case Intake.Meal(_, at)        => at
 
-  def closesAt(p: Profile, s: Session): Instant =
+  /** A night ended by hand closes at its end; otherwise two hours after blood alcohol is back to ~0. */
+  def closesAt(p: Profile, s: Session): Instant = s.endedAt.getOrElse(ruleClose(p, s))
+
+  private def ruleClose(p: Profile, s: Session): Instant =
     val lastEnd   = s.intakes.map(endOf).maxBy(_.toEpochMilli)
     val curve     = Simulation.simulate(p, s.intakes, s.startedAt, lastEnd.plusSeconds(24 * 3600), stepMinutes = 5)
     val lastAbove = curve.samples.findLast(_.bacMgDl >= Simulation.ZeroThresholdMgDl).map(_.at).getOrElse(lastEnd)
     later(lastAbove, lastEnd).plus(CloseAfter)
 
+  /** A night ended by hand is closed at once, even to a clock that ticked just before the tap. */
   def active(p: Profile, ss: Vector[Session], now: Instant): Option[Session] =
-    ss.lastOption.filter(s => s.intakes.nonEmpty && !now.isAfter(closesAt(p, s)))
+    ss.lastOption.filter(s => s.intakes.nonEmpty && s.endedAt.isEmpty && !now.isAfter(closesAt(p, s)))
 
-  /** Groups intakes into nights: a new night starts when an intake begins after the current night has closed. */
-  def group(p: Profile, intakes: Vector[Intake]): Vector[Session] =
-    intakes.sortBy(_.startsAt.toEpochMilli).foldLeft(Vector.empty[Session]) { (acc, i) =>
-      acc.lastOption match
-        case Some(s) if !i.startsAt.isAfter(closesAt(p, s)) => acc.init :+ s.copy(intakes = s.intakes :+ i)
-        case _ => acc :+ Session(SessionId(s"night-${i.startsAt.toEpochMilli}"), i.startsAt, Vector(i))
+  /**
+   * Only once the estimate is back to ~0: a drink after a manual end starts a new night, and a new night started
+   * while alcohol is still in the blood would leave it out of Tonight.
+   */
+  def canEnd(p: Profile, s: Session, at: Instant): Boolean =
+    s.endedAt.isEmpty && {
+      val close = ruleClose(p, s)
+      !at.isAfter(close) && !at.isBefore(close.minus(CloseAfter))
     }
+
+  def end(p: Profile, ss: Vector[Session], at: Instant): Vector[Session] =
+    ss.lastOption.filter(canEnd(p, _, at)).fold(ss)(s => ss.init :+ s.copy(endedAt = Some(at)))
+
+  def regroupAll(p: Profile, ss: Vector[Session]): Vector[Session] = group(p, ss.flatMap(_.intakes), ss.flatMap(_.endedAt))
+
+  /**
+   * Groups intakes into nights: a new night starts when an intake begins after the current night has closed by rule,
+   * or after a manual end. An end belongs to the night it falls in; one that falls in no night is dropped.
+   */
+  def group(p: Profile, intakes: Vector[Intake], ends: Vector[Instant] = Vector.empty): Vector[Session] =
+    val sortedEnds = ends.sortBy(_.toEpochMilli)
+    def endBefore(s: Session, limit: Instant) = sortedEnds.find(e => !e.isBefore(s.startedAt) && e.isBefore(limit))
+    def open(i: Intake) = Session(SessionId(s"night-${i.startsAt.toEpochMilli}"), i.startsAt, Vector(i))
+    val (done, current) = intakes.sortBy(_.startsAt.toEpochMilli).foldLeft((Vector.empty[Session], Option.empty[Session])) {
+      case ((done, None), i) => (done, Some(open(i)))
+      case ((done, Some(s)), i) =>
+        val close = ruleClose(p, s)
+        if i.startsAt.isAfter(close) then (done :+ s.copy(endedAt = endBefore(s, close)), Some(open(i)))
+        else
+          endBefore(s, i.startsAt) match
+            case Some(e) => (done :+ s.copy(endedAt = Some(e)), Some(open(i)))
+            case None    => (done, Some(s.copy(intakes = s.intakes :+ i)))
+    }
+    done ++ current.map(s => s.copy(endedAt = endBefore(s, ruleClose(p, s))))
 
   def add(p: Profile, ss: Vector[Session], i: Intake): Vector[Session] =
     regroup(p, ss, i.startsAt)(_ :+ i)
@@ -54,7 +85,7 @@ object Sessions:
    */
   private def regroup(p: Profile, ss: Vector[Session], changedAt: Instant)(f: Vector[Intake] => Vector[Intake]) =
     val (keep, redo) = ss.span(s => s.intakes.map(endOf).maxBy(_.toEpochMilli).plus(LatestClose).isBefore(changedAt))
-    keep ++ group(p, f(redo.flatMap(_.intakes)))
+    keep ++ group(p, f(redo.flatMap(_.intakes)), redo.flatMap(_.endedAt))
 
   private def removeFirst(xs: Vector[Intake], x: Intake): Vector[Intake] =
     val i = xs.indexOf(x)

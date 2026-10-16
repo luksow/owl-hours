@@ -66,3 +66,44 @@ class SessionsSuite extends munit.FunSuite:
     assertEquals(Sessions.endOf(drink(10)), at(40))
     assertEquals(Sessions.endOf(Intake.Meal(Kcal(500), at(10))), at(10))
   }
+
+  private def endedAfterOnePint = Sessions.end(profile, Sessions.add(profile, Vector.empty, drink(0)), at(240))
+
+  test("a night can be ended once the estimate is back to ~0; the end closes it at once") {
+    val ss = endedAfterOnePint
+    assertEquals(ss.map(_.endedAt), Vector(Some(at(240))))
+    assertEquals(Sessions.closesAt(profile, ss.last), at(240))
+    assertEquals(Sessions.active(profile, ss, at(241)), None)
+  }
+
+  test("a night is not ended while the estimate is above ~0, and an ended night is not ended again") {
+    val open = Sessions.add(profile, Vector.empty, drink(0))
+    assertEquals(Sessions.end(profile, open, at(40)), open)
+    assert(!Sessions.canEnd(profile, open.last, at(40)))
+    assert(Sessions.canEnd(profile, open.last, at(240)))
+    assertEquals(Sessions.end(profile, endedAfterOnePint, at(250)), endedAfterOnePint)
+    assertEquals(Sessions.end(profile, Vector.empty, at(250)), Vector.empty)
+  }
+
+  test("a drink after the end starts a new night; the ended night keeps its end") {
+    val next = Sessions.add(profile, endedAfterOnePint, drink(250))
+    assertEquals(nights(next), Vector(Vector(at(0)), Vector(at(250))))
+    assertEquals(next.map(_.endedAt), Vector(Some(at(240)), None))
+  }
+
+  test("a drink moved to before the end rejoins the ended night") {
+    val next  = Sessions.add(profile, endedAfterOnePint, drink(250))
+    val moved = Sessions.replace(profile, next, drink(250), drink(60))
+    assertEquals(nights(moved), Vector(Vector(at(0), at(60))))
+    assertEquals(moved.map(_.endedAt), Vector(Some(at(240))))
+  }
+
+  test("regrouping everything keeps manual ends") {
+    val ss = Sessions.add(profile, endedAfterOnePint, drink(250))
+    assertEquals(Sessions.regroupAll(profile, ss), ss)
+  }
+
+  test("an ended night is closed at once, even to a clock that has not yet passed the end") {
+    assertEquals(Sessions.active(profile, endedAfterOnePint, at(239)), None)
+    assertEquals(Sessions.active(profile, endedAfterOnePint, at(240)), None)
+  }

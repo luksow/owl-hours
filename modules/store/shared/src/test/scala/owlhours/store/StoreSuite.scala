@@ -96,3 +96,25 @@ class StoreSuite extends munit.FunSuite:
     assertEquals(loaded.persisted.sessions.head.intakes.map(_.startsAt),
       Vector(Instant.parse("2026-10-14T20:00:00.123Z"), Instant.parse("2026-10-14T20:30:00.123456Z")))
   }
+
+  test("nights saved before manual ends existed still load, and an end is saved and loaded") {
+    val kv = Memory("oh.v1.sessions" ->
+      """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[{"type":"meal","kcal":900,"at":"2026-10-14T20:00:00Z"}]}]""")
+    val store  = Store(kv)
+    val loaded = store.load.unsafeRunSync()
+    assertEquals(loaded.problems, Nil)
+    assertEquals(loaded.persisted.sessions, Vector(Session(SessionId("s-1"), t0, Vector(Intake.Meal(Kcal(900), t0)))))
+    val ended = session.copy(endedAt = Some(t0.plusSeconds(7200)))
+    store.saveSessions(Vector(ended)).unsafeRunSync()
+    assertEquals(store.load.unsafeRunSync().persisted.sessions, Vector(ended))
+  }
+
+  test("saveAll writes every key, and a missing profile removes the stored one") {
+    val kv    = Memory()
+    val store = Store(kv)
+    val all   = Persisted(disclaimerAccepted = true, Some(profile), Settings(BacUnit.MgPer100ml), Vector(session))
+    store.saveAll(all).unsafeRunSync()
+    assertEquals(store.load.unsafeRunSync().persisted, all)
+    store.saveAll(all.copy(profile = None)).unsafeRunSync()
+    assertEquals(kv.data.get("oh.v1.profile"), None)
+  }

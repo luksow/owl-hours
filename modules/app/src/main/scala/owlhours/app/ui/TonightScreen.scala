@@ -32,7 +32,7 @@ object TonightScreen:
           p.settings.bacUnit)
       }
       key = (night, app.now).mapN { case ((profile, last, unit), now) =>
-        val session = last.collect { case (s, closes) if !now.isAfter(closes) => s }
+        val session = last.collect { case (s, closes) if s.endedAt.isEmpty && !now.isAfter(closes) => s }
         Key(profile, session, unit, if session.isEmpty then now.getEpochSecond / 3600 else 0L)
       }
       bundle <- shared(key) { k =>
@@ -53,14 +53,14 @@ object TonightScreen:
           InnerHtml(watt)),
         div(view.map {
           case None => div(())
-          case Some((t, s, unit, now)) => body(t, s, unit, now)
+          case Some((t, s, unit, now)) => body(app, t, s, unit, now)
         }),
         p(cls := "mt-3 px-5 text-center text-xs uppercase tracking-wider text-dim", "Estimate only · never a green light to drive"),
         actionBar(app, bundle.map(_.session))
       )
     yield screen
 
-  private def body(t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
+  private def body(app: AppState, t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
     val current = t.projection.curve.samples.findLast(!_.at.isAfter(now)).getOrElse(t.projection.curve.samples.head)
     val trend = t.summary.trend match
       case Trend.Rising  => "↗ rising"
@@ -83,8 +83,20 @@ object TonightScreen:
             s"Peak ${Display.peak(pk.bacMgDl, unit)} at ${TimeFormat.hhmm(pk.at)}")),
         t.summary.backToZeroBy.map(b =>
           div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2", s"Back to ~0 by ${TimeFormat.hhmm(b)}"))),
+      s.map(night => endNight(app, night, now)),
       Option.when(t.impairment == Impairment.TakeCare)(takeCare)
     )
+
+  /** Offered only once the estimate is back to ~0 (Sessions.canEnd), so a new night never hides alcohol still in the blood. */
+  private def endNight(app: AppState, night: Session, now: Instant): Resource[IO, HtmlElement[IO]] =
+    div(app.persisted.map(_.profile.exists(Sessions.canEnd(_, night, now))).changes.map {
+      case false => div(())
+      case true =>
+        div(cls := "mt-3 flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3 py-2",
+          span(cls := "text-dim", "Back to ~0."),
+          button(cls := "min-h-12 rounded-xl px-3 font-semibold text-ice",
+            onClick --> (_.foreach(_ => Now.instant.flatMap(app.endNight))), "End night"))
+    })
 
   private def takeCare: Resource[IO, HtmlElement[IO]] =
     div(
