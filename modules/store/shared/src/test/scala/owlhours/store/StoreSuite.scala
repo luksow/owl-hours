@@ -12,6 +12,7 @@ class StoreSuite extends munit.FunSuite:
     def set(key: String, value: String) = SyncIO(data.update(key, value))
     def remove(key: String)             = SyncIO(data.remove(key)).void
     def available                       = SyncIO.pure(true)
+    def keys                            = SyncIO(data.keys.toList)
 
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val profile = Profile(Sex.Female, LocalDate.of(1997, 1, 1), BodyWeight(64.5), Height(168))
@@ -78,6 +79,7 @@ class StoreSuite extends munit.FunSuite:
       def set(key: String, value: String) = SyncIO.unit
       def remove(key: String)             = SyncIO.unit
       def available                       = SyncIO.pure(false)
+      def keys                            = SyncIO.pure(Nil)
     val loaded = Store(blocked).load.unsafeRunSync()
     assertEquals(loaded.problems, List(Store.StorageUnavailable))
   }
@@ -126,4 +128,10 @@ class StoreSuite extends munit.FunSuite:
     assertEquals(loaded.persisted.settings, Settings(BacUnit.MgPer100ml, StandardDrink.Grams10))
     store.saveSettings(Settings(BacUnit.Permille, StandardDrink.Grams14)).unsafeRunSync()
     assertEquals(store.load.unsafeRunSync().persisted.settings, Settings(BacUnit.Permille, StandardDrink.Grams14))
+  }
+
+  test("clear removes every Owl Hours key, recovery copies included, and nothing else") {
+    val kv = Memory("oh.v1.profile" -> "{}", "oh.recovery.oh.v1.sessions.1" -> "[", "other.app" -> "x")
+    Store(kv).clear.unsafeRunSync()
+    assertEquals(kv.data.keySet.toSet, Set("other.app"))
   }

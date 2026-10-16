@@ -16,6 +16,9 @@ trait KeyValue[F[_]]:
   /** False when storage is blocked (private mode, disabled site data); nothing will survive a reload. */
   def available: F[Boolean]
 
+  /** Every key currently stored (for deleting all of ours). */
+  def keys: F[List[String]]
+
 final case class Persisted(disclaimerAccepted: Boolean, profile: Option[Profile], settings: Settings, sessions: Vector[Session])
 
 object Persisted:
@@ -49,6 +52,9 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
   def saveProfile(p: Profile): F[Unit]          = kv.set(Keys.profile, Codecs.profileCodec(p).noSpaces)
   def saveSettings(s: Settings): F[Unit]        = kv.set(Keys.settings, Codecs.settingsCodec(s).noSpaces)
   def saveSessions(ss: Vector[Session]): F[Unit] = kv.set(Keys.sessions, Codecs.sessionsCodec(ss).noSpaces)
+
+  /** Deletes everything Owl Hours stored on this device, recovery copies included. */
+  def clear: F[Unit] = kv.keys.flatMap(_.filter(_.startsWith("oh.")).traverse_(kv.remove))
 
   /** Every key at once (undo of a whole-state change, import). */
   def saveAll(p: Persisted): F[Unit] =

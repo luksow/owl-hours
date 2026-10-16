@@ -63,6 +63,14 @@ final class AppState(
   def updateSettings(f: Settings => Settings): IO[Unit] =
     lock.lock.surround(persisted.updateAndGet(x => x.copy(settings = f(x.settings))).flatMap(x => store.saveSettings(x.settings)))
 
+  /** Replaces everything with a backup's contents, regrouped with its profile; Undo puts the previous data back. */
+  def importBackup(next: Persisted): IO[Unit] =
+    undoable("Data imported")(cur => next.profile.fold(cur)(p => next.copy(sessions = Sessions.regroupAll(p, next.sessions))))
+
+  /** Not undoable on purpose: people who delete their data expect it gone. */
+  def deleteEverything: IO[Unit] =
+    undo.set(None) *> lock.lock.surround(store.clear *> persisted.set(Persisted.empty)) *> go(Route.Tonight)
+
   def addIntake(i: Intake): IO[Unit] = updateSessions((p, ss) => Sessions.add(p, ss, i)) *> undo.set(None)
 
   def replaceIntake(old: Intake, updated: Intake): IO[Unit] =

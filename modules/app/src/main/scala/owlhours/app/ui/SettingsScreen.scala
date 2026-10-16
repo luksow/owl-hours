@@ -2,10 +2,14 @@ package owlhours.app.ui
 
 import calico.html.io.{*, given}
 import cats.effect.{IO, Resource}
+import cats.syntax.all.*
+import fs2.concurrent.SignallingRef
 import fs2.dom.HtmlElement
 import owlhours.app.{AppState, Route}
 import owlhours.app.logic.Display
+import owlhours.app.platform.{Files, LocalDateTime, Now}
 import owlhours.domain.*
+import owlhours.store.Backup
 
 object SettingsScreen:
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
@@ -23,7 +27,49 @@ object SettingsScreen:
           p(cls := "text-sm text-dim", "Used to count standard drinks in History."),
           choice("Standard drink", StandardDrink.values.toList.map(s => s -> Display.standardDrinkName(s)), p0.settings.standardDrink,
             s => app.updateSettings(_.copy(standardDrink = s)))),
+        Screen.section("Your data")(data(app)),
         Screen.makersPlate
+      )
+    }
+
+  private val Wide = "min-h-12 w-full rounded-xl border border-line bg-surface px-3 font-semibold"
+
+  private def data(app: AppState): Resource[IO, HtmlElement[IO]] =
+    (SignallingRef[IO].of(List.empty[String]), SignallingRef[IO].of(false)).tupled.toResource.flatMap { (errors, confirming) =>
+      div(
+        cls := "space-y-3",
+        p(cls := "text-sm text-dim", "Everything stays on this device. A backup is a file you keep; importing one replaces what is here."),
+        button(cls := Wide,
+          onClick --> (_.foreach(_ =>
+            (app.persisted.get, Now.instant).flatMapN((p, now) =>
+              Files.download(s"owl-hours-${LocalDateTime.format(now).take(10)}.json", Backup.encode(p, now))))),
+          "Export all data"),
+        label(cls := s"$Wide flex items-center justify-center",
+          span("Import a backup"),
+          input.withSelf { self =>
+            (typ := "file", cls := "sr-only",
+              onChange --> (_.foreach(_ => Files.read(self).flatMap {
+                case None => IO.unit
+                case Some(text) =>
+                  Backup.decode(text) match
+                    case Left(e)     => errors.set(List(e))
+                    case Right(next) => errors.set(Nil) *> app.importBackup(next)
+              })))
+          }),
+        Sheet.errors(errors),
+        div(confirming.map {
+          case false =>
+            button(cls := "min-h-12 w-full rounded-xl border border-warn/60 bg-surface px-3 font-semibold text-warn",
+              onClick --> (_.foreach(_ => confirming.set(true))), "Delete all data")
+          case true =>
+            div(cls := "space-y-3 rounded-xl border border-warn/60 bg-surface-2 p-3",
+              p("This deletes your profile, settings and every night on this device. It can't be undone."),
+              div(cls := "flex gap-2",
+                button(cls := "min-h-12 flex-1 rounded-xl border border-line", onClick --> (_.foreach(_ => confirming.set(false))),
+                  "Keep my data"),
+                button(cls := "min-h-12 flex-1 rounded-xl border border-warn font-bold text-warn",
+                  onClick --> (_.foreach(_ => app.deleteEverything)), "Delete everything")))
+        })
       )
     }
 

@@ -26,7 +26,7 @@ test("an invalid profile is not saved and says why", async ({ page }) => {
   await page.goto("/#/settings");
   await page.getByLabel("Weight (kg)").fill("abc");
   await page.getByRole("button", { name: "Save profile" }).click();
-  await expect(page.getByRole("alert")).toContainText("Weight must be a number");
+  await expect(page.getByRole("alert").first()).toContainText("Weight must be a number"); // the profile form's alert comes before Your data's
   expect((await read(page, "oh.v1.profile")).weight).toBe(80);
 });
 
