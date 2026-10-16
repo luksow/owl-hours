@@ -9,7 +9,7 @@ import fs2.concurrent.{Signal, SignallingRef}
 import fs2.dom.HtmlElement
 import java.time.Instant
 import owlhours.app.{AppState, Route}
-import owlhours.app.logic.{Amount, ChartSvg, Display, Durations, Edits, RecipeEdit, WhatIf}
+import owlhours.app.logic.{Amount, ChartSvg, Display, Durations, Edits, RecipeEdit, Recompute, WhatIf}
 import owlhours.app.platform.{Now, TimeFormat}
 import owlhours.catalogue.*
 import owlhours.domain.*
@@ -130,55 +130,59 @@ object AddDrinkSheet:
         case _ => div(())
       val submit =
         (amount.get, duration.get, when.get, abv.get, readIngredients).flatMapN((a, d, w, x, ing) => add(app, entry, x, a, d, w, ing, errors))
-      // Recomputed after 300 ms of quiet; cancelled with the sheet. Invalid input clears the preview.
+      // At most once per 300 ms, with the latest input; cancelled with the sheet. Invalid input or a failure clears it.
       val previewLoop: Resource[IO, Unit] =
-        (List(amount.discrete.void, duration.discrete.void, when.discrete.void, abv.discrete.void, perIngredient.discrete.void) ++
-          ingredients.map(_.discrete.void))
-          .reduce(_ merge _)
-          .debounce(300.millis)
-          .evalMap { _ =>
-            (app.persisted.get, Now.instant, amount.get, duration.get, when.get, abv.get, readIngredients).flatMapN { (p, now, a, d, w, x, ing) =>
-              preview.set(for
-                profile <- p.profile
-                drink   <- candidate(entry, x, a, d, w, ing, now).toOption
-              yield
-                val wi = WhatIf.of(profile, p.sessions, drink, now)
-                (ChartSvg.render(wi.tonight, now, wi.markers, TimeFormat.utcOffsetMinutes, TimeFormat.hhmm, wi.ghost,
-                  p0 => Display.gridLabel(p0.toInt, p.settings.bacUnit)),
-                  WhatIf.describe(wi, p.settings.bacUnit, TimeFormat.hhmm)))
-            }
+        Recompute.latest(
+          (List(amount.discrete.void, duration.discrete.void, when.discrete.void, abv.discrete.void, perIngredient.discrete.void) ++
+            ingredients.map(_.discrete.void)).reduce(_ merge _),
+          300.millis
+        ) {
+          (app.persisted.get, Now.instant, amount.get, duration.get, when.get, abv.get, readIngredients).mapN { (p, now, a, d, w, x, ing) =>
+            for
+              profile <- p.profile
+              drink   <- candidate(entry, x, a, d, w, ing, now).toOption
+            yield
+              val wi = WhatIf.of(profile, p.sessions, drink, now)
+              (ChartSvg.render(wi.tonight, now, wi.markers, TimeFormat.utcOffsetMinutes, TimeFormat.hhmm, wi.ghost,
+                p0 => Display.gridLabel(p0.toInt, p.settings.bacUnit), label = "Blood alcohol estimate with this drink"),
+                WhatIf.describe(wi, p.settings.bacUnit, TimeFormat.hhmm))
           }
-          .compile.drain.background.void
+        }.foreach(preview.set).compile.drain.background.void
       followSize *> previewLoop *> div(
         cls := "mt-4 space-y-4",
         h2(cls := "font-display text-4xl text-ice", entry.name),
         adjust,
         entry match
           case r: Recipe =>
-            div(perIngredient.map {
-              case false =>
-                div(
-                  Pickers.amountField("Amount (ml)", amount, presets),
-                  button(cls := "mt-2 min-h-12 rounded-xl border border-line bg-surface px-3",
-                    onClick --> (_.foreach(_ =>
+            div(
+              div(perIngredient.map {
+                case false => Pickers.amountField("Amount (ml)", amount, presets)
+                case true =>
+                  div(cls := "space-y-2", r.lines.zip(ingredients).map { (line, ref) =>
+                    label(cls := "block",
+                      span(cls := "block font-ui text-sm uppercase tracking-wider text-dim", s"${line.ingredient.name} (ml)"),
+                      input.withSelf { self =>
+                        (typ := "text", inputMode := "decimal", value <-- ref,
+                          cls := "mt-1 min-h-12 w-full rounded-xl border border-line bg-surface px-3 text-lg text-ink",
+                          onInput --> (_.foreach(_ => self.value.get.flatMap(ref.set))))
+                      })
+                  })
+              }),
+              button(cls := "mt-2 min-h-12 rounded-xl border border-line bg-surface px-3",
+                aria.expanded <-- perIngredient,
+                onClick --> (_.foreach(_ =>
+                  perIngredient.get.flatMap {
+                    case true => perIngredient.set(false)
+                    case false =>
                       // start from the amount chosen so far, scaled from the ×1 recipe
                       amount.get.flatMap { a =>
                         val base  = recipePresets(r).headOption.flatMap(_._2.toDoubleOption).getOrElse(1.0)
                         val scale = Amount.drinkMl(a).toOption.fold(1.0)(_.unwrap / base)
                         RecipeEdit.defaults(r, scale).zip(ingredients).traverse_((v, ref) => ref.set(v))
-                      } *> perIngredient.set(true))),
-                    "Adjust ingredients"))
-              case true =>
-                div(cls := "space-y-2", r.lines.zip(ingredients).map { (line, ref) =>
-                  label(cls := "block",
-                    span(cls := "block font-ui text-sm uppercase tracking-wider text-dim", s"${line.ingredient.name} (ml)"),
-                    input.withSelf { self =>
-                      (typ := "text", inputMode := "decimal", value <-- ref,
-                        cls := "mt-1 min-h-12 w-full rounded-xl border border-line bg-surface px-3 text-lg text-ink",
-                        onInput --> (_.foreach(_ => self.value.get.flatMap(ref.set))))
-                    })
-                })
-            })
+                      } *> perIngredient.set(true)
+                  })),
+                "Adjust ingredients")
+            )
           case _ => Pickers.amountField("Amount (ml)", amount, presets)
         ,
         Pickers.when(when),

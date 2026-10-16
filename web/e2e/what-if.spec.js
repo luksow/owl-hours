@@ -23,6 +23,7 @@ test("the preview shows the peak and back-to-~0 for the first drink", async ({ p
   await pickPils(page);
   const preview = page.getByTestId("what-if");
   await expect(preview.getByText(/^Peak \d\.\d\d‰ at \d\d:\d\d/)).toBeVisible();
+  await expect(preview.locator('svg[aria-label="Blood alcohol estimate with this drink"]')).toBeVisible();
   await expect(preview.locator("svg .oh-projection, svg .oh-past")).not.toHaveCount(0);
   await expect(preview).not.toContainText(/safe|fine|okay|one more|you can/i);
 });
