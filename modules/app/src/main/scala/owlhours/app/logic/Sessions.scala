@@ -11,8 +11,11 @@ import owlhours.model.Simulation
 object Sessions {
   val CloseAfter: Duration = Duration.ofHours(2)
 
-  /** `closesAt` looks at most a day past the last intake, so a night can close no later than this. */
-  private val LatestClose: Duration = Duration.ofHours(24).plus(CloseAfter)
+  /** How far `closesAt` looks past the last intake: as far as Tonight's longest window, so the two agree on ~0. */
+  private val Lookahead: Duration = Duration.ofHours(Tonight.Horizons.max)
+
+  /** So a night can close no later than this. */
+  private val LatestClose: Duration = Lookahead.plus(CloseAfter)
 
   def endOf(i: Intake): Instant = i match {
     case Intake.Drink(_, start, d) => start.plusSeconds(math.round(d.unwrap * 60))
@@ -25,7 +28,7 @@ object Sessions {
 
   private def ruleClose(p: Profile, s: Session): Instant = {
     val lastEnd   = s.intakes.map(endOf).maxBy(_.toEpochMilli)
-    val curve     = Simulation.simulate(p, s.intakes, s.startedAt, lastEnd.plusSeconds(24 * 3600), stepMinutes = 5)
+    val curve     = Simulation.simulate(p, s.intakes, s.startedAt, lastEnd.plus(Lookahead), stepMinutes = 5)
     val lastAbove = curve.samples.findLast(_.bacMgDl >= Simulation.ZeroThresholdMgDl).map(_.at).getOrElse(lastEnd)
     later(lastAbove, lastEnd).plus(CloseAfter)
   }

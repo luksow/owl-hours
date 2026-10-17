@@ -123,4 +123,15 @@ class SessionsSuite extends munit.FunSuite {
     assertEquals(nights(moved), Vector(Vector(at(0), at(225), at(250))))
     assertEquals(moved.map(_.endedAt), Vector(None))
   }
+
+  test("a night still above ~0 a day after its last drink stays open until two hours after Tonight's back-to time") {
+    val shot    = DrinkSnapshot(None, "Vodka", Millilitres(40), Abv(40), KcalPerLitre(2210), Nil)
+    val session = Session(SessionId("x"), at(0), Vector.tabulate(22)(k => Intake.Drink(shot, at(k * 6L), Minutes(2))))
+    val lastEnd = session.intakes.map(Sessions.endOf).maxBy(_.toEpochMilli)
+    val backTo  = Tonight.of(profile, Some(session), at(300)).summary.backToZeroBy.get
+    assert(backTo.isAfter(lastEnd.plusSeconds(24 * 3600)), s"the fixture must outlast a day: $backTo")
+    // the close rule samples every 5 min and Tonight every 2, so they may differ by one 5-min step
+    assert(!Sessions.closesAt(profile, session).isBefore(backTo.plus(Sessions.CloseAfter).minusSeconds(5 * 60)),
+      s"${Sessions.closesAt(profile, session)} vs back-to $backTo")
+  }
 }
