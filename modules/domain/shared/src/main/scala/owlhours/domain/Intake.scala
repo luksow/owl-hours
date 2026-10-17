@@ -11,8 +11,13 @@ final case class DrinkSnapshot(
     volume: Millilitres,
     abv: Abv,
     kcalPerLitre: KcalPerLitre,
-    components: List[ComponentLine]
+    components: List[ComponentLine],
+    /** Ice melt a mixed drink gains (catalogue `Method`), included in `volume`; absent in data saved before Plan 8. */
+    meltWater: Option[Millilitres] = None
 ):
+  /** What was poured: the volume the person sees and edits; melt water is added on top for the model (spec §9). */
+  def poured: Millilitres = meltWater.fold(volume)(m => Millilitres.from(volume.unwrap - m.unwrap).getOrElse(volume))
+
   def ethanolGrams: Double = volume.unwrap * abv.unwrap / 100.0 * DrinkSnapshot.EthanolDensity
 
   /** Energy other than the ethanol's own (sugars, dextrins…), kcal/L: what the model's gastric brake responds to. */

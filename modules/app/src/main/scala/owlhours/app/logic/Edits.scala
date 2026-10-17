@@ -12,7 +12,12 @@ object Edits:
     val k = volume.unwrap / s.volume.unwrap
     // a component can never exceed the drink; clamping also absorbs floating-point overshoot at the 5000 ml limit
     s.copy(volume = volume, components = s.components.map(c =>
-      c.copy(volume = Millilitres.from(math.min(c.volume.unwrap * k, volume.unwrap)).getOrElse(volume))))
+      c.copy(volume = Millilitres.from(math.min(c.volume.unwrap * k, volume.unwrap)).getOrElse(volume))),
+      meltWater = s.meltWater.flatMap(m => Millilitres.from(m.unwrap * k).toOption))
+
+  /** Scales the whole drink so that its poured volume (what the person sees) is `poured`; melt water follows. */
+  def rescalePoured(s: DrinkSnapshot, poured: Millilitres): DrinkSnapshot =
+    Millilitres.from(s.volume.unwrap * poured.unwrap / s.poured.unwrap).fold(_ => s, rescale(s, _))
 
   /** How far a logged drink's ABV may be edited; `None` means it is fixed (a product with a set ABV, or a cocktail). */
   def abvRange(entry: Option[Entry]): Option[(Abv, Abv)] = entry match
@@ -35,7 +40,8 @@ object Edits:
 
   def apply(i: Intake, e: IntakeEdit): Either[String, Intake] = i match
     case Intake.Drink(snapshot, _, duration) =>
-      val scaled = e.volume.fold(snapshot)(rescale(snapshot, _))
+      // a drink's edited volume is the poured volume, as Log shows it
+      val scaled = e.volume.fold(snapshot)(rescalePoured(snapshot, _))
       e.abv.fold(Right(scaled))(withAbv(scaled, _)).map(s => Intake.Drink(s, e.start, e.duration.getOrElse(duration)))
     case Intake.Water(volume, _, duration) =>
       Right(Intake.Water(e.volume.getOrElse(volume), e.start, e.duration.getOrElse(duration)))

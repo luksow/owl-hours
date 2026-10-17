@@ -73,7 +73,11 @@ object Display:
     case StandardDrink.Grams8  => "8 g — UK unit"
     case StandardDrink.Grams14 => "14 g — US"
 
+  /** The read-only note under a cocktail's amount (spec §9); `method` reads like "built over ice". */
+  def meltNote(s: DrinkSnapshot, method: String): Option[String] =
+    s.meltWater.map(m => s"+ ${Format.number(math.round(m.unwrap * 10) / 10.0)} ml melt water ($method), included in the strength")
+
   def intake(i: Intake): String = i match
-    case Intake.Drink(s, _, d) => s"${s.name} · ${Format.number(s.volume.unwrap)} ml · ${Format.number(s.abv.unwrap)} % · ${Format.number(d.unwrap)} min"
+    case Intake.Drink(s, _, d) => s"${s.name} · ${Format.number(math.round(s.poured.unwrap * 10) / 10.0)} ml · ${Format.number(s.abv.unwrap)} % · ${Format.number(d.unwrap)} min"
     case Intake.Water(v, _, d) => s"Water · ${Format.number(v.unwrap)} ml · ${Format.number(d.unwrap)} min"
     case Intake.Meal(k, _)     => s"Food · ${Format.number(k.unwrap)} kcal"

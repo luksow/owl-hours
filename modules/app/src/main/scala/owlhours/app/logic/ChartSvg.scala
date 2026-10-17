@@ -13,7 +13,7 @@ object Marker:
   def of(intakes: Seq[Intake]): List[Marker] = intakes.toList.map {
     case d: Intake.Drink =>
       val kind =
-        if d.snapshot.volume.unwrap >= 250 then MarkerKind.Beer
+        if d.snapshot.poured.unwrap >= 250 then MarkerKind.Beer
         else if d.snapshot.abv.unwrap >= 25 then MarkerKind.Shot
         else MarkerKind.Wine
       Marker(d.start, kind)

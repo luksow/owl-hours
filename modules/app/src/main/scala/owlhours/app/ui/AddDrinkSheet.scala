@@ -81,7 +81,7 @@ object AddDrinkSheet:
   /** Recipes: the ×1 volume and the amount presets as (label, ml text, strength). */
   private def recipePresets(r: Recipe): List[(String, String, Double)] =
     Resolve(Choice.OfRecipe(r)).toOption.toList.flatMap { base =>
-      List(1.0 -> "×1", 1.5 -> "×1.5", 2.0 -> "×2").map((k, t) => (t, ml(base.volume.unwrap * k), k))
+      List(1.0 -> "×1", 1.5 -> "×1.5", 2.0 -> "×2").map((k, t) => (t, ml(base.poured.unwrap * k), k))
     }
 
   private def ml(x: Double): String = Format.number(math.round(x * 10) / 10.0)
@@ -156,6 +156,7 @@ object AddDrinkSheet:
         entry match
           case r: Recipe =>
             div(
+              meltNote(r, amount, perIngredient, ingredients),
               div(perIngredient.map {
                 case false => Pickers.amountField("Amount (ml)", amount, presets)
                 case true =>
@@ -202,6 +203,30 @@ object AddDrinkSheet:
       )
     }
 
+  /** A preset amount resolves at that strength exactly; any other amount scales the ×1 recipe so it pours `v`. */
+  private def recipeByAmount(r: Recipe, amount: String, v: Millilitres): Either[String, DrinkSnapshot] =
+    recipePresets(r).find(_._2 == amount.trim) match
+      case Some((_, _, k)) => Resolve(Choice.OfRecipe(r, strength = k))
+      case None            => Resolve(Choice.OfRecipe(r)).map(s => Edits.rescalePoured(s, v).copy(name = s"${r.name} (custom)"))
+
+  private def methodText(m: Method): String = m match
+    case Method.Built   => "built over ice"
+    case Method.Stirred => "stirred with ice"
+    case Method.Shaken  => "shaken with ice"
+    case Method.Blended => "blended with ice"
+    case Method.Neat    => "served without ice"
+
+  /** Spec §9: what the ice adds, under the amount; read-only, and nothing for drinks without melt water. */
+  private def meltNote(r: Recipe, amount: Signal[IO, String], perIngredient: Signal[IO, Boolean],
+      ingredients: List[Signal[IO, String]]): Resource[IO, HtmlElement[IO]] =
+    val note = (amount, perIngredient, ingredients.sequence).mapN { (a, per, ing) =>
+      val snapshot =
+        if per then RecipeEdit.resolve(r, ing).toOption
+        else Amount.drinkMl(a).toOption.flatMap(v => recipeByAmount(r, a, v).toOption)
+      snapshot.flatMap(Display.meltNote(_, methodText(r.method))).getOrElse("")
+    }
+    p(cls := "mt-1 text-sm text-dim", note)
+
   /** `ingredients`: per-ingredient amounts when the person adjusted a cocktail line by line (the amount is then ignored). */
   private def candidate(entry: Entry, abv: Option[Double], amount: String, duration: String, when: When,
       ingredients: Option[List[String]], now: Instant): EitherNel[String, Intake.Drink] =
@@ -212,11 +237,7 @@ object AddDrinkSheet:
       (entry match
         case s: Style   => Abv.from(abv.getOrElse(s.abv.unwrap)).flatMap(a => Resolve(Choice.OfStyle(s, a, v)))
         case p: Product => Resolve(Choice.OfProduct(p, v))
-        case r: Recipe  =>
-          // A preset amount resolves at that strength exactly; any other amount scales the ×1 recipe proportionally.
-          recipePresets(r).find(_._2 == amount.trim) match
-            case Some((_, _, k)) => Resolve(Choice.OfRecipe(r, strength = k))
-            case None            => Resolve(Choice.OfRecipe(r)).map(s => Edits.rescale(s, v).copy(name = s"${r.name} (custom)"))
+        case r: Recipe  => recipeByAmount(r, amount, v)
       ).toEitherNel
     }
     val snapshot: EitherNel[String, DrinkSnapshot] = (entry, ingredients) match

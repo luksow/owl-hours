@@ -137,3 +137,15 @@ test("Adjust ingredients opens and closes, and closing goes back to the amount",
   await page.getByRole("button", { name: "Add", exact: true }).click();
   expect((await stored(page))[0].intakes[0].snapshot.name).not.toContain("custom");
 });
+
+test("a Negroni shows its poured 90 ml, with the melt water as a note", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("oh.v1.disclaimer", "true");
+    localStorage.setItem("oh.v1.profile", JSON.stringify({ sex: "Female", born: "1995-05-05", weight: 64, height: 168 }));
+  });
+  await page.goto("/#/add");
+  await page.getByPlaceholder(/Search/).fill("negroni");
+  await page.getByRole("button", { name: /^Negroni/ }).first().click();
+  await expect(page.getByLabel("Amount (ml)")).toHaveValue("90");
+  await expect(page.getByText("+ 9 ml melt water (built over ice), included in the strength")).toBeVisible();
+});

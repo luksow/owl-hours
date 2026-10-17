@@ -98,3 +98,13 @@ class ResolveSuite extends munit.FunSuite:
       Left("Strength must be between ×0.75 and ×2, got ×NaN"))
   }
 
+  test("a built Negroni pours 90 ml; 9 ml of melt water is added for the model, not to the alcohol") {
+    val s = ok(Choice.OfRecipe(negroni))
+    assertEqualsDouble(s.poured.unwrap, 90.0, 1e-9)
+    assertEqualsDouble(s.meltWater.get.unwrap, 9.0, 1e-9)
+    assertEqualsDouble(s.volume.unwrap, 99.0, 1e-9)
+    val undiluted = ok(Choice.OfRecipe(negroni, dilution = false))
+    assertEqualsDouble(s.ethanolGrams, undiluted.ethanolGrams, 1e-9)
+    assertEquals(undiluted.meltWater, None)
+    assertEquals(undiluted.poured, undiluted.volume)
+  }

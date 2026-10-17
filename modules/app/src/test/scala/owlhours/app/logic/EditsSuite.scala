@@ -76,3 +76,23 @@ class EditsSuite extends munit.FunSuite:
     assertEquals(Edits.abvRange(None), Some((Abv(0), Abv(100))))
     assertEquals(Edits.checkAbv(Abv(7), (Abv(4), Abv(6)), "Pale lager"), Left("ABV for Pale lager must be between 4 and 6 %, got 7"))
   }
+
+  test("editing a cocktail's poured volume scales its melt water with it; the strength is unchanged") {
+    val s = negroni.copy(meltWater = Some(Millilitres(9)))
+    val e = Edits.rescalePoured(s, Millilitres(135))
+    assertEqualsDouble(e.poured.unwrap, 135.0, 1e-9)
+    assertEqualsDouble(e.meltWater.get.unwrap, 13.5, 1e-9)
+    assertEquals(e.abv, s.abv)
+  }
+
+  test("a drink without melt water rescales as before") {
+    assertEquals(Edits.rescalePoured(lager, Millilitres(330)), Edits.rescale(lager, Millilitres(330)))
+  }
+
+  test("review focus: a drink saved before melt water existed edits and saves without gaining any") {
+    val old  = Intake.Drink(negroni, t0, Minutes(20))
+    val edit = IntakeEdit(t0, None, Some(Millilitres(99)), None, None)
+    val e    = Edits(old, edit).toOption.get.asInstanceOf[Intake.Drink]
+    assertEquals(e.snapshot.meltWater, None)
+    assertEqualsDouble(e.snapshot.ethanolGrams, negroni.ethanolGrams, 1e-9)
+  }

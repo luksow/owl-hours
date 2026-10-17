@@ -146,3 +146,17 @@ class StoreSuite extends munit.FunSuite:
     store.clear.unsafeRunSync()
     assertEquals(store.loadInstallHintDismissed.unsafeRunSync(), false)
   }
+
+  test("a snapshot saved before melt water existed loads with none; a new one round-trips its melt water") {
+    val old = """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[{"type":"drink","snapshot":""" +
+      """{"catalogueId":"negroni","name":"Negroni","volume":99,"abv":24.5,"kcalPerLitre":1839.4,"components":[]},""" +
+      """"start":"2026-10-14T20:10:00Z","duration":20}]}]"""
+    val loaded = Store(Memory("oh.v1.sessions" -> old)).load.unsafeRunSync()
+    assertEquals(loaded.problems, Nil)
+    val drink = loaded.persisted.sessions.head.intakes.head.asInstanceOf[Intake.Drink]
+    assertEquals(drink.snapshot.meltWater, None)
+    val withMelt = drink.copy(snapshot = drink.snapshot.copy(meltWater = Some(Millilitres(9))))
+    val kv = Memory()
+    Store(kv).saveSessions(Vector(Session(SessionId("s-1"), t0, Vector(withMelt)))).unsafeRunSync()
+    assertEquals(Store(kv).load.unsafeRunSync().persisted.sessions.head.intakes.head, withMelt)
+  }

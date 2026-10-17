@@ -64,7 +64,7 @@ object LogScreen:
       case _                     => None
     val (volume0, duration0, abv0, kcal0) = intake match
       case Intake.Drink(s, _, d) =>
-        (Some(s.volume.unwrap), Some(d.unwrap), Option.when(s.components.isEmpty && abvLimits.isDefined)(s.abv.unwrap), None)
+        (Some(math.round(s.poured.unwrap * 10) / 10.0), Some(d.unwrap), Option.when(s.components.isEmpty && abvLimits.isDefined)(s.abv.unwrap), None)
       case Intake.Water(v, _, d) => (Some(v.unwrap), Some(d.unwrap), None, None)
       case Intake.Meal(k, _)     => (None, None, None, Some(k.unwrap))
     (

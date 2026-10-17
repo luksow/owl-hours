@@ -66,3 +66,10 @@ class DisplaySuite extends munit.FunSuite:
     val (n, u) = Display.bacParts(62.0, 0.0, BacUnit.PercentBac)
     assertEquals(n + u, Display.bac(62.0, 0.0, BacUnit.PercentBac))
   }
+
+  test("log lines show the poured volume; the melt note names the method") {
+    val s = DrinkSnapshot(None, "Negroni", Millilitres(99), Abv(24.5), KcalPerLitre(1839.4), Nil, Some(Millilitres(9)))
+    assert(Display.intake(Intake.Drink(s, at(0), Minutes(20))).contains("Negroni · 90 ml"))
+    assertEquals(Display.meltNote(s, "built over ice"), Some("+ 9 ml melt water (built over ice), included in the strength"))
+    assertEquals(Display.meltNote(s.copy(meltWater = None), "built over ice"), None)
+  }

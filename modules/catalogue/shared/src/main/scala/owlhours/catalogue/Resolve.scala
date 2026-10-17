@@ -49,7 +49,8 @@ object Resolve:
           if volumes.isDefined then s"${recipe.name} (custom)"
           else if strength != 1.0 then s"${recipe.name} (×${Format.number(strength)})"
           else recipe.name
-        DrinkSnapshot(Some(recipe.id), name, volume, abv, density, components)
+        val melt = Option.when(totalMl - liquidMl > 0)(totalMl - liquidMl).flatMap(Millilitres.from(_).toOption)
+        DrinkSnapshot(Some(recipe.id), name, volume, abv, density, components, melt)
 
   private def amountsFor(recipe: Recipe, strength: Double, volumes: Option[List[Millilitres]]): Either[String, List[Double]] =
     volumes match
