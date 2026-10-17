@@ -17,7 +17,7 @@ Estimates only. Never use this app to decide whether you can drive.
   - `npm run lighthouse` — Lighthouse CI on `dist/` (needs Chrome: ``CHROME_PATH="$(node -e 'import("@playwright/test").then(m => console.log(m.chromium.executablePath()))')" npm run lighthouse``)
 - `cd reference && uv run python run_scenarios.py` — regenerate golden curves from the authors' Python model
 
-CI (`.github/workflows/ci.yml`) runs all of the above on every push and pull request. Deploys to GitHub Pages run from `main` once the repository variable `OH_DEPLOY` is `true`.
+CI (`.github/workflows/ci.yml`) runs all of the above on pushes to `main`, on pull requests and on demand. Deploys to GitHub Pages run from `main` once the repository variable `OH_DEPLOY` is `true`.
 
 ## Your data
 

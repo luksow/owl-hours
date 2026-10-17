@@ -56,11 +56,11 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]) {
   def saveSettings(s: Settings): F[Unit]        = kv.set(Keys.settings, Codecs.settingsCodec(s).noSpaces)
   def saveSessions(ss: Vector[Session]): F[Unit] = kv.set(Keys.sessions, Codecs.sessionsCodec(ss).noSpaces)
 
-  /** Deletes everything Owl Hours stored on this device, recovery copies included. */
   /** Not part of backups: it is about this browser, not the user's data. */
   def loadInstallHintDismissed: F[Boolean] = kv.get(Keys.installHint).map(_.contains("dismissed"))
   def saveInstallHintDismissed: F[Unit]    = kv.set(Keys.installHint, "dismissed")
 
+  /** Deletes everything Owl Hours stored on this device, recovery copies included. */
   def clear: F[Unit] = kv.keys.flatMap(_.filter(_.startsWith("oh.")).traverse_(kv.remove))
 
   /** Every key at once (undo of a whole-state change, import). */

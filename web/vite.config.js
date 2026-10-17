@@ -66,6 +66,8 @@ export default defineConfig({
       registerType: "prompt",
       injectRegister: false,
       includeAssets: ["owl.svg", "icon.svg", "favicon.ico", "apple-touch-icon-180x180.png"],
+      // manifest icons would otherwise be precached whatever globIgnores says; the small ones still match globPatterns
+      includeManifestIcons: false,
       manifest: {
         name: "Owl Hours",
         short_name: "Owl Hours",
@@ -84,7 +86,8 @@ export default defineConfig({
       },
       workbox: {
         // iOS fetches launch images while adding to the home screen and crawlers fetch the preview: not needed offline
-        globIgnores: ["**/splash/**", "**/og-image.png"],
+        // the 512 px icons (one file twice, as "any" and as "maskable") are fetched by the browser when it installs
+        globIgnores: ["**/splash/**", "**/og-image.png", "**/*512x512.png"],
         globPatterns: ["**/*.{js,css,html,json,woff,woff2,svg,png,ico,webmanifest}"],
         // Workbox silently skips files above 2 MiB; the Scala.js bundle is close to that, so leave headroom
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

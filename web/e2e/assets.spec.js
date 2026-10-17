@@ -77,3 +77,10 @@ test("splash screens and the social preview stay out of the offline precache", a
   expect(sw).not.toMatch(/apple-splash|og-image/);
   expect(sw).toMatch(/icon\.svg/);
 });
+
+test("the two identical 512 px install icons are not precached for every visitor", async ({ request }) => {
+  const sw = await (await request.get("/sw.js")).text();
+  expect(sw).not.toMatch(/512x512\.png/); // the browser fetches them itself when the app is installed
+  expect(sw).toMatch(/pwa-192x192\.png/);
+  expect((await request.get("/maskable-icon-512x512.png")).status()).toBe(200);
+});
