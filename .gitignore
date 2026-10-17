@@ -13,6 +13,8 @@ reference/__pycache__/
 web/node_modules/
 web/dist/
 web/dist-subpath/
+web/.lighthouseci/
+web/lighthouse/
 web/dev-dist/
 web/test-results/
 web/playwright-report/
