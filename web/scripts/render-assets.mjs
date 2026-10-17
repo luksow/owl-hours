@@ -4,6 +4,7 @@ import { chromium } from "@playwright/test";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { splashScreens, splashFile } from "../brand/splash-sizes.js";
 
 const web = path.resolve(import.meta.dirname, "..");
 const out = (f) => path.join(web, "public", f);
@@ -64,6 +65,10 @@ fs.writeFileSync(out("apple-touch-icon-180x180.png"), await frame("/public/icon.
 const favicons = [];
 for (const size of [16, 32, 48]) favicons.push({ size, png: await frame("/public/owl.svg", size) });
 fs.writeFileSync(out("favicon.ico"), ico(favicons));
+
+fs.writeFileSync(out("og-image.png"), await shoot("/brand/poster.html?kind=social", 1200, 630));
+fs.mkdirSync(out("splash"), { recursive: true });
+for (const s of splashScreens) fs.writeFileSync(out(splashFile(s)), await shoot("/brand/poster.html?kind=splash", s.w, s.h, s.r));
 
 await browser.close();
 server.close();

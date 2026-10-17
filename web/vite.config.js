@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import fs from "node:fs";
 import path from "node:path";
+import { splashScreens, splashFile, splashMedia } from "./brand/splash-sizes.js";
 
 const cataloguePath = path.resolve(import.meta.dirname, "../modules/catalogue/data/catalogue.json");
 
@@ -23,11 +24,25 @@ function catalogueAsset() {
   };
 }
 
+/** iOS launch images (spec §10): one <link> per iPhone screen, from the same list the renderer uses. */
+function iosSplash() {
+  return {
+    name: "owlhours-ios-splash",
+    transformIndexHtml: () =>
+      splashScreens.map((s) => ({
+        tag: "link",
+        attrs: { rel: "apple-touch-startup-image", href: splashFile(s), media: splashMedia(s) },
+        injectTo: "head",
+      })),
+  };
+}
+
 export default defineConfig({
   plugins: [
     scalaJSPlugin({ cwd: "..", projectID: "app" }),
     tailwindcss(),
     catalogueAsset(),
+    iosSplash(),
     VitePWA({
       registerType: "prompt",
       injectRegister: false,
@@ -49,6 +64,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // iOS fetches launch images while adding to the home screen and crawlers fetch the preview: not needed offline
+        globIgnores: ["**/splash/**", "**/og-image.png"],
         globPatterns: ["**/*.{js,css,html,json,woff,woff2,svg,png,ico,webmanifest}"],
         // Workbox silently skips files above 2 MiB; the Scala.js bundle is close to that, so leave headroom
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

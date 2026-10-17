@@ -50,3 +50,30 @@ test("the favicon, the app icon and the in-app lockup draw the same owl head", a
   expect(await headOf("/owl.svg")).toBe(inApp);
   expect(await headOf("/icon.svg")).toBe(inApp);
 });
+
+test("every iOS splash link matches its device exactly and points at an image of that size", async ({ page, request }) => {
+  await page.goto("/");
+  const links = await page.locator('link[rel="apple-touch-startup-image"]').evaluateAll((ls) =>
+    ls.map((l) => ({ href: l.getAttribute("href"), media: l.getAttribute("media") })));
+  expect(links.length).toBeGreaterThanOrEqual(10);
+  for (const { href, media } of links) {
+    const [, w, h, r] = media.match(/device-width: (\d+)px\) and \(device-height: (\d+)px\) and \(-webkit-device-pixel-ratio: (\d)\) and \(orientation: portrait\)/);
+    const res = await request.get(href);
+    expect(res.ok(), href).toBeTruthy();
+    expect(pngSize(await res.body()), href).toEqual([w * r, h * r]);
+  }
+});
+
+test("the social preview is 1200 × 630 and the page describes itself to link previews", async ({ page, request }) => {
+  expect(pngSize(await (await request.get("/og-image.png")).body())).toEqual([1200, 630]);
+  await page.goto("/");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Owl Hours");
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute("content", /never for driving decisions/);
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute("content", "summary_large_image");
+});
+
+test("splash screens and the social preview stay out of the offline precache", async ({ request }) => {
+  const sw = await (await request.get("/sw.js")).text();
+  expect(sw).not.toMatch(/apple-splash|og-image/);
+  expect(sw).toMatch(/icon\.svg/);
+});
