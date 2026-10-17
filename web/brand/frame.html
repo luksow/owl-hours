@@ -1,0 +1,11 @@
+<!doctype html>
+<meta charset="utf-8" />
+<style>html, body { margin: 0; background: transparent; } img { display: block; }</style>
+<img id="art" alt="" />
+<script>
+  const q = new URLSearchParams(location.search);
+  const img = document.getElementById("art");
+  img.width = Number(q.get("w"));
+  img.height = Number(q.get("h") ?? q.get("w"));
+  img.src = q.get("src");
+</script>

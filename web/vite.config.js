@@ -31,7 +31,7 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       injectRegister: false,
-      includeAssets: ["owl.svg", "favicon.ico", "apple-touch-icon-180x180.png"],
+      includeAssets: ["owl.svg", "icon.svg", "favicon.ico", "apple-touch-icon-180x180.png"],
       manifest: {
         name: "Owl Hours",
         short_name: "Owl Hours",
