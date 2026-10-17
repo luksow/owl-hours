@@ -21,8 +21,10 @@ class LocalDateTimeSuite extends munit.FunSuite {
   }
 
   test("the missing hour of a spring-forward night gets its own explanation (Europe/Warsaw)") {
-    assertEquals(LocalDateTime.parseDetailed("2026-03-29T02:30"),
-      Left("That time doesn't exist tonight: the clocks went forward"))
+    assertEquals(
+      LocalDateTime.parseDetailed("2026-03-29T02:30"),
+      Left("That time doesn't exist tonight: the clocks went forward")
+    )
     assertEquals(LocalDateTime.parseDetailed(""), Left("Pick a date and time"))
     assertEquals(LocalDateTime.parseDetailed("2026-03-29T03:30"), Right(Instant.parse("2026-03-29T01:30:00Z")))
   }

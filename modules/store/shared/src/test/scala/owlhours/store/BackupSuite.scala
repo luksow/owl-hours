@@ -6,8 +6,14 @@ import owlhours.domain.*
 class BackupSuite extends munit.FunSuite {
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val profile = Profile(Sex.Female, LocalDate.of(1997, 1, 1), BodyWeight(64.5), Height(168))
-  private val night   = Session(SessionId("night-1"), t0, Vector(Intake.Meal(Kcal(900), t0)), endedAt = Some(t0.plusSeconds(3600)))
-  private val all     = Persisted(disclaimerAccepted = true, Some(profile), Settings(BacUnit.MgPer100ml, StandardDrink.Grams8), Vector(night))
+  private val night =
+    Session(SessionId("night-1"), t0, Vector(Intake.Meal(Kcal(900), t0)), endedAt = Some(t0.plusSeconds(3600)))
+  private val all = Persisted(
+    disclaimerAccepted = true,
+    Some(profile),
+    Settings(BacUnit.MgPer100ml, StandardDrink.Grams8),
+    Vector(night)
+  )
 
   test("a backup reads back as the same data") {
     assertEquals(Backup.decode(Backup.encode(all, t0)), Right(all))

@@ -9,6 +9,7 @@ import Neon.*
  * dark. Motion classes are defined in web/main.css and respect prefers-reduced-motion.
  */
 object WattSvg {
+
   /** The lower part of an eye below a lid at `lidY`, plus the faint upper remainder. */
   private def lidEye(b: Bender, cx: Double, cy: Double, r: Double, lidY: Double, tube: Tube): Unit = {
     val dy    = lidY - cy
@@ -18,7 +19,8 @@ object WattSvg {
     b.add(s"M${n(cx - dx)},${n(lidY)} A${n(r)},${n(r)} 0 ${1 - large},1 ${n(cx + dx)},${n(lidY)}", tube, "watt-faint")
   }
 
-  private def star(x: Double, y: Double, s: Double): String = s"M${n(x)},${n(y - s)} V${n(y + s)} M${n(x - s)},${n(y)} H${n(x + s)}"
+  private def star(x: Double, y: Double, s: Double): String =
+    s"M${n(x)},${n(y - s)} V${n(y + s)} M${n(x - s)},${n(y)} H${n(x + s)}"
 
   private val Spiral =
     "M1.0,0.0 L1.2,0.2 L1.3,0.5 L1.4,0.9 L1.3,1.3 L1.2,1.7 L0.9,2.1 L0.5,2.4 L0.1,2.7 L-0.5,2.8 L-1.1,2.9 L-1.7,2.8 " +
@@ -53,61 +55,122 @@ object WattSvg {
 
   private def look(i: Impairment): Look = i match {
     case Impairment.Sober =>
-      Look(0, "watt-hum", Tube.Pink, Tube.Pink.glow, b =>
-        b.add(circ(82, 110, 15), Tube.Ice); b.add(circ(118, 110, 15), Tube.Ice)
-        b.add(circ(82, 110, 4), Tube.Ice); b.add(circ(118, 110, 4), Tube.Ice)
-        b.add("M93,124 L100,133 L107,124", Tube.Amber)
-        b.add(Tie, Tube.Amber))
+      Look(
+        0,
+        "watt-hum",
+        Tube.Pink,
+        Tube.Pink.glow,
+        b => {
+          b.add(circ(82, 110, 15), Tube.Ice); b.add(circ(118, 110, 15), Tube.Ice)
+          b.add(circ(82, 110, 4), Tube.Ice); b.add(circ(118, 110, 4), Tube.Ice)
+          b.add("M93,124 L100,133 L107,124", Tube.Amber)
+          b.add(Tie, Tube.Amber)
+        }
+      )
     case Impairment.WarmingUp =>
-      Look(0, "watt-hum", Tube.Pink, Tube.Pink.glow, b =>
-        b.add(circ(82, 110, 15), Tube.Ice); b.add(circ(118, 110, 15), Tube.Ice)
-        b.add(circ(84, 111, 4.8), Tube.Ice); b.add(circ(120, 111, 4.8), Tube.Ice)
-        b.add("M66,88 q12,-9 24,-3", Tube.Ice)
-        b.add("M92,124 Q100,137 108,124", Tube.Amber)
-        b.add(Tie, Tube.Amber)
-        b.add(star(160, 74, 5), Tube.Ice, "watt-twinkle"))
+      Look(
+        0,
+        "watt-hum",
+        Tube.Pink,
+        Tube.Pink.glow,
+        b => {
+          b.add(circ(82, 110, 15), Tube.Ice); b.add(circ(118, 110, 15), Tube.Ice)
+          b.add(circ(84, 111, 4.8), Tube.Ice); b.add(circ(120, 111, 4.8), Tube.Ice)
+          b.add("M66,88 q12,-9 24,-3", Tube.Ice)
+          b.add("M92,124 Q100,137 108,124", Tube.Amber)
+          b.add(Tie, Tube.Amber)
+          b.add(star(160, 74, 5), Tube.Ice, "watt-twinkle")
+        }
+      )
     case Impairment.Tipsy =>
-      Look(-6, "watt-hum", Tube.Pink, Tube.Pink.glow, wingL = "watt-flick1", draw = b =>
-        b.add(circ(82, 110, 15), Tube.Ice); b.add(circ(84, 112, 4.5), Tube.Ice)
-        lidEye(b, 118, 110, 15, 104, Tube.Ice); b.add(circ(119, 114, 4), Tube.Ice)
-        b.add("M91,124 Q100,139 109,124", Tube.Amber)
-        b.add(Tie, Tube.Amber, transform = "rotate(-9 100 146)")
-        b.add("M62,126 q7,5 14,0", Tube.Pink); b.add("M124,126 q7,5 14,0", Tube.Pink))
+      Look(
+        -6,
+        "watt-hum",
+        Tube.Pink,
+        Tube.Pink.glow,
+        wingL = "watt-flick1",
+        draw = b => {
+          b.add(circ(82, 110, 15), Tube.Ice); b.add(circ(84, 112, 4.5), Tube.Ice)
+          lidEye(b, 118, 110, 15, 104, Tube.Ice); b.add(circ(119, 114, 4), Tube.Ice)
+          b.add("M91,124 Q100,139 109,124", Tube.Amber)
+          b.add(Tie, Tube.Amber, transform = "rotate(-9 100 146)")
+          b.add("M62,126 q7,5 14,0", Tube.Pink); b.add("M124,126 q7,5 14,0", Tube.Pink)
+        }
+      )
     case Impairment.Buzzed =>
-      Look(8, "watt-jitter", Tube.Pink, Tube.Pink.glow, bellyCls = "watt-flick1", draw = b =>
-        lidEye(b, 82, 110, 15, 106, Tube.Ice); lidEye(b, 118, 110, 15, 106, Tube.Ice)
-        b.add(circ(80, 114, 4), Tube.Ice); b.add(circ(121, 113, 4), Tube.Ice)
-        b.add(circ(100, 131, 5.5), Tube.Amber)
-        b.add(Tie, Tube.Amber, transform = "rotate(18 100 146)")
-        b.add(Cheeks._1, Tube.Pink); b.add(Cheeks._2, Tube.Pink)
-        b.add(s"M160,64 v18 M160,64 l8,3 ${circ(157, 83, 3.5)}", Tube.Ice, "watt-bob")
-        b.add(s"M176,78 v14 M176,78 l7,3 ${circ(173.5, 93, 3)}", Tube.Ice, "watt-bob2"))
+      Look(
+        8,
+        "watt-jitter",
+        Tube.Pink,
+        Tube.Pink.glow,
+        bellyCls = "watt-flick1",
+        draw = b => {
+          lidEye(b, 82, 110, 15, 106, Tube.Ice); lidEye(b, 118, 110, 15, 106, Tube.Ice)
+          b.add(circ(80, 114, 4), Tube.Ice); b.add(circ(121, 113, 4), Tube.Ice)
+          b.add(circ(100, 131, 5.5), Tube.Amber)
+          b.add(Tie, Tube.Amber, transform = "rotate(18 100 146)")
+          b.add(Cheeks._1, Tube.Pink); b.add(Cheeks._2, Tube.Pink)
+          b.add(s"M160,64 v18 M160,64 l8,3 ${circ(157, 83, 3.5)}", Tube.Ice, "watt-bob")
+          b.add(s"M176,78 v14 M176,78 l7,3 ${circ(173.5, 93, 3)}", Tube.Ice, "watt-bob2")
+        }
+      )
     case Impairment.Drunk =>
-      Look(-10, "watt-sway", Tube.Pink, Tube.Pink.glow, bellyCls = "watt-flick2", wingL = "off", draw = b =>
-        b.add(Spiral, Tube.Ice, transform = "translate(82 110)")
-        b.add(Spiral, Tube.Ice, transform = "translate(118 110) scale(-1 1)")
-        b.add(circ(100, 132, 6.5), Tube.Amber)
-        b.add(s"M100,147 L90,141.5 L90,152.5 Z ${circ(100, 147, 2.2)} M100,147 L107,163", Tube.Amber, transform = "rotate(-12 100 147)")
-        b.add(Cheeks._1, Tube.Pink); b.add(Cheeks._2, Tube.Pink)
-        b.add(circ(121, 96, 2), Tube.Ice, "watt-rise"); b.add(circ(130, 86, 3), Tube.Ice, "watt-rise2")
-        b.add(circ(141, 74, 4), Tube.Ice, "watt-rise3"))
+      Look(
+        -10,
+        "watt-sway",
+        Tube.Pink,
+        Tube.Pink.glow,
+        bellyCls = "watt-flick2",
+        wingL = "off",
+        draw = b => {
+          b.add(Spiral, Tube.Ice, transform = "translate(82 110)")
+          b.add(Spiral, Tube.Ice, transform = "translate(118 110) scale(-1 1)")
+          b.add(circ(100, 132, 6.5), Tube.Amber)
+          b.add(
+            s"M100,147 L90,141.5 L90,152.5 Z ${circ(100, 147, 2.2)} M100,147 L107,163",
+            Tube.Amber,
+            transform = "rotate(-12 100 147)"
+          )
+          b.add(Cheeks._1, Tube.Pink); b.add(Cheeks._2, Tube.Pink)
+          b.add(circ(121, 96, 2), Tube.Ice, "watt-rise"); b.add(circ(130, 86, 3), Tube.Ice, "watt-rise2")
+          b.add(circ(141, 74, 4), Tube.Ice, "watt-rise3")
+        }
+      )
     case Impairment.Wobbly =>
-      Look(15, "watt-sway2", Tube.Warn, Tube.Warn.glow, bodyCls = "watt-flick3", bellyCls = "watt-flick2",
-        wingL = "watt-faint", wingR = "off", draw = b =>
+      Look(
+        15,
+        "watt-sway2",
+        Tube.Warn,
+        Tube.Warn.glow,
+        bodyCls = "watt-flick3",
+        bellyCls = "watt-flick2",
+        wingL = "watt-faint",
+        wingR = "off",
+        draw = b => {
           lidEye(b, 82, 110, 15, 114, Tube.Ice); lidEye(b, 118, 113, 15, 118, Tube.Ice)
           b.add(circ(80, 117.5, 2.5), Tube.Ice); b.add(circ(121, 121, 2.5), Tube.Ice)
           b.add("M92,127 q4,-5 8,0 q4,5 8,0", Tube.Amber)
           b.add(Tie, Tube.Amber, "off")
           b.add(star(48, 40, 5), Tube.Amber, "watt-twinkle"); b.add(star(100, 26, 4), Tube.Amber, "watt-twinkle2")
-          b.add(star(152, 46, 6), Tube.Amber, "watt-twinkle3"))
+          b.add(star(152, 46, 6), Tube.Amber, "watt-twinkle3")
+        }
+      )
     case Impairment.TakeCare =>
-      Look(0, "", Tube.White, Tube.White.glow, care = true, draw = b =>
-        b.add(circ(82, 111, 15), Tube.White); b.add(circ(118, 111, 15), Tube.White)
-        b.add(circ(82, 112, 5.5), Tube.White); b.add(circ(118, 112, 5.5), Tube.White)
-        b.add("M68,88 q10,-7 20,-3", Tube.White); b.add("M132,88 q-10,-7 -20,-3", Tube.White)
-        b.add("M94,125 L100,132 L106,125", Tube.White)
-        b.add(Tie, Tube.White)
-        b.add("M153,150 l3,24 h12 l3,-24 Z M156,161 h12", Tube.White)) // the glass of water
+      Look(
+        0,
+        "",
+        Tube.White,
+        Tube.White.glow,
+        care = true,
+        draw = b => {
+          b.add(circ(82, 111, 15), Tube.White); b.add(circ(118, 111, 15), Tube.White)
+          b.add(circ(82, 112, 5.5), Tube.White); b.add(circ(118, 112, 5.5), Tube.White)
+          b.add("M68,88 q10,-7 20,-3", Tube.White); b.add("M132,88 q-10,-7 -20,-3", Tube.White)
+          b.add("M94,125 L100,132 L106,125", Tube.White)
+          b.add(Tie, Tube.White)
+          b.add("M153,150 l3,24 h12 l3,-24 Z M156,161 h12", Tube.White)
+        }
+      ) // the glass of water
   }
 
   private val Defs =
@@ -138,10 +201,15 @@ object WattSvg {
       s"""<radialGradient id="watt-spill" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="${l.spill}" stop-opacity=".2"/>""" +
         s"""<stop offset="1" stop-color="${l.spill}" stop-opacity="0"/></radialGradient>"""
     val motion = if l.motion.isEmpty then "" else s""" class="${l.motion}""""
-    s"""<svg class="watt" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Watt the owl, ${Display.impairment(i)}">""" +
+    s"""<svg class="watt" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Watt the owl, ${Display
+        .impairment(i)}">""" +
       s"""<defs>$Defs$spill</defs>""" +
-      (if wall then """<rect width="200" height="220" fill="url(#watt-brick)"/><rect width="200" height="220" fill="url(#watt-vig)"/>""" else "") +
+      (if wall then
+         """<rect width="200" height="220" fill="url(#watt-brick)"/><rect width="200" height="220" fill="url(#watt-vig)"/>"""
+       else "") +
       s"""<ellipse cx="100" cy="124" rx="96" ry="100" fill="url(#watt-spill)"/>""" +
-      s"""<g transform="rotate(${l.tilt} 100 112)"><g$motion style="transform-origin:100px 112px">${b.out("watt-neon")}</g></g></svg>"""
+      s"""<g transform="rotate(${l.tilt} 100 112)"><g$motion style="transform-origin:100px 112px">${b.out(
+          "watt-neon"
+        )}</g></g></svg>"""
   }
 }

@@ -10,12 +10,13 @@ final class LocalDateTime private (date: LocalDate, secondOfDay: Int, nanos: Int
   def getDayOfMonth: Int     = date.getDayOfMonth
   def getHour: Int           = secondOfDay / 3600
   def getMinute: Int         = (secondOfDay / 60) % 60
-  def getSecond: Int         = secondOfDay % 60
+  def getSecond: Int         = secondOfDay        % 60
   def getNano: Int           = nanos
 
   override def equals(o: Any): Boolean = o match {
-    case d: LocalDateTime => d.toLocalDate == date && d.getHour * 3600 + d.getMinute * 60 + d.getSecond == secondOfDay && d.getNano == nanos
-    case _                => false
+    case d: LocalDateTime =>
+      d.toLocalDate == date && d.getHour * 3600 + d.getMinute * 60 + d.getSecond == secondOfDay && d.getNano == nanos
+    case _ => false
   }
   override def hashCode: Int = date.hashCode ^ (secondOfDay * 31 + nanos)
 }

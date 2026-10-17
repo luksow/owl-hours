@@ -2,7 +2,8 @@ import org.scalajs.linker.interface.{ModuleKind, ModuleSplitStyle}
 
 ThisBuild / scalaVersion := "3.3.8"
 ThisBuild / organization := "app.owlhours"
-ThisBuild / scalacOptions ++= Seq("-deprecation", "-feature", "-Wunused:imports")
+// braces only: indentation-based blocks do not compile (and .scalafmt.conf refuses them too)
+ThisBuild / scalacOptions ++= Seq("-deprecation", "-feature", "-Wunused:imports", "-no-indent")
 
 val V = new {
   val kebs            = "2.2.2"
@@ -24,11 +25,11 @@ lazy val domain = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("modules/domain"))
   .settings(
-    name := "owlhours-domain",
+    name                                   := "owlhours-domain",
     libraryDependencies += "pl.iterators" %%% "kebs-opaque" % V.kebs,
     testDeps
   )
-  // Scala.js gets a small java.time of its own (modules/domain/js), not scala-java-time: see learning note 06
+// Scala.js gets a small java.time of its own (modules/domain/js), not scala-java-time: see learning note 06
 
 lazy val model = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -75,7 +76,7 @@ lazy val app = project
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(domain.js, model.js, catalogue.js, store.js)
   .settings(
-    name := "owlhours-app",
+    name                            := "owlhours-app",
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
@@ -86,7 +87,8 @@ lazy val app = project
       .withModuleSplitStyle(ModuleSplitStyle.FewestModules)),
     // Time-zone tests (DST) run in a fixed zone; the code itself uses the browser's zone.
     Test / jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(
-      org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(Map("TZ" -> "Europe/Warsaw"))),
+      org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(Map("TZ" -> "Europe/Warsaw"))
+    ),
     libraryDependencies += "com.armanbilge" %%% "calico" % V.calico,
     testDeps
   )

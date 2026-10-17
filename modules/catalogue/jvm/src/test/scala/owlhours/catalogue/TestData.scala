@@ -10,5 +10,7 @@ object TestData {
   }
 
   lazy val catalogue: Catalogue =
-    Catalogue.fromJson(json).fold(e => throw AssertionError("catalogue.json does not load:\n" + e.toList.mkString("\n")), identity)
+    Catalogue
+      .fromJson(json)
+      .fold(e => throw AssertionError("catalogue.json does not load:\n" + e.toList.mkString("\n")), identity)
 }

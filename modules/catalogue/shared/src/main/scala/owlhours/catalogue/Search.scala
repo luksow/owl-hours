@@ -3,25 +3,65 @@ package owlhours.catalogue
 import owlhours.domain.CatalogueId
 
 object Search {
+
   /** Scala.js has no java.text.Normalizer, so diacritics are folded with an explicit table. */
   private val folds: Map[Char, String] = Map(
-    'à' -> "a", 'á' -> "a", 'â' -> "a", 'ã' -> "a", 'ä' -> "a", 'å' -> "a", 'ą' -> "a", 'æ' -> "ae",
-    'ç' -> "c", 'ć' -> "c", 'č' -> "c", 'ď' -> "d",
-    'è' -> "e", 'é' -> "e", 'ê' -> "e", 'ë' -> "e", 'ę' -> "e", 'ě' -> "e",
-    'ì' -> "i", 'í' -> "i", 'î' -> "i", 'ï' -> "i", 'ł' -> "l",
-    'ñ' -> "n", 'ń' -> "n", 'ň' -> "n",
-    'ò' -> "o", 'ó' -> "o", 'ô' -> "o", 'õ' -> "o", 'ö' -> "o", 'ø' -> "o", 'œ' -> "oe",
-    'ř' -> "r", 'ś' -> "s", 'š' -> "s", 'ß' -> "ss", 'ť' -> "t",
-    'ù' -> "u", 'ú' -> "u", 'û' -> "u", 'ü' -> "u", 'ů' -> "u",
-    'ý' -> "y", 'ÿ' -> "y", 'ź' -> "z", 'ż' -> "z", 'ž' -> "z"
+    'à' -> "a",
+    'á' -> "a",
+    'â' -> "a",
+    'ã' -> "a",
+    'ä' -> "a",
+    'å' -> "a",
+    'ą' -> "a",
+    'æ' -> "ae",
+    'ç' -> "c",
+    'ć' -> "c",
+    'č' -> "c",
+    'ď' -> "d",
+    'è' -> "e",
+    'é' -> "e",
+    'ê' -> "e",
+    'ë' -> "e",
+    'ę' -> "e",
+    'ě' -> "e",
+    'ì' -> "i",
+    'í' -> "i",
+    'î' -> "i",
+    'ï' -> "i",
+    'ł' -> "l",
+    'ñ' -> "n",
+    'ń' -> "n",
+    'ň' -> "n",
+    'ò' -> "o",
+    'ó' -> "o",
+    'ô' -> "o",
+    'õ' -> "o",
+    'ö' -> "o",
+    'ø' -> "o",
+    'œ' -> "oe",
+    'ř' -> "r",
+    'ś' -> "s",
+    'š' -> "s",
+    'ß' -> "ss",
+    'ť' -> "t",
+    'ù' -> "u",
+    'ú' -> "u",
+    'û' -> "u",
+    'ü' -> "u",
+    'ů' -> "u",
+    'ý' -> "y",
+    'ÿ' -> "y",
+    'ź' -> "z",
+    'ż' -> "z",
+    'ž' -> "z"
   )
 
   def normalize(s: String): String = {
     val folded = s.toLowerCase.flatMap {
-      case '&'                               => " and "
-      case c if folds.contains(c)            => folds(c)
-      case c if c.isLetterOrDigit            => c.toString
-      case _                                 => " "
+      case '&'                    => " and "
+      case c if folds.contains(c) => folds(c)
+      case c if c.isLetterOrDigit => c.toString
+      case _                      => " "
     }
     folded.split(' ').filter(_.nonEmpty).mkString(" ")
   }
@@ -36,9 +76,9 @@ object Search {
   }
 
   private def score(q: String, e: Entry): Int = {
-    val qWords = q.split(' ').toList
-    val name   = normalize(e.name)
-    val als    = e.aliases.map(normalize)
+    val qWords                 = q.split(' ').toList
+    val name                   = normalize(e.name)
+    val als                    = e.aliases.map(normalize)
     def wordsOf(c: String)     = c.split(' ').toList
     def prefixWords(c: String) = qWords.forall(w => wordsOf(c).exists(_.startsWith(w)))
     def nearWords(c: String) =

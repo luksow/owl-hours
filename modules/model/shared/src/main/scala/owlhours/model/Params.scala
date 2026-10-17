@@ -82,10 +82,18 @@ object Params {
    * Shown in the app as "typical person-to-person variation", never as a confidence interval.
    */
   def slowMetaboliser(p: Params): Params =
-    p.copy(vmaxADH1 = p.vmaxADH1 * 0.8, vmaxCYP2E1 = p.vmaxCYP2E1 * 0.8, kEtOHUptake = p.kEtOHUptake * 1.3,
-      vmaxGastric = p.vmaxGastric * 1.3)
+    p.copy(
+      vmaxADH1 = p.vmaxADH1 * 0.8,
+      vmaxCYP2E1 = p.vmaxCYP2E1 * 0.8,
+      kEtOHUptake = p.kEtOHUptake * 1.3,
+      vmaxGastric = p.vmaxGastric * 1.3
+    )
 
   def fastMetaboliser(p: Params): Params =
-    p.copy(vmaxADH1 = p.vmaxADH1 * 1.2, vmaxCYP2E1 = p.vmaxCYP2E1 * 1.2, kEtOHUptake = p.kEtOHUptake * 0.7,
-      vmaxGastric = p.vmaxGastric * 0.7)
+    p.copy(
+      vmaxADH1 = p.vmaxADH1 * 1.2,
+      vmaxCYP2E1 = p.vmaxCYP2E1 * 1.2,
+      kEtOHUptake = p.kEtOHUptake * 0.7,
+      vmaxGastric = p.vmaxGastric * 0.7
+    )
 }

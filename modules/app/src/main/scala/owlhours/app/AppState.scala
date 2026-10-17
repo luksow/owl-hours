@@ -72,20 +72,29 @@ final class AppState(
 
   /** From Settings: nights are regrouped, because when a night closes depends on the body. */
   def updateProfile(p: Profile): IO[Unit] =
-    lock.lock.surround(persisted.updateAndGet(x => x.copy(profile = Some(p), sessions = Sessions.regroupAll(p, x.sessions)))
-      .flatMap(x => store.saveProfile(p) *> store.saveSessions(x.sessions)))
+    lock.lock.surround(
+      persisted
+        .updateAndGet(x => x.copy(profile = Some(p), sessions = Sessions.regroupAll(p, x.sessions)))
+        .flatMap(x => store.saveProfile(p) *> store.saveSessions(x.sessions))
+    )
 
   def updateSettings(f: Settings => Settings): IO[Unit] =
-    lock.lock.surround(persisted.updateAndGet(x => x.copy(settings = f(x.settings))).flatMap(x => store.saveSettings(x.settings)))
+    lock.lock.surround(
+      persisted.updateAndGet(x => x.copy(settings = f(x.settings))).flatMap(x => store.saveSettings(x.settings))
+    )
 
   /** Replaces everything with a backup's contents, regrouped with its profile; Undo puts the previous data back. */
   def importBackup(next: Persisted): IO[Unit] =
-    undoable("Data imported")(cur => next.profile.fold(cur)(p => next.copy(sessions = Sessions.regroupAll(p, next.sessions)))) *>
+    undoable("Data imported")(cur =>
+      next.profile.fold(cur)(p => next.copy(sessions = Sessions.regroupAll(p, next.sessions)))
+    ) *>
       replaced.update(_ + 1)
 
   /** Not undoable on purpose: people who delete their data expect it gone. */
   def deleteEverything: IO[Unit] =
-    undo.set(None) *> lock.lock.surround(store.clear *> persisted.set(Persisted.empty) *> installDismissed.set(false)) *>
+    undo.set(None) *> lock.lock.surround(
+      store.clear *> persisted.set(Persisted.empty) *> installDismissed.set(false)
+    ) *>
       go(Route.Tonight)
 
   def addIntake(i: Intake): IO[Unit] = updateSessions((p, ss) => Sessions.add(p, ss, i)) *> undo.set(None)
@@ -93,13 +102,19 @@ final class AppState(
   def replaceIntake(old: Intake, updated: Intake): IO[Unit] =
     updateSessions((p, ss) => Sessions.replace(p, ss, old, updated)) *> undo.set(None)
 
-  def deleteIntake(old: Intake): IO[Unit] = undoable("Entry deleted")(withSessions((p, ss) => Sessions.delete(p, ss, old)))
+  def deleteIntake(old: Intake): IO[Unit] =
+    undoable("Entry deleted")(withSessions((p, ss) => Sessions.delete(p, ss, old)))
 
   def endNight(at: Instant): IO[Unit] = undoable("Night ended")(withSessions((p, ss) => Sessions.end(p, ss, at)))
 
   def undoLast: IO[Unit] =
-    undo.getAndSet(None).flatMap(_.traverse_(u =>
-      lock.lock.surround(persisted.set(u.before) *> store.saveAll(u.before)) *> replaced.update(_ + 1)))
+    undo
+      .getAndSet(None)
+      .flatMap(
+        _.traverse_(u =>
+          lock.lock.surround(persisted.set(u.before) *> store.saveAll(u.before)) *> replaced.update(_ + 1)
+        )
+      )
 
   /** A change that offers Undo. The snapshot is taken inside the lock, so it is exactly the state the change applied to. */
   private def undoable(message: String)(f: Persisted => Persisted): IO[Unit] =
@@ -145,7 +160,7 @@ object AppState {
       start <- Now.instant.toResource
       // tick every 30 s, and at once when the app is shown again (timers are paused while a phone sleeps)
       woken = fs2.dom.events[IO, dom.Event](dom.document, "visibilitychange").void
-      now <- Stream.awakeEvery[IO](30.seconds).void.merge(woken).evalMap(_ => Now.instant).holdResource(start)
+      now   <- Stream.awakeEvery[IO](30.seconds).void.merge(woken).evalMap(_ => Now.instant).holdResource(start)
       hash0 <- window.location.hash.get.toResource
       route <- fs2.dom
         .events[IO, dom.HashChangeEvent](dom.window, "hashchange")
@@ -153,11 +168,23 @@ object AppState {
         .map(Route.parse)
         .holdResource(Route.parse(hash0))
       // leaving a screen dismisses its undo bar
-      _ <- route.discrete.drop(1).foreach(_ => undo.set(None)).compile.drain.background
+      _         <- route.discrete.drop(1).foreach(_ => undo.set(None)).compile.drain.background
       dismissed <- store.loadInstallHintDismissed.flatMap(SignallingRef[IO].of).toResource
       install   <- Install.signal.map(_.map(InstallHint.of))
       lock      <- Mutex[IO].toResource
-    }
-    yield AppState(persisted, catalogue, problems, undo, replaced, now, route, install, dismissed, store, window, lock)
+    } yield AppState(
+      persisted,
+      catalogue,
+      problems,
+      undo,
+      replaced,
+      now,
+      route,
+      install,
+      dismissed,
+      store,
+      window,
+      lock
+    )
   }
 }

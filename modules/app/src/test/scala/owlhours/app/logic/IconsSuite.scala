@@ -21,8 +21,8 @@ class IconsSuite extends munit.FunSuite {
   }
 
   test("filter ids differ per icon and per tube, so two icons on one page never share a glow") {
-    val ids = for i <- List(Icon.Drink, Icon.Food); t <- List(Tube.Pink, Tube.Amber) yield
-      """<filter id="([^"]+)"""".r.findFirstMatchIn(Icons.svg(i, t, 24)).get.group(1)
+    val ids = for i <- List(Icon.Drink, Icon.Food); t <- List(Tube.Pink, Tube.Amber)
+    yield """<filter id="([^"]+)"""".r.findFirstMatchIn(Icons.svg(i, t, 24)).get.group(1)
     assertEquals(ids.distinct.size, 4)
   }
 }

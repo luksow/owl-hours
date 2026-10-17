@@ -22,8 +22,11 @@ object Onboarding {
       div(
         cls := card,
         div(cls := "mx-auto mb-6 w-full max-w-xs", InnerHtml(Signal.constant(BrandSvg.wordmark(lit = true)))),
-        h1(cls := "font-ui text-3xl font-semibold uppercase tracking-wide", "Before we start"),
-        p(cls := "mt-4", "Owl Hours estimates your blood alcohol from what you log, using a published physiological model."),
+        h1(cls  := "font-ui text-3xl font-semibold uppercase tracking-wide", "Before we start"),
+        p(
+          cls := "mt-4",
+          "Owl Hours estimates your blood alcohol from what you log, using a published physiological model."
+        ),
         ul(
           cls := "mt-3 list-disc space-y-1 pl-5 text-dim",
           li("It is an estimate, not a measurement. Real values vary from person to person."),
@@ -33,8 +36,11 @@ object Onboarding {
         label(
           cls := "mt-5 flex min-h-12 items-center gap-3",
           input.withSelf { self =>
-            (typ := "checkbox", cls := "size-6 accent-pink",
-              onChange --> (_.foreach(_ => self.checked.get.flatMap(understood.set))))
+            (
+              typ := "checkbox",
+              cls := "size-6 accent-pink",
+              onChange --> (_.foreach(_ => self.checked.get.flatMap(understood.set)))
+            )
           },
           span("I understand")
         ),
@@ -51,7 +57,10 @@ object Onboarding {
     div(
       cls := card,
       h1(cls := "font-ui text-3xl font-semibold uppercase tracking-wide", "About you"),
-      p(cls := "mt-2 text-dim", "The model uses these to size your blood, body water and liver. They stay on this device."),
+      p(
+        cls := "mt-2 text-dim",
+        "The model uses these to size your blood, body water and liver. They stay on this device."
+      ),
       ProfileFields(None, "Save", app.saveProfile)
     )
 }

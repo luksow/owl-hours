@@ -4,8 +4,14 @@ import java.time.Instant
 import owlhours.domain.*
 import owlhours.model.*
 
-final case class Tonight(projection: Projection, summary: Summary, impairment: Impairment, viewFrom: Instant, viewTo: Instant,
-    capped: Boolean)
+final case class Tonight(
+    projection: Projection,
+    summary: Summary,
+    impairment: Impairment,
+    viewFrom: Instant,
+    viewTo: Instant,
+    capped: Boolean
+)
 
 /** The simulated night; its window does not move with `now`, so it is recomputed only when the inputs change. */
 final case class Projected(projection: Projection, from: Instant, to: Instant, capped: Boolean)
@@ -30,7 +36,8 @@ object Tonight {
     }
     def backToZero(pr: Projected) = pr.projection.curve.samples.last.bacMgDl < Simulation.ZeroThresholdMgDl
     // windows are tried in order, so a light night pays for one
-    @annotation.tailrec def first(hs: List[Long]): Projected = {
+    @annotation.tailrec
+    def first(hs: List[Long]): Projected = {
       val pr = run(hs.head)
       if backToZero(pr) || hs.tail.isEmpty then pr else first(hs.tail)
     }
@@ -42,7 +49,9 @@ object Tonight {
   def at(pr: Projected, now: Instant): Tonight = {
     val minute  = truncate(now, 60)
     val summary = Summary.of(pr.projection.curve, now)
-    val viewTo  = summary.backToZeroBy.map(_.plusSeconds(30 * 60)).fold(minute.plusSeconds(3600))(later(_, minute.plusSeconds(3600)))
+    val viewTo = summary.backToZeroBy
+      .map(_.plusSeconds(30 * 60))
+      .fold(minute.plusSeconds(3600))(later(_, minute.plusSeconds(3600)))
     // a capped night is still above ~0 at the window's end, so its chart runs all the way there
     val end = if pr.capped || viewTo.isAfter(pr.to) then pr.to else viewTo
     Tonight(pr.projection, summary, Impairment.fromMgDl(summary.currentMgDl), pr.from, end, pr.capped)
@@ -51,5 +60,5 @@ object Tonight {
   def of(p: Profile, session: Option[Session], now: Instant): Tonight = at(project(p, session, now), now)
 
   private def truncate(t: Instant, seconds: Long): Instant = Instant.ofEpochSecond(t.getEpochSecond / seconds * seconds)
-  private def later(a: Instant, b: Instant): Instant = if a.isAfter(b) then a else b
+  private def later(a: Instant, b: Instant): Instant       = if a.isAfter(b) then a else b
 }

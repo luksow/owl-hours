@@ -8,6 +8,7 @@ Estimates only. Never use this app to decide whether you can drive.
 ## Develop
 
 - `sbt test` — Scala tests on the JVM and Node (domain, model, catalogue, store, app logic)
+- `sbt scalafmtAll` — formats the Scala code (braces only: `-no-indent` makes indentation-based blocks a compile error); CI runs `scalafmtCheckAll`
 - `cd web && npm install` once, then:
   - `npm run dev` with `sbt ~app/fastLinkJS` in a second terminal — live development
   - `npm run build && npm run preview` — production build (fails if the main bundle is over 400 KB gzipped) on http://localhost:4173

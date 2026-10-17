@@ -8,6 +8,7 @@ final case class Curve(samples: Vector[BacSample])
 final case class Projection(curve: Curve, low: Vector[Double], high: Vector[Double])
 
 object Simulation {
+
   /** "Back to ~0": 0.1 ‰. */
   val ZeroThresholdMgDl: Double = 0.1 * BacUnit.MgDlPerPermille
 
@@ -36,7 +37,14 @@ object Simulation {
     val leadSteps = math.ceil(leadMin / stepMinutes).toInt
     val origin    = from.minusSeconds(leadSteps.toLong * stepMinutes * 60)
     val result =
-      Engine.run(anthropometrics(profile, from), schedule(intakes, origin), 0.0, minutesBetween(origin, to), stepMinutes, params)
+      Engine.run(
+        anthropometrics(profile, from),
+        schedule(intakes, origin),
+        0.0,
+        minutesBetween(origin, to),
+        stepMinutes,
+        params
+      )
     Curve(
       (leadSteps until result.size).map { i =>
         val bac = result.bacMgDl(i)
@@ -52,12 +60,16 @@ object Simulation {
    * includes a classic Widmark estimate (never lower than the model runs).
    */
   def project(profile: Profile, intakes: Seq[Intake], from: Instant, to: Instant, stepMinutes: Int = 1): Projection = {
-    val base = simulate(profile, intakes, from, to, stepMinutes, Params.published)
-    val slow = simulate(profile, intakes, from, to, stepMinutes, Params.slowMetaboliser(Params.published))
-    val fast = simulate(profile, intakes, from, to, stepMinutes, Params.fastMetaboliser(Params.published))
-    val runs = Seq(base, slow, fast).map(_.samples.map(_.bacMgDl))
+    val base    = simulate(profile, intakes, from, to, stepMinutes, Params.published)
+    val slow    = simulate(profile, intakes, from, to, stepMinutes, Params.slowMetaboliser(Params.published))
+    val fast    = simulate(profile, intakes, from, to, stepMinutes, Params.fastMetaboliser(Params.published))
+    val runs    = Seq(base, slow, fast).map(_.samples.map(_.bacMgDl))
     val widmark = Widmark.curveMgDl(profile, intakes, base.samples.map(_.at))
-    Projection(base, runs.transpose.map(_.min).toVector, runs.transpose.map(_.max).zip(widmark).map((a, b) => math.max(a, b)).toVector)
+    Projection(
+      base,
+      runs.transpose.map(_.min).toVector,
+      runs.transpose.map(_.max).zip(widmark).map((a, b) => math.max(a, b)).toVector
+    )
   }
 
   /**
@@ -67,8 +79,13 @@ object Simulation {
   private[model] def schedule(intakes: Seq[Intake], origin: Instant): Schedule = {
     val drinks = intakes.collect {
       case Intake.Drink(s, start, dur) =>
-        DrinkInput(minutesBetween(origin, start), math.max(dur.unwrap, MinDrinkMinutes), s.volume.unwrap / 1000,
-          s.abv.unwrap, s.nonAlcoholKcalPerLitre)
+        DrinkInput(
+          minutesBetween(origin, start),
+          math.max(dur.unwrap, MinDrinkMinutes),
+          s.volume.unwrap / 1000,
+          s.abv.unwrap,
+          s.nonAlcoholKcalPerLitre
+        )
       case Intake.Water(vol, start, dur) =>
         DrinkInput(minutesBetween(origin, start), math.max(dur.unwrap, MinDrinkMinutes), vol.unwrap / 1000, 0, 0)
     }

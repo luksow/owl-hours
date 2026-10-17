@@ -2,16 +2,19 @@ package java.time
 
 import Civil.*
 
-final class Instant private (seconds: Long, nanos: Int) extends temporal.Temporal with Comparable[Instant] with java.io.Serializable {
+final class Instant private (seconds: Long, nanos: Int)
+    extends temporal.Temporal
+    with Comparable[Instant]
+    with java.io.Serializable {
   def getEpochSecond: Long = seconds
   def getNano: Int         = nanos
   def toEpochMilli: Long   = Math.addExact(Math.multiplyExact(seconds, 1000L), (nanos / 1000000).toLong)
 
-  def plusSeconds(s: Long): Instant = Instant.ofEpochSecond(Math.addExact(seconds, s), nanos.toLong)
+  def plusSeconds(s: Long): Instant  = Instant.ofEpochSecond(Math.addExact(seconds, s), nanos.toLong)
   def minusSeconds(s: Long): Instant = Instant.ofEpochSecond(Math.subtractExact(seconds, s), nanos.toLong)
-  def plusMillis(ms: Long): Instant = plus(Duration.ofMillis(ms))
+  def plusMillis(ms: Long): Instant  = plus(Duration.ofMillis(ms))
   def minusMillis(ms: Long): Instant = minus(Duration.ofMillis(ms))
-  def plusNanos(n: Long): Instant = Instant.ofEpochSecond(seconds, nanos + n)
+  def plusNanos(n: Long): Instant    = Instant.ofEpochSecond(seconds, nanos + n)
   def plus(amount: temporal.TemporalAmount): Instant = {
     val d = Instant.duration(amount)
     Instant.ofEpochSecond(Math.addExact(seconds, d.getSeconds), nanos.toLong + d.getNano)
@@ -28,7 +31,8 @@ final class Instant private (seconds: Long, nanos: Int) extends temporal.Tempora
     if c != 0 then c else Integer.compare(nanos, o.getNano)
   }
 
-  def atOffset(offset: ZoneOffset): OffsetDateTime = OffsetDateTime.of(LocalDateTime.ofEpochSecond(seconds, nanos, offset), offset)
+  def atOffset(offset: ZoneOffset): OffsetDateTime =
+    OffsetDateTime.of(LocalDateTime.ofEpochSecond(seconds, nanos, offset), offset)
 
   override def equals(o: Any): Boolean = o match {
     case i: Instant => i.getEpochSecond == seconds && i.getNano == nanos
@@ -63,10 +67,12 @@ object Instant {
 
   /** `yyyy-MM-ddTHH:mm:ss[.f{1,9}]Z`, as ISO_INSTANT reads what Owl Hours and browsers write. */
   def parse(text: CharSequence): Instant = {
-    val s = text.toString
+    val s    = text.toString
     def fail = throw new format.DateTimeParseException(s"Text '$s' could not be parsed", s, 0)
     if s.length < 17 || !(s.endsWith("Z") || s.endsWith("z")) || (s.charAt(10) != 'T' && s.charAt(10) != 't') then fail
-    val date = try LocalDate.parse(s.substring(0, 10)) catch case _: DateTimeException => fail
+    val date =
+      try LocalDate.parse(s.substring(0, 10))
+      catch case _: DateTimeException => fail
     if !digits(s, 11, 2) || s.charAt(13) != ':' || !digits(s, 14, 2) then fail
     val (hh, mm) = (s.substring(11, 13).toInt, s.substring(14, 16).toInt)
     val rest     = s.substring(16, s.length - 1)
@@ -77,8 +83,7 @@ object Instant {
         else if frac.length >= 2 && frac.length <= 10 && frac.charAt(0) == '.' && digits(frac, 1, frac.length - 1) then
           (rest.substring(1, 3).toInt, (frac.substring(1) + "00000000").take(9).toInt)
         else fail
-      }
-      else fail
+      } else fail
     // like ISO_INSTANT, 24:00:00 is the end of the day
     val endOfDay = hh == 24 && mm == 0 && ss == 0 && nanos == 0
     if (hh > 23 && !endOfDay) || mm > 59 || ss > 59 then fail

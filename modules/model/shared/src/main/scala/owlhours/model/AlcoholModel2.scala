@@ -118,13 +118,13 @@ object AlcoholModel2 {
       val rTisP   = bp - tis
 
       // elimination and metabolites
-      val vADH1   = p.vmaxADH1 * (liv / (p.kmADH1 + liv))
-      val vCYP    = p.vmaxCYP2E1 * liv / (p.kmCYP2E1 + liv)
-      val rElim   = (vADH1 + vCYP) * (1 + p.kFoodClearance * (if kS > 1e-3 then 1.0 else 0.0))
-      val rEtG    = p.vmaxEtG * (liv / (liv + p.kmEtG))
-      val rEtS    = p.vmaxEtS * (liv / (liv + p.kmEtS))
-      val rEtGLP  = lEtG - pEtG
-      val rEtSLP  = lEtS - pEtS
+      val vADH1    = p.vmaxADH1 * (liv / (p.kmADH1 + liv))
+      val vCYP     = p.vmaxCYP2E1 * liv / (p.kmCYP2E1 + liv)
+      val rElim    = (vADH1 + vCYP) * (1 + p.kFoodClearance * (if kS > 1e-3 then 1.0 else 0.0))
+      val rEtG     = p.vmaxEtG * (liv / (liv + p.kmEtG))
+      val rEtS     = p.vmaxEtS * (liv / (liv + p.kmEtS))
+      val rEtGLP   = lEtG - pEtG
+      val rEtSLP   = lEtS - pEtS
       val rAcetate = ac * p.kAcetate
 
       // vasopressin and urine

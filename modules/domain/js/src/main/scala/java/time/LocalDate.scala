@@ -2,10 +2,12 @@ package java.time
 
 import Civil.*
 
-final class LocalDate private (year: Int, month: Int, day: Int) extends chrono.ChronoLocalDate with java.io.Serializable {
-  def getYear: Int       = year
-  def getMonthValue: Int = month
-  def getDayOfMonth: Int = day
+final class LocalDate private (year: Int, month: Int, day: Int)
+    extends chrono.ChronoLocalDate
+    with java.io.Serializable {
+  def getYear: Int        = year
+  def getMonthValue: Int  = month
+  def getDayOfMonth: Int  = day
   def isLeapYear: Boolean = isLeap(year)
   def lengthOfMonth: Int  = monthLength(year, month)
   def toEpochDay: Long    = daysFromCivil(year, month, day)
@@ -60,9 +62,15 @@ object LocalDate {
   /** `yyyy-MM-dd`. */
   def parse(text: CharSequence): LocalDate = {
     val s = text.toString
-    if s.length != 10 || !digits(s, 0, 4) || s.charAt(4) != '-' || !digits(s, 5, 2) || s.charAt(7) != '-' || !digits(s, 8, 2) then
-      throw new format.DateTimeParseException(s"Text '$s' could not be parsed", s, 0)
+    if s.length != 10 || !digits(s, 0, 4) || s.charAt(4) != '-' || !digits(s, 5, 2) || s.charAt(7) != '-' || !digits(
+        s,
+        8,
+        2
+      )
+    then throw new format.DateTimeParseException(s"Text '$s' could not be parsed", s, 0)
     try of(s.substring(0, 4).toInt, s.substring(5, 7).toInt, s.substring(8, 10).toInt)
-    catch case e: DateTimeException => throw new format.DateTimeParseException(s"Text '$s' could not be parsed: ${e.getMessage}", s, 0)
+    catch
+      case e: DateTimeException =>
+        throw new format.DateTimeParseException(s"Text '$s' could not be parsed: ${e.getMessage}", s, 0)
   }
 }

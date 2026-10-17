@@ -11,8 +11,7 @@ class PropertiesSuite extends munit.ScalaCheckSuite {
     weight <- Gen.choose(45.0, 130.0)
     height <- Gen.choose(1.50, 2.00)
     age    <- Gen.choose(18.0, 80.0)
-  }
-  yield Anthropometrics(sex, weight, height, age)
+  } yield Anthropometrics(sex, weight, height, age)
 
   private val drink = for {
     start <- Gen.choose(5.0, 300.0)
@@ -20,21 +19,18 @@ class PropertiesSuite extends munit.ScalaCheckSuite {
     vol   <- Gen.choose(0.03, 0.6)
     abv   <- Gen.choose(0.0, 45.0)
     kcal  <- Gen.choose(0.0, 2500.0)
-  }
-  yield DrinkInput(start, dur, vol, abv, kcal)
+  } yield DrinkInput(start, dur, vol, abv, kcal)
 
   private val meal = for {
     at   <- Gen.choose(5.0, 300.0)
     kcal <- Gen.choose(100.0, 1500.0)
-  }
-  yield MealInput(at, kcal)
+  } yield MealInput(at, kcal)
 
   private val night = for {
     a      <- anth
     drinks <- Gen.choose(1, 6).flatMap(Gen.listOfN(_, drink))
     meals  <- Gen.choose(0, 2).flatMap(Gen.listOfN(_, meal))
-  }
-  yield (a, Schedule(drinks, meals))
+  } yield (a, Schedule(drinks, meals))
 
   private val ethanolMgPerLPerPercent = 789.1 * 10
 
@@ -54,10 +50,15 @@ class PropertiesSuite extends munit.ScalaCheckSuite {
 
   property("the body never holds more ethanol than was drunk") {
     forAll(night) { (a, sched) =>
-      val r       = Engine.run(a, sched, 0, 720, 10)
-      val v       = Volumes.of(a, Params.published)
+      val r = Engine.run(a, sched, 0, 720, 10)
+      val v = Volumes.of(a, Params.published)
       val drunkMg = (t: Double) =>
-        sched.drinks.map(d => math.min(math.max(t - d.startMin, 0), d.durationMin) * d.rateLPerMin * d.abvPercent * ethanolMgPerLPerPercent).sum
+        sched.drinks
+          .map(d =>
+            math
+              .min(math.max(t - d.startMin, 0), d.durationMin) * d.rateLPerMin * d.abvPercent * ethanolMgPerLPerPercent
+          )
+          .sum
       // 2 % slack: tissue concentration is diluted/concentrated as tissue water changes, which the model
       // does not mass-correct. Unit errors (×10, ×100) would still fail this by a wide margin.
       (0 until r.size).forall(i => bodyEthanolMg(r.states(i), v) <= drunkMg(r.times(i)) * 1.02 + 50.0)
@@ -66,9 +67,10 @@ class PropertiesSuite extends munit.ScalaCheckSuite {
 
   property("a stronger drink (same volume and kcal) never gives a lower peak") {
     forAll(anth, drink) { (a, d) =>
-      val peak = (dd: DrinkInput) =>
+      val peak = (dd: DrinkInput) => {
         val r = Engine.run(a, Schedule(Seq(dd), Nil), 0, 600, 5)
         (0 until r.size).map(r.bacMgDl).max
+      }
       peak(d.copy(abvPercent = math.min(d.abvPercent * 1.5 + 1, 60))) >= peak(d) - 1e-6
     }
   }

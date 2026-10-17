@@ -17,8 +17,10 @@ class ResolveSuite extends munit.FunSuite {
   }
 
   test("style ABV outside its range is rejected with a readable message") {
-    assertEquals(Resolve(Choice.OfStyle(lager, Abv(7), Millilitres(500))),
-      Left("ABV for Pale lager must be between 4.2 and 6 %, got 7"))
+    assertEquals(
+      Resolve(Choice.OfStyle(lager, Abv(7), Millilitres(500))),
+      Left("ABV for Pale lager must be between 4.2 and 6 %, got 7")
+    )
   }
 
   test("product with an ABV override keeps its non-alcohol calories") {
@@ -28,8 +30,7 @@ class ResolveSuite extends munit.FunSuite {
   }
 
   test("ABV override on a fixed product is rejected") {
-    assertEquals(Resolve(Choice.OfProduct(campari, Millilitres(30), Some(Abv(20)))),
-      Left("Campari has a fixed ABV"))
+    assertEquals(Resolve(Choice.OfProduct(campari, Millilitres(30), Some(Abv(20)))), Left("Campari has a fixed ABV"))
   }
 
   test("Negroni 30/30/30 built over ice: 10 % ice melt") {
@@ -40,8 +41,10 @@ class ResolveSuite extends munit.FunSuite {
     assertEqualsDouble(s.volume.unwrap, 99, 1e-9)
     assertEqualsDouble(s.abv.unwrap, 24.3 / 99 * 100, 1e-9)
     assertEqualsDouble(s.kcalPerLitre.unwrap, 182.1 / 99 * 1000, 1e-9)
-    assertEquals(s.components.map(c => (c.name, c.volume.unwrap)),
-      List(("Gin", 30.0), ("Campari", 30.0), ("Sweet vermouth", 30.0)))
+    assertEquals(
+      s.components.map(c => (c.name, c.volume.unwrap)),
+      List(("Gin", 30.0), ("Campari", 30.0), ("Sweet vermouth", 30.0))
+    )
   }
 
   test("heavy hand ×1.5 scales every ingredient and keeps the ABV") {
@@ -80,10 +83,18 @@ class ResolveSuite extends munit.FunSuite {
   }
 
   test("strength and custom amounts are validated") {
-    assertEquals(Resolve(Choice.OfRecipe(negroni, strength = 2.5)), Left("Strength must be between ×0.75 and ×2, got ×2.5"))
-    assertEquals(Resolve(Choice.OfRecipe(negroni, strength = 0.5)), Left("Strength must be between ×0.75 and ×2, got ×0.5"))
-    assertEquals(Resolve(Choice.OfRecipe(negroni, volumes = Some(List(Millilitres(30), Millilitres(30))))),
-      Left("Negroni needs 3 amounts, got 2"))
+    assertEquals(
+      Resolve(Choice.OfRecipe(negroni, strength = 2.5)),
+      Left("Strength must be between ×0.75 and ×2, got ×2.5")
+    )
+    assertEquals(
+      Resolve(Choice.OfRecipe(negroni, strength = 0.5)),
+      Left("Strength must be between ×0.75 and ×2, got ×0.5")
+    )
+    assertEquals(
+      Resolve(Choice.OfRecipe(negroni, volumes = Some(List(Millilitres(30), Millilitres(30))))),
+      Left("Negroni needs 3 amounts, got 2")
+    )
   }
 
   test("review: extreme custom amounts return a Left instead of throwing") {
@@ -94,8 +105,10 @@ class ResolveSuite extends munit.FunSuite {
   }
 
   test("review: a NaN strength is rejected, not passed through") {
-    assertEquals(Resolve(Choice.OfRecipe(negroni, strength = Double.NaN)),
-      Left("Strength must be between ×0.75 and ×2, got ×NaN"))
+    assertEquals(
+      Resolve(Choice.OfRecipe(negroni, strength = Double.NaN)),
+      Left("Strength must be between ×0.75 and ×2, got ×NaN")
+    )
   }
 
   test("a built Negroni pours 90 ml; 9 ml of melt water is added for the model, not to the alcohol") {

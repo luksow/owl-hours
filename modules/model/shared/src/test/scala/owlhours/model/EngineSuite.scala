@@ -14,12 +14,15 @@ class EngineSuite extends munit.FunSuite {
     assertEqualsDouble(mix.kcalPerLitre, 215, 1e-12)
     assertEquals(s.inputsAt(5), Inputs.zero)
     assertEquals(s.inputsAt(15), Inputs(5, 0.025, 430)) // beer alone, before the water starts
-    assertEquals(s.inputsAt(30), Inputs.zero)            // both have ended (intervals are half-open)
-    assertEquals(s.segments(0, 60).map(seg => (seg.start, seg.end)), Vector((0.0, 10.0), (10.0, 20.0), (20.0, 30.0), (30.0, 60.0)))
+    assertEquals(s.inputsAt(30), Inputs.zero)           // both have ended (intervals are half-open)
+    assertEquals(
+      s.segments(0, 60).map(seg => (seg.start, seg.end)),
+      Vector((0.0, 10.0), (10.0, 20.0), (20.0, 30.0), (30.0, 60.0))
+    )
   }
 
   test("meal times become segment boundaries carrying the meal") {
-    val s = Schedule(Nil, Seq(MealInput(15, 600), MealInput(15, 100)))
+    val s    = Schedule(Nil, Seq(MealInput(15, 600), MealInput(15, 100)))
     val segs = s.segments(0, 60)
     assertEquals(segs.map(_.start), Vector(0.0, 15.0))
     assertEquals(segs(1).mealKcal, 700.0)

@@ -7,7 +7,7 @@ import scala.collection.mutable
 
 class StoreSuite extends munit.FunSuite {
   final class Memory(initial: (String, String)*) extends KeyValue[SyncIO] {
-    val data = mutable.Map.from(initial)
+    val data                            = mutable.Map.from(initial)
     def get(key: String)                = SyncIO(data.get(key))
     def set(key: String, value: String) = SyncIO(data.update(key, value))
     def remove(key: String)             = SyncIO(data.remove(key)).void
@@ -17,16 +17,32 @@ class StoreSuite extends munit.FunSuite {
 
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val profile = Profile(Sex.Female, LocalDate.of(1997, 1, 1), BodyWeight(64.5), Height(168))
-  private val beer    = DrinkSnapshot(Some(CatalogueId("pale-lager")), "Pale lager / Pilsner", Millilitres(500), Abv(5),
-    KcalPerLitre(404.15), Nil)
-  private val negroni = DrinkSnapshot(Some(CatalogueId("negroni")), "Negroni (×1.5)", Millilitres(148.5), Abv(24.5),
-    KcalPerLitre(1839.4), List(ComponentLine("Gin", Millilitres(45), Abv(40))))
-  private val session = Session(SessionId("s-1"), t0, Vector(
-    Intake.Meal(Kcal(900), t0),
-    Intake.Drink(beer, t0.plusSeconds(600), Minutes(30)),
-    Intake.Water(Millilitres(250), t0.plusSeconds(3600), Minutes(5)),
-    Intake.Drink(negroni, t0.plusSeconds(5400), Minutes(15))
-  ))
+  private val beer = DrinkSnapshot(
+    Some(CatalogueId("pale-lager")),
+    "Pale lager / Pilsner",
+    Millilitres(500),
+    Abv(5),
+    KcalPerLitre(404.15),
+    Nil
+  )
+  private val negroni = DrinkSnapshot(
+    Some(CatalogueId("negroni")),
+    "Negroni (×1.5)",
+    Millilitres(148.5),
+    Abv(24.5),
+    KcalPerLitre(1839.4),
+    List(ComponentLine("Gin", Millilitres(45), Abv(40)))
+  )
+  private val session = Session(
+    SessionId("s-1"),
+    t0,
+    Vector(
+      Intake.Meal(Kcal(900), t0),
+      Intake.Drink(beer, t0.plusSeconds(600), Minutes(30)),
+      Intake.Water(Millilitres(250), t0.plusSeconds(3600), Minutes(5)),
+      Intake.Drink(negroni, t0.plusSeconds(5400), Minutes(15))
+    )
+  )
 
   test("empty storage loads as a first run") {
     assertEquals(Store(Memory()).load.unsafeRunSync(), Loaded(Persisted.empty, Nil))
@@ -45,7 +61,7 @@ class StoreSuite extends munit.FunSuite {
   }
 
   test("an unreadable value is kept as a recovery copy, reported, and the rest still loads") {
-    val kv = Memory(Store.Keys.profile -> """{"sex":"Female","age":12}""", Store.Keys.disclaimer -> "true")
+    val kv     = Memory(Store.Keys.profile -> """{"sex":"Female","age":12}""", Store.Keys.disclaimer -> "true")
     val loaded = Store(kv).load.unsafeRunSync()
     assertEquals(loaded.persisted.profile, None)
     assertEquals(loaded.persisted.disclaimerAccepted, true)
@@ -55,11 +71,16 @@ class StoreSuite extends munit.FunSuite {
     assertEquals(copies.size, 1)
     assertEquals(kv.data(copies.head), """{"sex":"Female","age":12}""")
     // no decoder internals in a message meant for people
-    assert(!loaded.problems.head.contains("DecodingFailure") && !loaded.problems.head.contains("DownField"), loaded.problems.head)
+    assert(
+      !loaded.problems.head.contains("DecodingFailure") && !loaded.problems.head.contains("DownField"),
+      loaded.problems.head
+    )
   }
 
   test("an unknown intake type is a readable problem, not a crash") {
-    val kv     = Memory(Store.Keys.sessions -> """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[{"type":"snack"}]}]""")
+    val kv = Memory(
+      Store.Keys.sessions -> """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[{"type":"snack"}]}]"""
+    )
     val loaded = Store(kv).load.unsafeRunSync()
     assertEquals(loaded.persisted.sessions, Vector.empty)
     assert(loaded.problems.exists(_.contains("unknown intake type 'snack'")), loaded.problems.toString)
@@ -97,13 +118,17 @@ class StoreSuite extends munit.FunSuite {
       {"type":"meal","kcal":500,"at":"2026-10-14T20:30:00.123456Z"}]}]""")
     val loaded = Store(kv).load.unsafeRunSync()
     assertEquals(loaded.problems, Nil)
-    assertEquals(loaded.persisted.sessions.head.intakes.map(_.startsAt),
-      Vector(Instant.parse("2026-10-14T20:00:00.123Z"), Instant.parse("2026-10-14T20:30:00.123456Z")))
+    assertEquals(
+      loaded.persisted.sessions.head.intakes.map(_.startsAt),
+      Vector(Instant.parse("2026-10-14T20:00:00.123Z"), Instant.parse("2026-10-14T20:30:00.123456Z"))
+    )
   }
 
   test("nights saved before manual ends existed still load, and an end is saved and loaded") {
-    val kv = Memory("oh.v1.sessions" ->
-      """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[{"type":"meal","kcal":900,"at":"2026-10-14T20:00:00Z"}]}]""")
+    val kv = Memory(
+      "oh.v1.sessions" ->
+        """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[{"type":"meal","kcal":900,"at":"2026-10-14T20:00:00Z"}]}]"""
+    )
     val store  = Store(kv)
     val loaded = store.load.unsafeRunSync()
     assertEquals(loaded.problems, Nil)
@@ -124,7 +149,7 @@ class StoreSuite extends munit.FunSuite {
   }
 
   test("settings saved before the standard drink existed load with the 10 g default; a choice round-trips") {
-    val store = Store(Memory("oh.v1.settings" -> """{"bacUnit":"MgPer100ml"}"""))
+    val store  = Store(Memory("oh.v1.settings" -> """{"bacUnit":"MgPer100ml"}"""))
     val loaded = store.load.unsafeRunSync()
     assertEquals(loaded.problems, Nil)
     assertEquals(loaded.persisted.settings, Settings(BacUnit.MgPer100ml, StandardDrink.Grams10))
@@ -158,7 +183,7 @@ class StoreSuite extends munit.FunSuite {
     val drink = loaded.persisted.sessions.head.intakes.head.asInstanceOf[Intake.Drink]
     assertEquals(drink.snapshot.meltWater, None)
     val withMelt = drink.copy(snapshot = drink.snapshot.copy(meltWater = Some(Millilitres(9))))
-    val kv = Memory()
+    val kv       = Memory()
     Store(kv).saveSessions(Vector(Session(SessionId("s-1"), t0, Vector(withMelt)))).unsafeRunSync()
     assertEquals(Store(kv).load.unsafeRunSync().persisted.sessions.head.intakes.head, withMelt)
   }

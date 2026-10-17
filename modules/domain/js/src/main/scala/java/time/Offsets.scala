@@ -6,7 +6,7 @@ final class ZoneOffset private (totalSeconds: Int) extends java.io.Serializable 
     case z: ZoneOffset => z.getTotalSeconds == totalSeconds
     case _             => false
   }
-  override def hashCode: Int = totalSeconds
+  override def hashCode: Int    = totalSeconds
   override def toString: String = if totalSeconds == 0 then "Z" else s"${totalSeconds}s"
 }
 
@@ -31,6 +31,7 @@ final class Period private (years: Int, months: Int, days: Int) extends java.io.
 }
 
 object Period {
+
   /** As the JDK: whole years and months from start to end, then days. */
   def between(start: LocalDate, end: LocalDate): Period = {
     var totalMonths = (end.getYear * 12L + end.getMonthValue) - (start.getYear * 12L + start.getMonthValue)
@@ -38,8 +39,7 @@ object Period {
     if totalMonths > 0 && days < 0 then {
       totalMonths -= 1
       days = (end.toEpochDay - start.plusMonths(totalMonths).toEpochDay).toInt
-    }
-    else if totalMonths < 0 && days > 0 then {
+    } else if totalMonths < 0 && days > 0 then {
       totalMonths += 1
       days -= end.lengthOfMonth
     }

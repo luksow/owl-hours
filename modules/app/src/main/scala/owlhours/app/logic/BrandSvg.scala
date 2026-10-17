@@ -8,7 +8,8 @@ import Neon.*
  * is in web/public/owl.svg and web/public/icon.svg; e2e/assets.spec.js checks they match.
  */
 object BrandSvg {
-  val Head = "M30,76 C16,64 18,42 32,32 L24,12 L42,28 Q50,24 58,28 L76,12 L68,32 C82,42 84,64 70,76 C60,84 40,84 30,76 Z"
+  val Head =
+    "M30,76 C16,64 18,42 32,32 L24,12 L42,28 Q50,24 58,28 L76,12 L68,32 C82,42 84,64 70,76 C60,84 40,84 30,76 Z"
 
   /** The prototype's small-glow filter ("neonS"); `id` must be unique in the document. */
   private def glow(id: String): String =
@@ -35,8 +36,9 @@ object BrandSvg {
           s"""$script fill="#FFD2E3">Owl Hours</text>"""
       else s"""$script fill="${Tube.Pink.unlit}">Owl Hours</text>"""
     val tagColour = if lit then Tube.Amber.glow else Tube.Amber.unlit
-    val tagline = s"""<text x="156" y="138" font-family="Barlow Condensed, sans-serif" font-weight="600" font-size="19" """ +
-      s"""letter-spacing="4.2" fill="$tagColour">KNOW YOUR CURVE</text>"""
+    val tagline =
+      s"""<text x="156" y="138" font-family="Barlow Condensed, sans-serif" font-weight="600" font-size="19" """ +
+        s"""letter-spacing="4.2" fill="$tagColour">KNOW YOUR CURVE</text>"""
     val defs = if lit then s"<defs>${glow(id)}</defs>" else ""
     s"""<svg class="neon-art" viewBox="0 0 560 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Owl Hours">""" +
       s"""$defs<g transform="translate(12 18) scale(1.24)">${b.out(id)}</g>$name$tagline</svg>"""
@@ -47,7 +49,9 @@ object BrandSvg {
     val id   = "oh-neon-script"
     val text = """<text x="12" y="92" font-family="Mr Dafoe, cursive" font-size="92""""
     s"""<svg class="neon-art" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Owl Hours">""" +
-      s"""<defs>${glow(id)}</defs><g filter="url(#$id)">$text fill="#FF3F8E" stroke="#FF3F8E" stroke-width="3" stroke-linejoin="round">Owl Hours</text></g>""" +
+      s"""<defs>${glow(
+          id
+        )}</defs><g filter="url(#$id)">$text fill="#FF3F8E" stroke="#FF3F8E" stroke-width="3" stroke-linejoin="round">Owl Hours</text></g>""" +
       s"""$text fill="#FFD2E3">Owl Hours</text></svg>"""
   }
 
@@ -55,15 +59,29 @@ object BrandSvg {
   def badge(badge: Badge): Option[String] = {
     val drawing: Option[(String, Tube, Bender => Unit)] = badge match {
       case Badge.HydrationHero =>
-        Some(("oh-neon-hydration", Tube.Ice, b =>
-          b.add("M75,36 C60,58 50,70 50,84 a25,25 0 0 0 50,0 C100,70 90,58 75,36 Z", Tube.Ice)
-          b.add("M62,86 a13,13 0 0 0 8,12", Tube.Ice)
-          b.add("M58,93 q17,-7 34,0 M60,101 q15,-6 30,0", Tube.Ice, "watt-faint")))
+        Some(
+          (
+            "oh-neon-hydration",
+            Tube.Ice,
+            b => {
+              b.add("M75,36 C60,58 50,70 50,84 a25,25 0 0 0 50,0 C100,70 90,58 75,36 Z", Tube.Ice)
+              b.add("M62,86 a13,13 0 0 0 8,12", Tube.Ice)
+              b.add("M58,93 q17,-7 34,0 M60,101 q15,-6 30,0", Tube.Ice, "watt-faint")
+            }
+          )
+        )
       case Badge.SlowSipper =>
-        Some(("oh-neon-slow", Tube.Amber, b =>
-          b.add("M86,80 a14,14 0 1,0 -10,10 a8,8 0 1,0 6,-6 a3,3 0 1,0 -2,-2", Tube.Amber)
-          b.add("M44,96 C34,96 30,86 38,80 C44,76 50,74 54,74 M44,96 H100 M54,74 L48,56 M60,74 L64,56", Tube.Amber)
-          b.add(circ(48, 54, 2.2), Tube.Amber); b.add(circ(64, 54, 2.2), Tube.Amber)))
+        Some(
+          (
+            "oh-neon-slow",
+            Tube.Amber,
+            b => {
+              b.add("M86,80 a14,14 0 1,0 -10,10 a8,8 0 1,0 6,-6 a3,3 0 1,0 -2,-2", Tube.Amber)
+              b.add("M44,96 C34,96 30,86 38,80 C44,76 50,74 54,74 M44,96 H100 M54,74 L48,56 M60,74 L64,56", Tube.Amber)
+              b.add(circ(48, 54, 2.2), Tube.Amber); b.add(circ(64, 54, 2.2), Tube.Amber)
+            }
+          )
+        )
       case _ => None
     }
     drawing.map { (id, tube, draw) =>

@@ -4,10 +4,10 @@ import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
 class SessionsSuite extends munit.FunSuite {
-  private val profile = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
-  private val t0      = Instant.parse("2026-10-14T20:00:00Z")
-  private def at(min: Long) = t0.plusSeconds(min * 60)
-  private val pint    = DrinkSnapshot(None, "Pale lager", Millilitres(568), Abv(5), KcalPerLitre(404), Nil)
+  private val profile          = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
+  private val t0               = Instant.parse("2026-10-14T20:00:00Z")
+  private def at(min: Long)    = t0.plusSeconds(min * 60)
+  private val pint             = DrinkSnapshot(None, "Pale lager", Millilitres(568), Abv(5), KcalPerLitre(404), Nil)
   private def drink(min: Long) = Intake.Drink(pint, at(min), Minutes(30))
   private def water(min: Long) = Intake.Water(Millilitres(250), at(min), Minutes(5))
 
@@ -109,7 +109,6 @@ class SessionsSuite extends munit.FunSuite {
     assertEquals(Sessions.active(profile, endedAfterOnePint, at(240)), None)
   }
 
-
   test("review: a drink logged as starting before the end reopens the night, so Tonight keeps counting it") {
     val ss = Sessions.add(profile, endedAfterOnePint, drink(225))
     assertEquals(nights(ss), Vector(Vector(at(0), at(225))))
@@ -131,7 +130,9 @@ class SessionsSuite extends munit.FunSuite {
     val backTo  = Tonight.of(profile, Some(session), at(300)).summary.backToZeroBy.get
     assert(backTo.isAfter(lastEnd.plusSeconds(24 * 3600)), s"the fixture must outlast a day: $backTo")
     // the close rule samples every 5 min and Tonight every 2, so they may differ by one 5-min step
-    assert(!Sessions.closesAt(profile, session).isBefore(backTo.plus(Sessions.CloseAfter).minusSeconds(5 * 60)),
-      s"${Sessions.closesAt(profile, session)} vs back-to $backTo")
+    assert(
+      !Sessions.closesAt(profile, session).isBefore(backTo.plus(Sessions.CloseAfter).minusSeconds(5 * 60)),
+      s"${Sessions.closesAt(profile, session)} vs back-to $backTo"
+    )
   }
 }

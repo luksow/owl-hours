@@ -15,9 +15,9 @@ final case class Volumes(
 
 object Volumes {
   def of(a: Anthropometrics, p: Params): Volumes = {
-    val s = a.sex
-    val w = a.weightKg
-    val h = a.heightM
+    val s     = a.sex
+    val w     = a.weightKg
+    val h     = a.heightM
     val liver = (18.51 * w + 191.8) / 100 // Vauthey, doi:10.1053/jlts.2002.31654
     val blood = // Nadler's equation
       ((1 - s) * (0.3561 * h * h * h + 0.03308 * w + 0.1833) + s * (0.3669 * h * h * h + 0.03219 * w + 0.6041)) * 10

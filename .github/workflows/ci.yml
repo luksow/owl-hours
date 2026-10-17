@@ -31,8 +31,8 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Unit, property and golden-curve tests (JVM and Node)
-        run: sbt -batch test
+      - name: Formatting (scalafmt), then unit, property and golden-curve tests (JVM and Node)
+        run: sbt -batch scalafmtCheckAll scalafmtSbtCheck test
       - run: npm ci
         working-directory: web
       - run: npx playwright install --with-deps chromium

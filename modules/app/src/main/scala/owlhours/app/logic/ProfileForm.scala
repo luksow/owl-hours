@@ -10,13 +10,21 @@ object ProfileForm {
 
   object Fields {
     def of(p: Profile): Fields =
-      Fields(p.sex.toString.toLowerCase, IsoTime.formatDate(p.born), Format.number(p.weight.unwrap), Format.number(p.height.unwrap))
+      Fields(
+        p.sex.toString.toLowerCase,
+        IsoTime.formatDate(p.born),
+        Format.number(p.weight.unwrap),
+        Format.number(p.height.unwrap)
+      )
   }
 
   def validate(f: Fields, today: LocalDate): EitherNel[String, Profile] =
-    (sex(f.sex), born(f.born, today).toEitherNel,
+    (
+      sex(f.sex),
+      born(f.born, today).toEitherNel,
       number("Weight", f.weightKg).flatMap(BodyWeight.from).toEitherNel,
-      number("Height", f.heightCm).flatMap(Height.from).toEitherNel).parMapN(Profile.apply)
+      number("Height", f.heightCm).flatMap(Height.from).toEitherNel
+    ).parMapN(Profile.apply)
 
   private def sex(s: String): EitherNel[String, Sex] = s.trim.toLowerCase match {
     case "male"   => Right(Sex.Male)

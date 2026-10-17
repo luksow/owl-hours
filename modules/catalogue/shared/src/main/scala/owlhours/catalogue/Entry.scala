@@ -16,12 +16,12 @@ enum Category {
     Mixer, Syrup, Cocktail
 
   def group: Group = this match {
-    case Beer | Cider | Seltzer                       => Group.BeerAndCider
-    case Wine | Sparkling | Fortified | Sake | Mead   => Group.Wine
-    case Spirit                                       => Group.Spirits
-    case Liqueur | Aperitif | Vermouth | Bitters      => Group.Liqueurs
-    case Mixer | Syrup                                => Group.Mixers
-    case Cocktail                                     => Group.Cocktails
+    case Beer | Cider | Seltzer                     => Group.BeerAndCider
+    case Wine | Sparkling | Fortified | Sake | Mead => Group.Wine
+    case Spirit                                     => Group.Spirits
+    case Liqueur | Aperitif | Vermouth | Bitters    => Group.Liqueurs
+    case Mixer | Syrup                              => Group.Mixers
+    case Cocktail                                   => Group.Cocktails
   }
 }
 
@@ -35,6 +35,7 @@ enum Method(val dilution: Double) {
 }
 
 final case class Serving(label: String, volume: Millilitres) {
+
   /** "330 ml" when unlabelled, otherwise "bottle · 330 ml". */
   def display: String = {
     val ml = s"${Format.number(volume.unwrap)} ml"
@@ -71,8 +72,8 @@ final case class Style(
     source: String,
     estimate: Boolean
 ) extends Ingredient {
-  def defaultAbv: Abv                     = abv
-  def kcalPerLitre: KcalPerLitre          = kcalPerLitreAt(abv)
+  def defaultAbv: Abv                      = abv
+  def kcalPerLitre: KcalPerLitre           = kcalPerLitreAt(abv)
   def kcalPerLitreAt(a: Abv): KcalPerLitre = KcalPerLitre(Energy.styleKcalPerLitre(a.unwrap, carbs.unwrap))
 }
 

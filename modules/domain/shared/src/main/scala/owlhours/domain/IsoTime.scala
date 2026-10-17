@@ -34,7 +34,7 @@ object IsoTime {
   def parseInstant(s: String): Option[Instant] = s match {
     case InstantShape(y, mo, d, h, mi, sec, frac) =>
       Try {
-        val date = LocalDate.of(y.toInt, mo.toInt, d.toInt)
+        val date         = LocalDate.of(y.toInt, mo.toInt, d.toInt)
         val (hh, mm, ss) = (h.toInt, mi.toInt, Option(sec).fold(0)(_.toInt))
         require(hh < 24 && mm < 60 && ss < 60)
         val nanos = Option(frac).fold(0)(f => (f + "00000000").take(9).toInt)

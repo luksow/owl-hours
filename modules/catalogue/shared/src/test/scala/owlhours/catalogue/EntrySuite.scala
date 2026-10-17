@@ -8,8 +8,19 @@ class EntrySuite extends munit.FunSuite {
   }
 
   test("style kcal = ethanol + carbs × 4 (pale lager 5 %, 32 g/L → 40.4 kcal/100 ml)") {
-    val lager = Style(CatalogueId("pale-lager"), "Pale lager", Category.Beer, Abv(5), Abv(4.2), Abv(6),
-      CarbsPerLitre(32), List(Serving("bottle", Millilitres(330))), Nil, "test", estimate = false)
+    val lager = Style(
+      CatalogueId("pale-lager"),
+      "Pale lager",
+      Category.Beer,
+      Abv(5),
+      Abv(4.2),
+      Abv(6),
+      CarbsPerLitre(32),
+      List(Serving("bottle", Millilitres(330))),
+      Nil,
+      "test",
+      estimate = false
+    )
     assertEqualsDouble(lager.kcalPerLitre.unwrap, 404.15, 1e-9)
     assertEqualsDouble(lager.kcalPerLitreAt(Abv(6)).unwrap, 6 * 10 * 0.789 * 7.0 + 128, 1e-9)
     assertEquals(lager.defaultAbv, Abv(5))
@@ -28,13 +39,23 @@ class EntrySuite extends munit.FunSuite {
     assertEquals(Category.Vermouth.group, Group.Liqueurs)
     assertEquals(Category.Syrup.group, Group.Mixers)
     assertEquals(Category.Cocktail.group, Group.Cocktails)
-    assertEquals(Group.values.map(_.label).toList,
-      List("Beer & cider", "Wine", "Cocktails", "Spirits", "Liqueurs & aperitifs", "Mixers & soft"))
+    assertEquals(
+      Group.values.map(_.label).toList,
+      List("Beer & cider", "Wine", "Cocktails", "Spirits", "Liqueurs & aperitifs", "Mixers & soft")
+    )
   }
 
   test("mixing methods carry the spec's dilution") {
-    assertEquals(Method.values.map(m => m -> m.dilution).toList,
-      List(Method.Neat -> 0.0, Method.Built -> 0.10, Method.Stirred -> 0.22, Method.Shaken -> 0.28, Method.Blended -> 0.28))
+    assertEquals(
+      Method.values.map(m => m -> m.dilution).toList,
+      List(
+        Method.Neat    -> 0.0,
+        Method.Built   -> 0.10,
+        Method.Stirred -> 0.22,
+        Method.Shaken  -> 0.28,
+        Method.Blended -> 0.28
+      )
+    )
   }
 
   test("servings display their volume, with the label when there is one") {
@@ -44,4 +65,3 @@ class EntrySuite extends munit.FunSuite {
     assertEquals(Serving("ochoko", Millilitres(45.5)).display, "ochoko · 45.5 ml")
   }
 }
-

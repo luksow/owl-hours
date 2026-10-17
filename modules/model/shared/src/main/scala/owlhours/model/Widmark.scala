@@ -37,11 +37,14 @@ object Widmark {
       while i < times.size do {
         val target = times(i).toEpochMilli
         while t < target do {
-          val next   = math.min(t + stepMs, target)
-          val now    = absorbedGrams(next)
-          permille   = math.max(0.0, permille + (now - absorbed) / distribution - EliminationPermillePerHour * (next - t) / 3600000.0)
-          absorbed   = now
-          t          = next
+          val next = math.min(t + stepMs, target)
+          val now  = absorbedGrams(next)
+          permille = math.max(
+            0.0,
+            permille + (now - absorbed) / distribution - EliminationPermillePerHour * (next - t) / 3600000.0
+          )
+          absorbed = now
+          t = next
         }
         out += permille * BacUnit.MgDlPerPermille
         i += 1

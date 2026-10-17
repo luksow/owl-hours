@@ -14,4 +14,3 @@ class NormalizeSuite extends munit.FunSuite {
     assertEquals(Search.normalize("Водка"), "водка")
   }
 }
-

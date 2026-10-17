@@ -12,7 +12,12 @@ import scala.scalajs.js
 object UpdateToast {
   def apply(): Resource[IO, HtmlElement[IO]] =
     SignallingRef[IO].of(false).toResource.flatMap { ready =>
-      fs2.dom.events[IO, dom.Event](dom.window, "oh-update-ready").foreach(_ => ready.set(true)).compile.drain.background *>
+      fs2.dom
+        .events[IO, dom.Event](dom.window, "oh-update-ready")
+        .foreach(_ => ready.set(true))
+        .compile
+        .drain
+        .background *>
         div(ready.map {
           case false => div(())
           case true =>
@@ -22,7 +27,10 @@ object UpdateToast {
               button(
                 cls := "min-h-12 rounded-xl px-4 font-semibold text-ice",
                 onClick --> (_.foreach(_ =>
-                  IO(if js.typeOf(js.Dynamic.global.ohApplyUpdate) == "function" then js.Dynamic.global.ohApplyUpdate()).void)),
+                  IO(
+                    if js.typeOf(js.Dynamic.global.ohApplyUpdate) == "function" then js.Dynamic.global.ohApplyUpdate()
+                  ).void
+                )),
                 "Reload"
               )
             )

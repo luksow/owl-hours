@@ -19,8 +19,18 @@ class JavaTimeSuite extends munit.FunSuite {
   test("parsing instants: seconds required, fractions optional; impossible dates rejected") {
     assertEquals(Instant.parse("2026-10-14T20:00:00.5Z").getNano, 500000000)
     assertEquals(Instant.parse("2026-10-14T24:00:00Z"), Instant.parse("2026-10-15T00:00:00Z")) // the end of a day
-    for bad <- List("2026-10-14T20:00Z", "2026-02-30T00:00:00Z", "2026-10-14T24:00:01Z", "2026-10-14 20:00:00Z", "2026-10-14T20:00:00") do
-      assert(scala.util.Try(Instant.parse(bad)).failed.toOption.exists(_.isInstanceOf[DateTimeParseException]), s"$bad -> ${scala.util.Try(Instant.parse(bad))}")
+    for bad <- List(
+        "2026-10-14T20:00Z",
+        "2026-02-30T00:00:00Z",
+        "2026-10-14T24:00:01Z",
+        "2026-10-14 20:00:00Z",
+        "2026-10-14T20:00:00"
+      )
+    do
+      assert(
+        scala.util.Try(Instant.parse(bad)).failed.toOption.exists(_.isInstanceOf[DateTimeParseException]),
+        s"$bad -> ${scala.util.Try(Instant.parse(bad))}"
+      )
   }
 
   test("instants compare, equal and hash by value") {

@@ -20,7 +20,12 @@ trait KeyValue[F[_]] {
   def keys: F[List[String]]
 }
 
-final case class Persisted(disclaimerAccepted: Boolean, profile: Option[Profile], settings: Settings, sessions: Vector[Session])
+final case class Persisted(
+    disclaimerAccepted: Boolean,
+    profile: Option[Profile],
+    settings: Settings,
+    sessions: Vector[Session]
+)
 
 object Persisted {
   val empty: Persisted = Persisted(disclaimerAccepted = false, None, Settings.default, Vector.empty)
@@ -39,8 +44,7 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]) {
       profile    <- read(Keys.profile, "your profile", now)(using Codecs.profileCodec)
       settings   <- read(Keys.settings, "your settings", now)(using Codecs.settingsCodec)
       sessions   <- read(Keys.sessions, "your nights", now)(using Codecs.sessionsCodec)
-    }
-    yield Loaded(
+    } yield Loaded(
       Persisted(
         disclaimer._1.getOrElse(false),
         profile._1,
@@ -52,8 +56,8 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]) {
     )
 
   def saveDisclaimer(accepted: Boolean): F[Unit] = kv.set(Keys.disclaimer, accepted.asJson.noSpaces)
-  def saveProfile(p: Profile): F[Unit]          = kv.set(Keys.profile, Codecs.profileCodec(p).noSpaces)
-  def saveSettings(s: Settings): F[Unit]        = kv.set(Keys.settings, Codecs.settingsCodec(s).noSpaces)
+  def saveProfile(p: Profile): F[Unit]           = kv.set(Keys.profile, Codecs.profileCodec(p).noSpaces)
+  def saveSettings(s: Settings): F[Unit]         = kv.set(Keys.settings, Codecs.settingsCodec(s).noSpaces)
   def saveSessions(ss: Vector[Session]): F[Unit] = kv.set(Keys.sessions, Codecs.sessionsCodec(ss).noSpaces)
 
   /** Not part of backups: it is about this browser, not the user's data. */

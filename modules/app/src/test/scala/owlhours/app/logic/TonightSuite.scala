@@ -6,10 +6,10 @@ import owlhours.domain.*
 import owlhours.model.{Impairment, Trend}
 
 class TonightSuite extends munit.FunSuite {
-  private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
-  private val t0      = Instant.parse("2026-10-14T20:00:00Z")
+  private val profile       = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
+  private val t0            = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
-  private val wine    = DrinkSnapshot(None, "Red wine", Millilitres(175), Abv(13.5), KcalPerLitre(860), Nil)
+  private val wine          = DrinkSnapshot(None, "Red wine", Millilitres(175), Abv(13.5), KcalPerLitre(860), Nil)
 
   test("no night yet: zero, steady, sober, a one-hour window around now") {
     val t = Tonight.of(profile, None, at(0))
@@ -20,7 +20,11 @@ class TonightSuite extends munit.FunSuite {
   }
 
   test("two glasses of wine: rising after drinking, a peak and a back-to-~0 time inside the view") {
-    val s = Session(SessionId("a"), at(0), Vector(Intake.Drink(wine, at(0), Minutes(20)), Intake.Drink(wine, at(30), Minutes(20))))
+    val s = Session(
+      SessionId("a"),
+      at(0),
+      Vector(Intake.Drink(wine, at(0), Minutes(20)), Intake.Drink(wine, at(30), Minutes(20)))
+    )
     val t = Tonight.of(profile, Some(s), at(40))
     assert(t.summary.currentMgDl > 10, t.summary.toString)
     assertEquals(t.summary.trend, Trend.Rising)
@@ -31,8 +35,10 @@ class TonightSuite extends munit.FunSuite {
   }
 
   test("durations follow the serve type") {
-    def style(cat: Category) = Style(CatalogueId("x"), "x", cat, Abv(5), Abv(4), Abv(6), CarbsPerLitre(30), Nil, Nil, "t", false)
-    def product(cat: Category) = Product(CatalogueId("y"), "y", cat, Abv(40), KcalPerLitre(2210), true, Nil, Nil, "t", false)
+    def style(cat: Category) =
+      Style(CatalogueId("x"), "x", cat, Abv(5), Abv(4), Abv(6), CarbsPerLitre(30), Nil, Nil, "t", false)
+    def product(cat: Category) =
+      Product(CatalogueId("y"), "y", cat, Abv(40), KcalPerLitre(2210), true, Nil, Nil, "t", false)
     assertEquals(Durations.default(style(Category.Beer), Millilitres(568)), Minutes(30))
     assertEquals(Durations.default(style(Category.Beer), Millilitres(330)), Minutes(20))
     assertEquals(Durations.default(style(Category.Wine), Millilitres(150)), Minutes(20))
@@ -50,8 +56,10 @@ class TonightSuite extends munit.FunSuite {
   }
 
   private val shot = DrinkSnapshot(None, "Vodka", Millilitres(40), Abv(40), KcalPerLitre(2210), Nil)
+
   /** About 2.5 ‰ for this profile: 16 shots over two hours. */
-  private val heavy = Session(SessionId("h"), at(0), Vector.tabulate(16)(k => Intake.Drink(shot, at(k * 8L), Minutes(2))))
+  private val heavy =
+    Session(SessionId("h"), at(0), Vector.tabulate(16)(k => Intake.Drink(shot, at(k * 8L), Minutes(2))))
 
   test("a heavy night still has a back-to-~0 time, and its curve reaches ~0 inside the window") {
     val t = Tonight.of(profile, Some(heavy), at(130))
@@ -64,7 +72,7 @@ class TonightSuite extends munit.FunSuite {
   }
 
   test("a light night keeps the short window (no extra simulation)") {
-    val s = Session(SessionId("a"), at(0), Vector(Intake.Drink(wine, at(0), Minutes(20))))
+    val s  = Session(SessionId("a"), at(0), Vector(Intake.Drink(wine, at(0), Minutes(20))))
     val pr = Tonight.project(profile, Some(s), at(30))
     assertEquals(pr.to, at(20).plusSeconds(10 * 3600))
     assert(!pr.capped)

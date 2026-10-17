@@ -4,8 +4,14 @@ import java.time.{Duration, Instant}
 import owlhours.domain.*
 import owlhours.model.*
 
-final case class NightSummary(session: Session, peak: Option[Peak], drinks: Int, standardDrinks: Double, duration: Duration,
-    badges: List[Badge])
+final case class NightSummary(
+    session: Session,
+    peak: Option[Peak],
+    drinks: Int,
+    standardDrinks: Double,
+    duration: Duration,
+    badges: List[Badge]
+)
 
 /** Past nights, re-estimated with the current profile. One simulation per night. */
 object History {

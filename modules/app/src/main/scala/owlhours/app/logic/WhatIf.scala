@@ -21,18 +21,26 @@ object WhatIf {
     val without   = night.intakes.diff(Vector(candidate))
     val projected = Tonight.project(p, Some(night), now)
     val after     = Tonight.at(projected, now)
-    val ghost = Option.when(without.nonEmpty)(
-      Simulation.simulate(p, without, projected.from, projected.to, Tonight.StepMinutes))
+    val ghost =
+      Option.when(without.nonEmpty)(Simulation.simulate(p, without, projected.from, projected.to, Tonight.StepMinutes))
     val before = ghost.map(Summary.of(_, now))
-    WhatIf(after, ghost, before.flatMap(_.peak), after.summary.peak, before.flatMap(_.backToZeroBy),
-      after.summary.backToZeroBy, Marker.of(night.intakes))
+    WhatIf(
+      after,
+      ghost,
+      before.flatMap(_.peak),
+      after.summary.peak,
+      before.flatMap(_.backToZeroBy),
+      after.summary.backToZeroBy,
+      Marker.of(night.intakes)
+    )
   }
 
   def describe(w: WhatIf, unit: BacUnit, time: Instant => String): List[String] = {
     val peak = (w.peakBefore, w.peakAfter) match {
-      case (Some(b), Some(a)) => Some(s"Peak ${Display.peak(b.bacMgDl, unit)} → ${Display.peak(a.bacMgDl, unit)} at ${time(a.at)}")
-      case (None, Some(a))    => Some(s"Peak ${Display.peak(a.bacMgDl, unit)} at ${time(a.at)}")
-      case _                  => None
+      case (Some(b), Some(a)) =>
+        Some(s"Peak ${Display.peak(b.bacMgDl, unit)} → ${Display.peak(a.bacMgDl, unit)} at ${time(a.at)}")
+      case (None, Some(a)) => Some(s"Peak ${Display.peak(a.bacMgDl, unit)} at ${time(a.at)}")
+      case _               => None
     }
     val zero = (w.zeroBefore, w.zeroAfter) match {
       case (Some(b), Some(a)) => Some(s"Back to ~0 by ${time(b)} → ${time(a)}")

@@ -20,11 +20,11 @@ object Badges {
     val drinks = s.intakes.collect { case d: Intake.Drink => d }
     if drinks.isEmpty then Nil
     else {
-      val waters    = s.intakes.count { case _: Intake.Water => true; case _ => false }
-      val firstSip  = drinks.map(_.start).minBy(_.toEpochMilli)
-      val fed       = s.intakes.exists { case Intake.Meal(_, at) => !at.isAfter(firstSip); case _ => false }
-      val slow      = busiestHourGrams(drinks) <= SlowSipperGramsPerHour
-      val early     = drinks.forall(d => bacMgDlAt(Sessions.endOf(d)) < EarlyBirdMgDl)
+      val waters   = s.intakes.count { case _: Intake.Water => true; case _ => false }
+      val firstSip = drinks.map(_.start).minBy(_.toEpochMilli)
+      val fed      = s.intakes.exists { case Intake.Meal(_, at) => !at.isAfter(firstSip); case _ => false }
+      val slow     = busiestHourGrams(drinks) <= SlowSipperGramsPerHour
+      val early    = drinks.forall(d => bacMgDlAt(Sessions.endOf(d)) < EarlyBirdMgDl)
       List(
         Option.when(waters >= drinks.size)(Badge.HydrationHero),
         Option.when(fed)(Badge.FedAndSteady),
@@ -44,7 +44,9 @@ object Badges {
       val a = d.start.toEpochMilli.toDouble
       (a, a + math.max(d.duration.unwrap, 0.5) * 60000)
     }
-    val starts = drinks.flatMap { d => val (a, b) = span(d); Vector(a, b - HourMs) }
+    val starts = drinks.flatMap { d =>
+      val (a, b) = span(d); Vector(a, b - HourMs)
+    }
     starts.map { w0 =>
       drinks.map { d =>
         val (a, b) = span(d)

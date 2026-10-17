@@ -6,7 +6,8 @@ import WhenPick.*
 class WhenPickSuite extends munit.FunSuite {
   private val now    = Instant.parse("2026-10-17T21:47:20Z")
   private val format = (t: Instant) => t.toString.substring(0, 16) // UTC "yyyy-MM-ddTHH:mm" stands in for local time
-  private val parse  = (s: String) => scala.util.Try(Instant.parse(s + ":00Z")).toEither.left.map(_ => "Pick a date and time")
+  private val parse = (s: String) =>
+    scala.util.Try(Instant.parse(s + ":00Z")).toEither.left.map(_ => "Pick a date and time")
 
   test("a chip shows its time in the field") {
     assertEquals(text(When.Ago(0), now, format), "2026-10-17T21:47")

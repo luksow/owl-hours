@@ -14,8 +14,14 @@ class GoldenSuite extends munit.FunSuite {
   final case class D(startMin: Double, durationMin: Double, volumeMl: Double, abv: Double, kcalPerLitre: Double)
       derives Decoder
   final case class M(atMin: Double, kcal: Double) derives Decoder
-  final case class Scenario(name: String, profile: P, drinks: List[D], meals: List[M], horizonMin: Double, stepMin: Double)
-      derives Decoder
+  final case class Scenario(
+      name: String,
+      profile: P,
+      drinks: List[D],
+      meals: List[M],
+      horizonMin: Double,
+      stepMin: Double
+  ) derives Decoder
 
   private def resource(name: String): String = {
     val src = Source.fromResource(s"golden/$name")
@@ -28,7 +34,8 @@ class GoldenSuite extends munit.FunSuite {
   for s <- scenarios do
     test(s"matches SUND: ${s.name}") {
       val rows = resource(s"${s.name}.csv").linesIterator.drop(1).map(_.split(',').map(_.toDouble)).toVector
-      val anth = Anthropometrics(if s.profile.sex == "male" then 1 else 0, s.profile.weightKg, s.profile.heightM, s.profile.age)
+      val anth =
+        Anthropometrics(if s.profile.sex == "male" then 1 else 0, s.profile.weightKg, s.profile.heightM, s.profile.age)
       val schedule = Schedule(
         s.drinks.map(d => DrinkInput(d.startMin, d.durationMin, d.volumeMl / 1000, d.abv, d.kcalPerLitre)),
         s.meals.map(m => MealInput(m.atMin, m.kcal))

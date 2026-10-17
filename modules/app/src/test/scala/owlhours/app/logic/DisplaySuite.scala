@@ -5,13 +5,14 @@ import owlhours.domain.*
 import owlhours.model.{Peak, Trend}
 
 class DisplaySuite extends munit.FunSuite {
-  private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
-  private val t0      = Instant.parse("2026-10-14T20:00:00Z")
+  private val profile       = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
+  private val t0            = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
-  private val wine    = DrinkSnapshot(None, "Red wine", Millilitres(175), Abv(13.5), KcalPerLitre(860), Nil)
-  private val shot    = DrinkSnapshot(None, "Vodka", Millilitres(40), Abv(40), KcalPerLitre(2210), Nil)
-  private val heavy   = Session(SessionId("h"), at(0), Vector.tabulate(16)(k => Intake.Drink(shot, at(k * 8L), Minutes(2))))
-  private val hhmm    = (t: Instant) => t.toString.substring(11, 16)
+  private val wine          = DrinkSnapshot(None, "Red wine", Millilitres(175), Abv(13.5), KcalPerLitre(860), Nil)
+  private val shot          = DrinkSnapshot(None, "Vodka", Millilitres(40), Abv(40), KcalPerLitre(2210), Nil)
+  private val heavy =
+    Session(SessionId("h"), at(0), Vector.tabulate(16)(k => Intake.Drink(shot, at(k * 8L), Minutes(2))))
+  private val hhmm = (t: Instant) => t.toString.substring(11, 16)
 
   test("grid labels at half-‰ steps speak the chosen unit (breath figures stay blood ‰ on the chart)") {
     assertEquals(Display.gridLabel(0.5, BacUnit.Permille), "0.5‰")
@@ -31,10 +32,13 @@ class DisplaySuite extends munit.FunSuite {
 
   test("a night card line: peak, drinks, standard drinks, duration") {
     val s = Session(SessionId("n"), java.time.Instant.EPOCH, Vector.empty)
-    val n = NightSummary(s, Some(owlhours.model.Peak(java.time.Instant.EPOCH, 47.25)), 3, 2.64, Duration.ofMinutes(190), Nil)
+    val n =
+      NightSummary(s, Some(owlhours.model.Peak(java.time.Instant.EPOCH, 47.25)), 3, 2.64, Duration.ofMinutes(190), Nil)
     assertEquals(Display.night(n, BacUnit.Permille), "Peak 0.45‰ · 3 drinks · 2.6 standard drinks · 3 h 10 min")
-    assertEquals(Display.night(n.copy(peak = None, drinks = 1, standardDrinks = 1.0), BacUnit.Permille),
-      "Peak ~0 · 1 drink · 1.0 standard drink · 3 h 10 min")
+    assertEquals(
+      Display.night(n.copy(peak = None, drinks = 1, standardDrinks = 1.0), BacUnit.Permille),
+      "Peak ~0 · 1 drink · 1.0 standard drink · 3 h 10 min"
+    )
   }
 
   test("an intake reads as a short line") {
@@ -44,8 +48,12 @@ class DisplaySuite extends munit.FunSuite {
   }
 
   test("back-to chip: a time when there is one, 'after …+' when capped, nothing once back to ~0") {
-    val two = Session(SessionId("a"), at(0), Vector(Intake.Drink(wine, at(0), Minutes(20)), Intake.Drink(wine, at(30), Minutes(20))))
-    val t = Tonight.of(profile, Some(two), at(40))
+    val two = Session(
+      SessionId("a"),
+      at(0),
+      Vector(Intake.Drink(wine, at(0), Minutes(20)), Intake.Drink(wine, at(30), Minutes(20)))
+    )
+    val t     = Tonight.of(profile, Some(two), at(40))
     val noDay = (_: Instant) => "?"
     assertEquals(Display.backTo(t, at(40), hhmm, noDay), Some(s"Back to ~0 by ${hhmm(t.summary.backToZeroBy.get)}"))
     val capped = Tonight.at(Tonight.project(profile, Some(heavy), at(130), horizons = List(1)), at(130))
@@ -71,7 +79,10 @@ class DisplaySuite extends munit.FunSuite {
   test("log lines show the poured volume; the melt note names the method") {
     val s = DrinkSnapshot(None, "Negroni", Millilitres(99), Abv(24.5), KcalPerLitre(1839.4), Nil, Some(Millilitres(9)))
     assert(Display.intake(Intake.Drink(s, at(0), Minutes(20))).contains("Negroni · 90 ml"))
-    assertEquals(Display.meltNote(s, "built over ice"), Some("+ 9 ml melt water (built over ice), included in the strength"))
+    assertEquals(
+      Display.meltNote(s, "built over ice"),
+      Some("+ 9 ml melt water (built over ice), included in the strength")
+    )
     assertEquals(Display.meltNote(s.copy(meltWater = None), "built over ice"), None)
   }
 
@@ -80,7 +91,10 @@ class DisplaySuite extends munit.FunSuite {
     assertEquals(Display.gridLines(BacUnit.Permille, 1.3 * k), List(0.0 -> "0", 0.5 * k -> "0.5‰", 1.0 * k -> "1‰"))
     assertEquals(Display.gridLines(BacUnit.MgPer100ml, 120.0), List(0.0 -> "0", 50.0 -> "50 mg", 100.0 -> "100 mg"))
     assertEquals(Display.gridLines(BacUnit.PercentBac, 120.0), List(0.0 -> "0", 50.0 -> "0.05%", 100.0 -> "0.10%"))
-    assertEquals(Display.gridLines(BacUnit.MgPer100ml, 400.0).map(_._2), List("0", "100 mg", "200 mg", "300 mg", "400 mg"))
+    assertEquals(
+      Display.gridLines(BacUnit.MgPer100ml, 400.0).map(_._2),
+      List("0", "100 mg", "200 mg", "300 mg", "400 mg")
+    )
     assertEquals(Display.gridLines(BacUnit.BreathMgPerL, 1.3 * k).map(_._2), List("0", "0.5‰", "1‰"))
   }
 

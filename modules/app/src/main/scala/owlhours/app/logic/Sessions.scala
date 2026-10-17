@@ -50,7 +50,8 @@ object Sessions {
   def end(p: Profile, ss: Vector[Session], at: Instant): Vector[Session] =
     ss.lastOption.filter(canEnd(p, _, at)).fold(ss)(s => ss.init :+ s.copy(endedAt = Some(at)))
 
-  def regroupAll(p: Profile, ss: Vector[Session]): Vector[Session] = group(p, ss.flatMap(_.intakes), ss.flatMap(_.endedAt))
+  def regroupAll(p: Profile, ss: Vector[Session]): Vector[Session] =
+    group(p, ss.flatMap(_.intakes), ss.flatMap(_.endedAt))
 
   /**
    * Groups intakes into nights: a new night starts when an intake begins after the current night has closed by rule,
@@ -64,17 +65,18 @@ object Sessions {
       sortedEnds.find(e => !e.isBefore(close.minus(CloseAfter)) && e.isBefore(limit))
     }
     def open(i: Intake) = Session(SessionId(s"night-${i.startsAt.toEpochMilli}"), i.startsAt, Vector(i))
-    val (done, current) = intakes.sortBy(_.startsAt.toEpochMilli).foldLeft((Vector.empty[Session], Option.empty[Session])) {
-      case ((done, None), i) => (done, Some(open(i)))
-      case ((done, Some(s)), i) =>
-        val close = ruleClose(p, s)
-        if i.startsAt.isAfter(close) then (done :+ s.copy(endedAt = endBefore(s, close)), Some(open(i)))
-        else
-          endBefore(s, i.startsAt) match {
-            case Some(e) => (done :+ s.copy(endedAt = Some(e)), Some(open(i)))
-            case None    => (done, Some(s.copy(intakes = s.intakes :+ i)))
-          }
-    }
+    val (done, current) =
+      intakes.sortBy(_.startsAt.toEpochMilli).foldLeft((Vector.empty[Session], Option.empty[Session])) {
+        case ((done, None), i) => (done, Some(open(i)))
+        case ((done, Some(s)), i) =>
+          val close = ruleClose(p, s)
+          if i.startsAt.isAfter(close) then (done :+ s.copy(endedAt = endBefore(s, close)), Some(open(i)))
+          else
+            endBefore(s, i.startsAt) match {
+              case Some(e) => (done :+ s.copy(endedAt = Some(e)), Some(open(i)))
+              case None    => (done, Some(s.copy(intakes = s.intakes :+ i)))
+            }
+      }
     done ++ current.map(s => s.copy(endedAt = endBefore(s, ruleClose(p, s))))
   }
 
@@ -83,7 +85,8 @@ object Sessions {
 
   /** Entries are addressed by value: an entry that is no longer there (a stale tap) leaves the nights unchanged. */
   def replace(p: Profile, ss: Vector[Session], old: Intake, updated: Intake): Vector[Session] =
-    if !contains(ss, old) then ss else regroup(p, ss, earlier(old.startsAt, updated.startsAt))(xs => removeFirst(xs, old) :+ updated)
+    if !contains(ss, old) then ss
+    else regroup(p, ss, earlier(old.startsAt, updated.startsAt))(xs => removeFirst(xs, old) :+ updated)
 
   def delete(p: Profile, ss: Vector[Session], old: Intake): Vector[Session] =
     if !contains(ss, old) then ss else regroup(p, ss, old.startsAt)(removeFirst(_, old))

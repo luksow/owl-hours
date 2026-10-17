@@ -9,7 +9,7 @@ object LocalDateTime {
   private val Shape = """\d{4}-\d{2}-\d{2}T\d{2}:\d{2}""".r
 
   def format(t: Instant): String = {
-    val d = new js.Date(t.toEpochMilli.toDouble)
+    val d              = new js.Date(t.toEpochMilli.toDouble)
     def two(n: Double) = f"${n.toInt}%02d"
     s"${d.getFullYear().toInt}-${two(d.getMonth() + 1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}"
   }
@@ -24,8 +24,7 @@ object LocalDateTime {
       val ms = new js.Date(text).getTime()
       if !ms.isNaN && format(Instant.ofEpochMilli(ms.toLong)) == text then Right(Instant.ofEpochMilli(ms.toLong))
       // a real calendar date-time that the browser cannot represent locally is the hour skipped when clocks go forward
-      else if IsoTime.isLocalDateTime(text) then
-        Left("That time doesn't exist tonight: the clocks went forward")
+      else if IsoTime.isLocalDateTime(text) then Left("That time doesn't exist tonight: the clocks went forward")
       else Left("Pick a date and time")
     }
   }

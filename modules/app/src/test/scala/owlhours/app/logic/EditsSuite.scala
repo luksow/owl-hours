@@ -5,10 +5,17 @@ import owlhours.catalogue.*
 import owlhours.domain.*
 
 class EditsSuite extends munit.FunSuite {
-  private val t0      = Instant.parse("2026-10-14T20:00:00Z")
-  private val lager   = DrinkSnapshot(Some(CatalogueId("pale-lager")), "Pale lager", Millilitres(500), Abv(5), KcalPerLitre(404), Nil)
-  private val negroni = DrinkSnapshot(Some(CatalogueId("negroni")), "Negroni", Millilitres(99), Abv(24.5), KcalPerLitre(1839),
-    List(ComponentLine("Gin", Millilitres(30), Abv(40)), ComponentLine("Campari", Millilitres(30), Abv(25))))
+  private val t0 = Instant.parse("2026-10-14T20:00:00Z")
+  private val lager =
+    DrinkSnapshot(Some(CatalogueId("pale-lager")), "Pale lager", Millilitres(500), Abv(5), KcalPerLitre(404), Nil)
+  private val negroni = DrinkSnapshot(
+    Some(CatalogueId("negroni")),
+    "Negroni",
+    Millilitres(99),
+    Abv(24.5),
+    KcalPerLitre(1839),
+    List(ComponentLine("Gin", Millilitres(30), Abv(40)), ComponentLine("Campari", Millilitres(30), Abv(25)))
+  )
 
   test("amounts are parsed the way people type them") {
     assertEquals(Amount.ml(" 500 "), Right(Millilitres(500)))
@@ -40,43 +47,81 @@ class EditsSuite extends munit.FunSuite {
 
   test("an edit applies to the matching intake kind") {
     val drink = Intake.Drink(lager, t0, Minutes(30))
-    val edited = Edits(drink, IntakeEdit(t0.plusSeconds(600), Some(Minutes(45)), Some(Millilitres(330)), Some(Abv(4.5)), None))
+    val edited =
+      Edits(drink, IntakeEdit(t0.plusSeconds(600), Some(Minutes(45)), Some(Millilitres(330)), Some(Abv(4.5)), None))
     assertEquals(edited.map(_.startsAt), Right(t0.plusSeconds(600)))
     edited.toOption.get match {
       case Intake.Drink(s, _, d) =>
         assertEquals((s.volume, s.abv, d), (Millilitres(330), Abv(4.5), Minutes(45)))
       case other => fail(other.toString)
     }
-    assertEquals(Edits(Intake.Meal(Kcal(500), t0), IntakeEdit(t0, None, None, None, Some(Kcal(750)))),
-      Right(Intake.Meal(Kcal(750), t0)))
-    assertEquals(Edits(Intake.Water(Millilitres(250), t0, Minutes(5)), IntakeEdit(t0, None, Some(Millilitres(500)), None, None)),
-      Right(Intake.Water(Millilitres(500), t0, Minutes(5))))
+    assertEquals(
+      Edits(Intake.Meal(Kcal(500), t0), IntakeEdit(t0, None, None, None, Some(Kcal(750)))),
+      Right(Intake.Meal(Kcal(750), t0))
+    )
+    assertEquals(
+      Edits(Intake.Water(Millilitres(250), t0, Minutes(5)), IntakeEdit(t0, None, Some(Millilitres(500)), None, None)),
+      Right(Intake.Water(Millilitres(500), t0, Minutes(5)))
+    )
   }
 
   test("start times in the future are rejected (one minute of slack)") {
     assertEquals(Edits.notInFuture(t0.plusSeconds(30), t0), Right(t0.plusSeconds(30)))
-    assertEquals(Edits.notInFuture(t0.plusSeconds(600), t0),
-      Left("That's later than now — for last night, pick yesterday's date"))
+    assertEquals(
+      Edits.notInFuture(t0.plusSeconds(600), t0),
+      Left("That's later than now — for last night, pick yesterday's date")
+    )
     assertEquals(Edits.notInFuture(t0.plusSeconds(30 * 3600), t0), Left("That time is in the future"))
   }
 
   test("rescaling never throws, even when one ingredient is the whole drink and the total hits the maximum") {
     for total <- (1 to 20000).map(_ / 4.0) do {
-      val solo = DrinkSnapshot(None, "Solo", Millilitres(total), Abv(40), KcalPerLitre(2200), List(ComponentLine("Gin", Millilitres(total), Abv(40))))
-      val big  = Edits.rescale(solo, Millilitres(5000))
+      val solo = DrinkSnapshot(
+        None,
+        "Solo",
+        Millilitres(total),
+        Abv(40),
+        KcalPerLitre(2200),
+        List(ComponentLine("Gin", Millilitres(total), Abv(40)))
+      )
+      val big = Edits.rescale(solo, Millilitres(5000))
       assert(big.components.forall(_.volume.unwrap <= 5000), total.toString)
     }
   }
 
   test("ABV can be edited within the style's range, freely for unknown drinks, and not at all for fixed products") {
-    val style = Style(CatalogueId("pale-lager"), "Pale lager", Category.Beer, Abv(5), Abv(4), Abv(6), CarbsPerLitre(30),
-      List(Serving("can", Millilitres(500))), Nil, "test", false)
-    val aperol = Product(CatalogueId("aperol"), "Aperol", Category.Aperitif, Abv(11), KcalPerLitre(1200), false,
-      List(Serving("glass", Millilitres(50))), Nil, "test", false)
+    val style = Style(
+      CatalogueId("pale-lager"),
+      "Pale lager",
+      Category.Beer,
+      Abv(5),
+      Abv(4),
+      Abv(6),
+      CarbsPerLitre(30),
+      List(Serving("can", Millilitres(500))),
+      Nil,
+      "test",
+      false
+    )
+    val aperol = Product(
+      CatalogueId("aperol"),
+      "Aperol",
+      Category.Aperitif,
+      Abv(11),
+      KcalPerLitre(1200),
+      false,
+      List(Serving("glass", Millilitres(50))),
+      Nil,
+      "test",
+      false
+    )
     assertEquals(Edits.abvRange(Some(style)), Some((Abv(4), Abv(6))))
     assertEquals(Edits.abvRange(Some(aperol)), None)
     assertEquals(Edits.abvRange(None), Some((Abv(0), Abv(100))))
-    assertEquals(Edits.checkAbv(Abv(7), (Abv(4), Abv(6)), "Pale lager"), Left("ABV for Pale lager must be between 4 and 6 %, got 7"))
+    assertEquals(
+      Edits.checkAbv(Abv(7), (Abv(4), Abv(6)), "Pale lager"),
+      Left("ABV for Pale lager must be between 4 and 6 %, got 7")
+    )
   }
 
   test("editing a cocktail's poured volume scales its melt water with it; the strength is unchanged") {

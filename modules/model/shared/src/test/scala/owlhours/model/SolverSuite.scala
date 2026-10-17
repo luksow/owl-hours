@@ -16,9 +16,9 @@ class SolverSuite extends munit.FunSuite {
 
   test("harmonic oscillator keeps phase over 10 periods") {
     val osc: Solver.Rhs = (_, y, dy) => { dy(0) = y(1); dy(1) = -y(0) }
-    val y    = Array(1.0, 0.0)
-    val t1   = 20 * math.Pi
-    val stop = Solver.integrate(osc, 0.0, y, t1, Array(0.0), 1, new Array[Array[Double]](1), None)
+    val y               = Array(1.0, 0.0)
+    val t1              = 20 * math.Pi
+    val stop            = Solver.integrate(osc, 0.0, y, t1, Array(0.0), 1, new Array[Array[Double]](1), None)
     assertEqualsDouble(stop.t, t1, 1e-12)
     assertEqualsDouble(y(0), 1.0, 1e-5)
     assertEqualsDouble(y(1), 0.0, 1e-5)
@@ -26,10 +26,10 @@ class SolverSuite extends munit.FunSuite {
 
   test("event stops integration where the event function crosses zero") {
     val fall: Solver.Rhs = (_, _, dy) => dy(0) = -1.0 // y = 3 - t
-    val y    = Array(3.0)
-    val grid = Array(0.0, 1.0, 2.0, 3.0, 4.0)
-    val out  = new Array[Array[Double]](5)
-    val stop = Solver.integrate(fall, 0.0, y, 4.0, grid, 1, out, Some((_, s) => s(0) - 0.5))
+    val y                = Array(3.0)
+    val grid             = Array(0.0, 1.0, 2.0, 3.0, 4.0)
+    val out              = new Array[Array[Double]](5)
+    val stop             = Solver.integrate(fall, 0.0, y, 4.0, grid, 1, out, Some((_, s) => s(0) - 0.5))
     assert(stop.eventFired)
     assertEqualsDouble(stop.t, 2.5, 1e-9)
     assertEqualsDouble(y(0), 0.5, 1e-9)
@@ -39,6 +39,8 @@ class SolverSuite extends munit.FunSuite {
 
   test("a non-finite derivative fails loudly instead of returning garbage") {
     val bad: Solver.Rhs = (_, _, dy) => dy(0) = Double.NaN
-    intercept[IllegalStateException](Solver.integrate(bad, 0.0, Array(1.0), 1.0, Array(0.0), 1, new Array[Array[Double]](1), None))
+    intercept[IllegalStateException](
+      Solver.integrate(bad, 0.0, Array(1.0), 1.0, Array(0.0), 1, new Array[Array[Double]](1), None)
+    )
   }
 }

@@ -6,14 +6,15 @@ import org.scalacheck.Prop.forAll
 import owlhours.domain.*
 
 class BadgesSuite extends munit.ScalaCheckSuite {
-  private val t0 = Instant.parse("2026-10-14T20:00:00Z")
-  private def at(min: Long) = t0.plusSeconds(min * 60)
-  private def beer(ml: Double)       = DrinkSnapshot(None, "Lager", Millilitres(ml), Abv(5), KcalPerLitre(430), Nil)
-  private def drink(min: Long, ml: Double = 568, minutes: Double = 30) = Intake.Drink(beer(ml), at(min), Minutes(minutes))
-  private def water(min: Long)       = Intake.Water(Millilitres(250), at(min), Minutes(5))
-  private def meal(min: Long)        = Intake.Meal(Kcal(700), at(min))
-  private def night(is: Intake*)     = Session(SessionId("n"), is.map(_.startsAt).minBy(_.toEpochMilli), is.toVector)
-  private val sober                  = (_: Instant) => 0.0
+  private val t0               = Instant.parse("2026-10-14T20:00:00Z")
+  private def at(min: Long)    = t0.plusSeconds(min * 60)
+  private def beer(ml: Double) = DrinkSnapshot(None, "Lager", Millilitres(ml), Abv(5), KcalPerLitre(430), Nil)
+  private def drink(min: Long, ml: Double = 568, minutes: Double = 30) =
+    Intake.Drink(beer(ml), at(min), Minutes(minutes))
+  private def water(min: Long)   = Intake.Water(Millilitres(250), at(min), Minutes(5))
+  private def meal(min: Long)    = Intake.Meal(Kcal(700), at(min))
+  private def night(is: Intake*) = Session(SessionId("n"), is.map(_.startsAt).minBy(_.toEpochMilli), is.toVector)
+  private val sober              = (_: Instant) => 0.0
 
   test("hydration hero: at least one water for every drink") {
     assert(Badges.of(night(drink(0), water(20), drink(60), water(80)), sober).contains(Badge.HydrationHero))
@@ -37,7 +38,9 @@ class BadgesSuite extends munit.ScalaCheckSuite {
   test("early bird: every drink finished while the estimate was under 0.5‰") {
     val n = night(drink(0), drink(60))
     assert(Badges.of(n, _ => 0.4 * BacUnit.MgDlPerPermille).contains(Badge.EarlyBird))
-    assert(!Badges.of(n, t => if t.isAfter(at(60)) then 0.6 * BacUnit.MgDlPerPermille else 0.0).contains(Badge.EarlyBird))
+    assert(
+      !Badges.of(n, t => if t.isAfter(at(60)) then 0.6 * BacUnit.MgDlPerPermille else 0.0).contains(Badge.EarlyBird)
+    )
   }
 
   test("a night without drinks earns nothing") {
@@ -48,14 +51,12 @@ class BadgesSuite extends munit.ScalaCheckSuite {
     start   <- Gen.choose(0L, 300L)
     ml      <- Gen.choose(30.0, 600.0)
     minutes <- Gen.choose(0.0, 90.0)
-  }
-  yield drink(start, ml, minutes)
+  } yield drink(start, ml, minutes)
   private val others = Gen.oneOf(Gen.choose(0L, 300L).map(water), Gen.choose(0L, 300L).map(meal))
   private val nights = for {
     ds <- Gen.nonEmptyListOf(drinks)
     os <- Gen.listOf(others)
-  }
-  yield night((ds ++ os)*)
+  } yield night((ds ++ os)*)
 
   property("logging another drink never earns a badge the night did not have") {
     forAll(nights, drinks) { (n, extra) =>

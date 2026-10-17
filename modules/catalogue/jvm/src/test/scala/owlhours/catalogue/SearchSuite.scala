@@ -49,4 +49,3 @@ class SearchSuite extends munit.FunSuite {
     assertEquals(ids("白酒").head, "baijiu")
   }
 }
-

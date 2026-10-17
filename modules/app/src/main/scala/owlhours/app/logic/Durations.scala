@@ -19,6 +19,5 @@ object Durations {
         case Category.Aperitif | Category.Vermouth                 => 10
         case _                                                     => 5
       }
-  }
-  )
+  })
 }

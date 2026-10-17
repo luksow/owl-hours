@@ -39,10 +39,14 @@ class CatalogueJsonSuite extends munit.FunSuite {
     val badLager = lager.replace("\"Beer\"", "\"Beeer\"")
     val errors   = Catalogue.fromJson(doc(badLager, s"$badGin, $tonic", gt)).swap.toOption.get.toList
     assertEquals(errors.size, 2, errors.mkString("\n"))
-    assert(errors.exists(e => e.contains(".products[0].abv") && e.contains("ABV must be between 0 and 100 %, got 101")),
-      errors.mkString("\n"))
-    assert(errors.exists(e => e.contains(".styles[0].category") && e.contains("unknown category 'Beeer'")),
-      errors.mkString("\n"))
+    assert(
+      errors.exists(e => e.contains(".products[0].abv") && e.contains("ABV must be between 0 and 100 %, got 101")),
+      errors.mkString("\n")
+    )
+    assert(
+      errors.exists(e => e.contains(".styles[0].category") && e.contains("unknown category 'Beeer'")),
+      errors.mkString("\n")
+    )
   }
 
   test("integrity problems are all reported") {
@@ -50,8 +54,12 @@ class CatalogueJsonSuite extends munit.FunSuite {
     val duplicate  = gin.replace("\"Gin\"", "\"Another gin\"")
     val outOfRange = lager.replace("\"abv\": 5", "\"abv\": 7")
     val tooLight   = tonic.replace("\"abv\": 0", "\"abv\": 10") // 35 kcal/100 ml cannot hold 10 % alcohol (≈ 55 kcal)
-    val errors = Catalogue.fromJson(doc(outOfRange, s"$gin, $duplicate, $tooLight", misspelt, version = 2))
-      .swap.toOption.get.toList
+    val errors = Catalogue
+      .fromJson(doc(outOfRange, s"$gin, $duplicate, $tooLight", misspelt, version = 2))
+      .swap
+      .toOption
+      .get
+      .toList
     assertEquals(
       errors.toSet,
       Set(
@@ -71,19 +79,24 @@ class CatalogueJsonSuite extends munit.FunSuite {
   }
 
   test("review: cocktails that cannot be resolved are rejected at load time") {
-    val empty    = gt.replace("\"gin-tonic\"", "\"empty\"").replace(
-      "[{\"id\": \"gin\", \"ml\": 50},\n {\"id\": \"tonic-water\", \"ml\": 120}]", "[]")
+    val empty = gt
+      .replace("\"gin-tonic\"", "\"empty\"")
+      .replace("[{\"id\": \"gin\", \"ml\": 50},\n {\"id\": \"tonic-water\", \"ml\": 120}]", "[]")
     val negative = gt.replace("\"solidsKcal\": 0", "\"solidsKcal\": -500")
-    val errors = Catalogue.fromJson(doc(lager, s"$gin, $tonic", s"$empty, $negative")).swap.toOption.get.toList
+    val errors   = Catalogue.fromJson(doc(lager, s"$gin, $tonic", s"$empty, $negative")).swap.toOption.get.toList
     assert(errors.contains("cocktails[empty]: needs at least one ingredient"), errors.mkString("\n"))
-    assert(errors.contains("cocktails[gin-tonic]: solidsKcal must be between 0 and 1000, got -500"), errors.mkString("\n"))
+    assert(
+      errors.contains("cocktails[gin-tonic]: solidsKcal must be between 0 and 1000, got -500"),
+      errors.mkString("\n")
+    )
   }
 
   test("review: every cocktail is resolved at its standard serve while loading") {
-    val dense = gt.replace("\"ml\": 50}", "\"ml\": 1}").replace("\"ml\": 120}", "\"ml\": 1}")
+    val dense = gt
+      .replace("\"ml\": 50}", "\"ml\": 1}")
+      .replace("\"ml\": 120}", "\"ml\": 1}")
       .replace("\"solidsKcal\": 0", "\"solidsKcal\": 900")
     val errors = Catalogue.fromJson(doc(lager, s"$gin, $tonic", dense)).swap.toOption.get.toList
     assert(errors.exists(_.startsWith("cocktails[gin-tonic]: Gin & Tonic: Energy density")), errors.mkString("\n"))
   }
 }
-

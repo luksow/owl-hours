@@ -25,37 +25,64 @@ object Pickers {
       text
     )
 
-  def resolveWhen(w: When, now: Instant): Either[String, Instant] = WhenPick.resolve(w, now, LocalDateTime.parseDetailed)
+  def resolveWhen(w: When, now: Instant): Either[String, Instant] =
+    WhenPick.resolve(w, now, LocalDateTime.parseDetailed)
 
   /** Spec §6: shortcut chips fill a date-time field that is always shown; typing a chip's time selects that chip. */
   def when(state: SignallingRef[IO, When], now: Signal[IO, Instant]): Resource[IO, HtmlElement[IO]] = {
     val shown = (state, now).mapN((w, t) => WhenPick.text(w, t, LocalDateTime.format))
     div(
       span(cls := caption, "When"),
-      div(cls := "mt-1 flex flex-wrap gap-2",
-        WhenPick.Agos.map((m, t) => chip(t, state.map(_ == When.Ago(m)), state.set(When.Ago(m))))),
-      label(cls := "mt-2 block",
+      div(
+        cls := "mt-1 flex flex-wrap gap-2",
+        WhenPick.Agos.map((m, t) => chip(t, state.map(_ == When.Ago(m)), state.set(When.Ago(m))))
+      ),
+      label(
+        cls := "mt-2 block",
         span(cls := caption, "Started at"),
-        input.withSelf { self =>
-          (typ := "datetime-local", cls := field, maxAttr <-- now.map(LocalDateTime.format),
-            onInput --> (_.foreach(_ => (self.value.get, Now.instant).flatMapN((v, t) =>
-              state.set(WhenPick.typed(v, t, LocalDateTime.format))))))
-        }.flatTap { el =>
-          // written only when it differs: echoing a half-typed (empty) value back makes Chromium clear every segment
-          shown.discrete.foreach(v => el.value.get.flatMap(cur => IO.whenA(cur != v)(el.value.set(v)))).compile.drain.background
-        })
+        input
+          .withSelf { self =>
+            (
+              typ := "datetime-local",
+              cls := field,
+              maxAttr <-- now.map(LocalDateTime.format),
+              onInput --> (_.foreach(_ =>
+                (self.value.get, Now.instant).flatMapN((v, t) => state.set(WhenPick.typed(v, t, LocalDateTime.format)))
+              ))
+            )
+          }
+          .flatTap { el =>
+            // written only when it differs: echoing a half-typed (empty) value back makes Chromium clear every segment
+            shown.discrete
+              .foreach(v => el.value.get.flatMap(cur => IO.whenA(cur != v)(el.value.set(v))))
+              .compile
+              .drain
+              .background
+          }
+      )
     )
   }
 
-  def amountField(caption0: String, text: SignallingRef[IO, String], presets: List[(String, String)]): Resource[IO, HtmlElement[IO]] =
+  def amountField(
+      caption0: String,
+      text: SignallingRef[IO, String],
+      presets: List[(String, String)]
+  ): Resource[IO, HtmlElement[IO]] =
     div(
       div(cls := "flex flex-wrap gap-2", presets.map((t, v) => chip(t, text.map(_ == v), text.set(v)))),
-      label(cls := "mt-2 block",
+      label(
+        cls := "mt-2 block",
         span(cls := caption, caption0),
         input.withSelf { self =>
-          (typ := "text", inputMode := "decimal", cls := field, value <-- text,
-            onInput --> (_.foreach(_ => self.value.get.flatMap(text.set))))
-        })
+          (
+            typ       := "text",
+            inputMode := "decimal",
+            cls       := field,
+            value <-- text,
+            onInput --> (_.foreach(_ => self.value.get.flatMap(text.set)))
+          )
+        }
+      )
     )
 
   def minutesField(text: SignallingRef[IO, String]): Resource[IO, HtmlElement[IO]] =

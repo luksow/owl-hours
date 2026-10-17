@@ -20,6 +20,7 @@ enum BacUnit {
 }
 
 object BacUnit {
+
   /** The model's own conversion: ‰ = mg/dL ÷ 105. */
   val MgDlPerPermille: Double = 105.0
 }

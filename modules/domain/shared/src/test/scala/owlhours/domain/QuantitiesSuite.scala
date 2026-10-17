@@ -34,7 +34,10 @@ class QuantitiesSuite extends munit.FunSuite {
 
   test("ids") {
     assertEquals(CatalogueId.from("negroni").map(_.unwrap), Right("negroni"))
-    assertEquals(CatalogueId.from("Negroni!"), Left("Catalogue id must be a lowercase slug (a-z, 0-9, -), got Negroni!"))
+    assertEquals(
+      CatalogueId.from("Negroni!"),
+      Left("Catalogue id must be a lowercase slug (a-z, 0-9, -), got Negroni!")
+    )
     assertEquals(SessionId.from(""), Left("Session id must not be empty"))
   }
 }

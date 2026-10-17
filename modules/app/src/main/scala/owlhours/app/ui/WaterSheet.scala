@@ -13,8 +13,12 @@ import owlhours.app.logic.WhenPick.When
 
 object WaterSheet {
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
-    (SignallingRef[IO].of("250"), SignallingRef[IO].of("5"), SignallingRef[IO].of[When](When.Ago(0)),
-      SignallingRef[IO].of(List.empty[String])).tupled.toResource.flatMap { (amount, duration, when, errors) =>
+    (
+      SignallingRef[IO].of("250"),
+      SignallingRef[IO].of("5"),
+      SignallingRef[IO].of[When](When.Ago(0)),
+      SignallingRef[IO].of(List.empty[String])
+    ).tupled.toResource.flatMap { (amount, duration, when, errors) =>
       Sheet("Water", app)(
         Pickers.amountField("Amount (ml)", amount, List("250", "330", "500").map(v => s"$v ml" -> v)),
         Pickers.when(when, app.now),

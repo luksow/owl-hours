@@ -17,7 +17,9 @@ object WhenPick {
   }
 
   def typed(text: String, now: Instant, format: Instant => String): When =
-    Agos.collectFirst { case (m, _) if format(now.minusSeconds(m * 60L)) == text => When.Ago(m) }.getOrElse(When.At(text))
+    Agos
+      .collectFirst { case (m, _) if format(now.minusSeconds(m * 60L)) == text => When.Ago(m) }
+      .getOrElse(When.At(text))
 
   def resolve(w: When, now: Instant, parse: String => Either[String, Instant]): Either[String, Instant] = w match {
     case When.Ago(m) => Right(now.minusSeconds(m * 60L))

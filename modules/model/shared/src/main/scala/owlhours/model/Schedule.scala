@@ -1,9 +1,15 @@
 package owlhours.model
 
 /** One drink as a constant-rate input in model units. */
-final case class DrinkInput(startMin: Double, durationMin: Double, volumeL: Double, abvPercent: Double, kcalPerLitre: Double) {
-  def endMin: Double       = startMin + durationMin
-  def rateLPerMin: Double  = volumeL / durationMin
+final case class DrinkInput(
+    startMin: Double,
+    durationMin: Double,
+    volumeL: Double,
+    abvPercent: Double,
+    kcalPerLitre: Double
+) {
+  def endMin: Double      = startMin + durationMin
+  def rateLPerMin: Double = volumeL / durationMin
 }
 
 final case class MealInput(atMin: Double, kcal: Double)
@@ -12,6 +18,7 @@ final case class MealInput(atMin: Double, kcal: Double)
 final case class Segment(start: Double, end: Double, inputs: Inputs, mealKcal: Double, drinkStarts: Boolean)
 
 final case class Schedule(drinks: Seq[DrinkInput], meals: Seq[MealInput]) {
+
   /** Drinks active at `t` combined into one input, weighted by volume rate (exact for the model's linear input terms). */
   def inputsAt(t: Double): Inputs = {
     val active = drinks.filter(d => d.startMin <= t && t < d.endMin)
@@ -33,7 +40,9 @@ final case class Schedule(drinks: Seq[DrinkInput], meals: Seq[MealInput]) {
       .sorted
     cuts
       .zip(cuts.tail)
-      .map((a, b) => Segment(a, b, inputsAt(a), meals.filter(_.atMin == a).map(_.kcal).sum, drinks.exists(_.startMin == a)))
+      .map((a, b) =>
+        Segment(a, b, inputsAt(a), meals.filter(_.atMin == a).map(_.kcal).sum, drinks.exists(_.startMin == a))
+      )
       .toVector
   }
 }

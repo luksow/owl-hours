@@ -37,13 +37,13 @@ class CatalogueDataSuite extends munit.FunSuite {
     val lager = c.get(CatalogueId("pale-lager")).collect { case s: Style => s }.get
     assertEqualsDouble(lager.kcalPerLitre.unwrap / 10, 40.4, 0.1) // USDA regular beer ≈ 43 kcal/100 g at ~4.6 %
     val vodka = c.get(CatalogueId("vodka")).collect { case p: Product => p }.get
-    assertEquals(vodka.kcalPerLitre, KcalPerLitre(2210))           // Absolut label 221 kcal/100 ml
+    assertEquals(vodka.kcalPerLitre, KcalPerLitre(2210)) // Absolut label 221 kcal/100 ml
     assert(vodka.abvAdjustable)
     val negroni = c.get(CatalogueId("negroni")).collect { case r: Recipe => r }.get
     assertEqualsDouble(Resolve(Choice.OfRecipe(negroni)).toOption.get.abv.unwrap, 24.3 / 99 * 100, 1e-9)
     def volumeOf(id: String) =
       Resolve(Choice.OfRecipe(c.get(CatalogueId(id)).collect { case r: Recipe => r }.get)).toOption.get.volume.unwrap
-    assertEqualsDouble(volumeOf("irish-coffee"), 220, 1e-9)       // hot, no ice: no dilution
+    assertEqualsDouble(volumeOf("irish-coffee"), 220, 1e-9)         // hot, no ice: no dilution
     assertEqualsDouble(volumeOf("french-75"), 60 * 1.28 + 60, 1e-9) // champagne added after shaking
   }
 
@@ -66,7 +66,6 @@ class CatalogueDataSuite extends munit.FunSuite {
       assertEquals(volumes.distinct.size, volumes.size, s"${i.id.unwrap}: ${i.servings}")
     }
   }
-
 
   test("every beer, cider and seltzer offers 330, 500 and 568 ml") {
     for s <- c.styles if Set(Category.Beer, Category.Cider, Category.Seltzer)(s.category) do {

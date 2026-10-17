@@ -11,9 +11,11 @@ object Sheet {
   def apply(title: String, app: AppState)(content: Resource[IO, HtmlElement[IO]]*): Resource[IO, HtmlElement[IO]] =
     div(
       cls := "mx-auto flex min-h-dvh max-w-md flex-col gap-4 p-4",
-      div(cls := "flex items-center justify-between",
-        h1(cls := "font-ui text-2xl font-semibold uppercase tracking-wide", title),
-        button(cls := "min-h-12 px-3 text-dim", onClick --> (_.foreach(_ => app.go(Route.Tonight))), "Cancel")),
+      div(
+        cls := "flex items-center justify-between",
+        h1(cls     := "font-ui text-2xl font-semibold uppercase tracking-wide", title),
+        button(cls := "min-h-12 px-3 text-dim", onClick --> (_.foreach(_ => app.go(Route.Tonight))), "Cancel")
+      ),
       content.toList
     )
 

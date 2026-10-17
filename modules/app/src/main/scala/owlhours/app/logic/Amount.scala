@@ -5,6 +5,7 @@ import owlhours.domain.*
 /** Parses numbers typed by people ("0,5", " 500 ") into validated domain quantities. */
 object Amount {
   def ml(text: String): Either[String, Millilitres] = number("Amount", text).flatMap(Millilitres.from)
+
   /** Drinks and water: below 5 ml (less than a dash) is almost surely litres typed into a ml field, e.g. "0,5". */
   def drinkMl(text: String): Either[String, Millilitres] = ml(text).flatMap { v =>
     if v.unwrap < 5 then Left(s"Amounts are in ml — did you mean ${Format.number(v.unwrap * 1000)} ml?") else Right(v)
