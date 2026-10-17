@@ -135,3 +135,14 @@ class StoreSuite extends munit.FunSuite:
     Store(kv).clear.unsafeRunSync()
     assertEquals(kv.data.keySet.toSet, Set("other.app"))
   }
+
+  test("the install hint's dismissal is remembered, and delete-all forgets it") {
+    val kv    = Memory()
+    val store = Store(kv)
+    assertEquals(store.loadInstallHintDismissed.unsafeRunSync(), false)
+    store.saveInstallHintDismissed.unsafeRunSync()
+    assertEquals(kv.data.get("oh.v1.installHint"), Some("dismissed"))
+    assertEquals(store.loadInstallHintDismissed.unsafeRunSync(), true)
+    store.clear.unsafeRunSync()
+    assertEquals(store.loadInstallHintDismissed.unsafeRunSync(), false)
+  }

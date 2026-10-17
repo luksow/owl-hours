@@ -54,6 +54,10 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
   def saveSessions(ss: Vector[Session]): F[Unit] = kv.set(Keys.sessions, Codecs.sessionsCodec(ss).noSpaces)
 
   /** Deletes everything Owl Hours stored on this device, recovery copies included. */
+  /** Not part of backups: it is about this browser, not the user's data. */
+  def loadInstallHintDismissed: F[Boolean] = kv.get(Keys.installHint).map(_.contains("dismissed"))
+  def saveInstallHintDismissed: F[Unit]    = kv.set(Keys.installHint, "dismissed")
+
   def clear: F[Unit] = kv.keys.flatMap(_.filter(_.startsWith("oh.")).traverse_(kv.remove))
 
   /** Every key at once (undo of a whole-state change, import). */
@@ -84,7 +88,8 @@ object Store:
     "Owl Hours can't save on this device or browser (storage is blocked), so tonight will be forgotten when you close the app."
 
   object Keys:
-    val disclaimer = "oh.v1.disclaimer"
-    val profile    = "oh.v1.profile"
-    val settings   = "oh.v1.settings"
-    val sessions   = "oh.v1.sessions"
+    val disclaimer  = "oh.v1.disclaimer"
+    val profile     = "oh.v1.profile"
+    val settings    = "oh.v1.settings"
+    val sessions    = "oh.v1.sessions"
+    val installHint = "oh.v1.installHint"

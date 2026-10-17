@@ -60,6 +60,7 @@ object TonightScreen:
           case Some((t, s, unit, now)) => body(app, t, s, unit, now)
         }),
         p(cls := "mt-3 px-5 text-center text-xs uppercase tracking-wider text-dim", "Estimate only · never a green light to drive"),
+        InstallCard.tonight(app),
         actionBar(app, bundle.map(_.session))
       )
     yield screen

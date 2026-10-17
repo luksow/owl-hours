@@ -19,6 +19,7 @@ object SettingsScreen:
       // the forms copy the saved state, so they are rebuilt when an import or an undo replaces it
       div(cls := "flex flex-col gap-4", app.replaced.map(_ => app.persisted.get.toResource.flatMap(choices(app, _)))),
       Screen.section("Your data")(data(app)),
+      InstallCard.settings(app),
       button(cls := Wide, onClick --> (_.foreach(_ => app.go(Route.About))), "About the science"),
       Screen.makersPlate
     )

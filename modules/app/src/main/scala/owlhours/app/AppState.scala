@@ -8,8 +8,8 @@ import fs2.concurrent.{Signal, SignallingRef}
 import fs2.dom.Window
 import java.time.Instant
 import org.scalajs.dom
-import owlhours.app.logic.{Saving, Sessions}
-import owlhours.app.platform.{BrowserKeyValue, CatalogueLoader, Now}
+import owlhours.app.logic.{InstallHint, Saving, Sessions}
+import owlhours.app.platform.{BrowserKeyValue, CatalogueLoader, Install, Now}
 import owlhours.catalogue.Catalogue
 import owlhours.domain.*
 import owlhours.store.{Persisted, Store}
@@ -50,10 +50,19 @@ final class AppState(
     val replaced: SignallingRef[IO, Int],
     val now: Signal[IO, Instant],
     val route: Signal[IO, Route],
+    val install: Signal[IO, Option[InstallHint]],
+    installDismissed: SignallingRef[IO, Boolean],
     store: Store[IO],
     window: Window[IO],
     lock: Mutex[IO]
 ):
+  def installHintDismissed: Signal[IO, Boolean] = installDismissed
+
+  /** Hides the Tonight card; remembered when storage allows, and for this visit regardless. */
+  def dismissInstallHint: IO[Unit] = installDismissed.set(true) *> store.saveInstallHintDismissed
+
+  def promptInstall: IO[Unit] = Install.prompt
+
   def acceptDisclaimer: IO[Unit] = persisted.update(_.copy(disclaimerAccepted = true)) *> store.saveDisclaimer(true)
 
   def saveProfile(p: Profile): IO[Unit] = persisted.update(_.copy(profile = Some(p))) *> store.saveProfile(p)
@@ -73,7 +82,8 @@ final class AppState(
 
   /** Not undoable on purpose: people who delete their data expect it gone. */
   def deleteEverything: IO[Unit] =
-    undo.set(None) *> lock.lock.surround(store.clear *> persisted.set(Persisted.empty)) *> go(Route.Tonight)
+    undo.set(None) *> lock.lock.surround(store.clear *> persisted.set(Persisted.empty) *> installDismissed.set(false)) *>
+      go(Route.Tonight)
 
   def addIntake(i: Intake): IO[Unit] = updateSessions((p, ss) => Sessions.add(p, ss, i)) *> undo.set(None)
 
@@ -140,5 +150,8 @@ object AppState:
         .holdResource(Route.parse(hash0))
       // leaving a screen dismisses its undo bar
       _ <- route.discrete.drop(1).foreach(_ => undo.set(None)).compile.drain.background
-      lock <- Mutex[IO].toResource
-    yield AppState(persisted, catalogue, problems, undo, replaced, now, route, store, window, lock)
+      dismissed <- store.loadInstallHintDismissed.flatMap(SignallingRef[IO].of).toResource
+      env0      <- Install.env.toResource
+      install   <- Install.changes.evalMap(_ => Install.env).holdResource(env0).map(_.map(InstallHint.of))
+      lock      <- Mutex[IO].toResource
+    yield AppState(persisted, catalogue, problems, undo, replaced, now, route, install, dismissed, store, window, lock)

@@ -9,4 +9,28 @@ const applyUpdate = registerSW({
 });
 window.ohApplyUpdate = () => applyUpdate(true);
 
+// Install (spec §10): Chromium offers this once the app is installable, possibly before the Scala app has mounted, so
+// it is kept here. The app reads ohInstallReady() and listens for "oh-install-changed".
+let installEvent = null;
+const installChanged = () => window.dispatchEvent(new CustomEvent("oh-install-changed"));
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installEvent = e;
+  installChanged();
+});
+window.addEventListener("appinstalled", () => {
+  installEvent = null;
+  installChanged();
+});
+window.ohInstallReady = () => installEvent !== null;
+window.ohInstall = async () => {
+  const e = installEvent;
+  if (!e) return "unavailable";
+  installEvent = null; // prompt() works once per event
+  await e.prompt();
+  const { outcome } = await e.userChoice;
+  installChanged();
+  return outcome;
+};
+
 import "scalajs:main.js";
