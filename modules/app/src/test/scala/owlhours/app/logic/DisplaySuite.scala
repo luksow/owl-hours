@@ -2,6 +2,7 @@ package owlhours.app.logic
 
 import java.time.{Duration, Instant, LocalDate}
 import owlhours.domain.*
+import owlhours.model.{Peak, Trend}
 
 class DisplaySuite extends munit.FunSuite:
   private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
@@ -49,4 +50,19 @@ class DisplaySuite extends munit.FunSuite:
     val capped = Tonight.at(Tonight.project(profile, Some(heavy), at(130), horizons = List(1)), at(130))
     assertEquals(Display.backTo(capped, hhmm), Some(s"Back to ~0 after ${hhmm(capped.viewTo)}+"))
     assertEquals(Display.backTo(Tonight.of(profile, Some(two), at(24 * 60)), hhmm), None)
+  }
+
+  test("trend line: the peak time while it is ahead") {
+    val pk = Some(Peak(at(90), 80.0))
+    assertEquals(Display.trendLine(Trend.Rising, pk, at(60), hhmm), s"↗ Rising · peak ${hhmm(at(90))}")
+    assertEquals(Display.trendLine(Trend.Rising, pk, at(95), hhmm), "↗ Rising")
+    assertEquals(Display.trendLine(Trend.Falling, pk, at(120), hhmm), "↘ Falling")
+    assertEquals(Display.trendLine(Trend.Steady, None, at(0), hhmm), "→ Steady")
+  }
+
+  test("the big number and its unit are split, so the unit can be set smaller") {
+    assertEquals(Display.bacParts(0.62 * BacUnit.MgDlPerPermille, 0.0, BacUnit.Permille), ("0.62", "‰"))
+    assertEquals(Display.bacParts(0.0, 0.0, BacUnit.Permille), ("0.00", "‰"))
+    val (n, u) = Display.bacParts(62.0, 0.0, BacUnit.PercentBac)
+    assertEquals(n + u, Display.bac(62.0, 0.0, BacUnit.PercentBac))
   }

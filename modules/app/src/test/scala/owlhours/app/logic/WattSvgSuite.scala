@@ -22,7 +22,7 @@ class WattSvgSuite extends munit.FunSuite:
       assert(s.startsWith("<svg class=\"watt\""), i.toString)
       assert(s.contains(s"""aria-label="Watt the owl, ${Display.impairment(i)}""""), i.toString)
       assert(s.endsWith("</svg>"), i.toString)
-    assertEquals(all.map(WattSvg.render).distinct.size, all.size)
+    assertEquals(all.map(WattSvg.render(_)).distinct.size, all.size)
   }
 
   test("tilt follows the state (the sign hangs crooked as BAC climbs)") {
@@ -53,4 +53,11 @@ class WattSvgSuite extends munit.FunSuite:
     val s = WattSvg.render(Impairment.Buzzed)
     assertEquals("""<filter """.r.findAllMatchIn(s).size, 1)
     assert(s.contains("""id="watt-neon"""") && !s.contains("oh-glow"))
+  }
+
+  test("without its wall Watt is transparent: no brick or vignette, same tubes") {
+    for i <- all do
+      val bare = WattSvg.render(i, wall = false)
+      assert(!bare.contains("url(#watt-brick)") && !bare.contains("url(#watt-vig)"), i.toString)
+      assert(bare.contains("watt-glows"))
   }

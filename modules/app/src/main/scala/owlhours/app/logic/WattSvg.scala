@@ -120,7 +120,8 @@ object WattSvg:
       """<radialGradient id="watt-vig" cx="50%" cy="45%" r="72%"><stop offset="0" stop-color="#000" stop-opacity="0"/>""" +
       """<stop offset="1" stop-color="#000" stop-opacity=".62"/></radialGradient>"""
 
-  def render(i: Impairment): String =
+  /** `wall = false` leaves out the brick and vignette, for a page that draws the wall itself (Tonight's sign panel). */
+  def render(i: Impairment, wall: Boolean = true): String =
     val l      = look(i)
     val accent = if l.care then Tube.White else Tube.Amber
     val wings  = if l.care then Tube.White else Tube.Pink
@@ -136,6 +137,7 @@ object WattSvg:
         s"""<stop offset="1" stop-color="${l.spill}" stop-opacity="0"/></radialGradient>"""
     val motion = if l.motion.isEmpty then "" else s""" class="${l.motion}""""
     s"""<svg class="watt" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Watt the owl, ${Display.impairment(i)}">""" +
-      s"""<defs>$Defs$spill</defs><rect width="200" height="220" fill="url(#watt-brick)"/><rect width="200" height="220" fill="url(#watt-vig)"/>""" +
+      s"""<defs>$Defs$spill</defs>""" +
+      (if wall then """<rect width="200" height="220" fill="url(#watt-brick)"/><rect width="200" height="220" fill="url(#watt-vig)"/>""" else "") +
       s"""<ellipse cx="100" cy="124" rx="96" ry="100" fill="url(#watt-spill)"/>""" +
       s"""<g transform="rotate(${l.tilt} 100 112)"><g$motion style="transform-origin:100px 112px">${b.out("watt-neon")}</g></g></svg>"""

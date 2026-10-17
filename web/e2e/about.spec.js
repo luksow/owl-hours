@@ -11,7 +11,9 @@ test.beforeEach(async ({ page }) => {
 
 test("About explains the model, the band, the limits, privacy and credits", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: "About" }).click();
+  // About is reached from Settings (Plan 8: the header holds Log, History and Settings)
+  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "About the science" }).click();
   for (const h of ["How the estimate works", "The shaded band", "What it can't know", "Never for driving", "Privacy", "Credits"])
     await expect(page.getByRole("heading", { name: h })).toBeVisible();
   await expect(page.getByText("typical person-to-person variation", { exact: false })).toBeVisible();

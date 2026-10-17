@@ -2,16 +2,28 @@ package owlhours.app.logic
 
 import java.time.{Duration, Instant}
 import owlhours.domain.*
-import owlhours.model.Impairment
+import owlhours.model.{Impairment, Peak, Trend}
 
 object Display:
   def bac(bacMgDl: Double, bracMgL: Double, unit: BacUnit): String =
+    val (number, suffix) = bacParts(bacMgDl, bracMgL, unit)
+    number + suffix
+
+  /** The number and its unit apart, so Tonight can set the unit smaller (identity prototype, section 06). */
+  def bacParts(bacMgDl: Double, bracMgL: Double, unit: BacUnit): (String, String) =
     val v = unit.fromModel(bacMgDl, bracMgL)
     unit match
-      case BacUnit.Permille     => f"$v%.2f‰"
-      case BacUnit.PercentBac   => f"$v%.3f%%"
-      case BacUnit.MgPer100ml   => f"$v%.0f mg/100 ml"
-      case BacUnit.BreathMgPerL => f"$v%.2f mg/L"
+      case BacUnit.Permille     => (f"$v%.2f", "‰")
+      case BacUnit.PercentBac   => (f"$v%.3f", "%")
+      case BacUnit.MgPer100ml   => (f"$v%.0f", " mg/100 ml")
+      case BacUnit.BreathMgPerL => (f"$v%.2f", " mg/L")
+
+  /** The line under the number: the trend, and while rising towards a peak still ahead, its time. */
+  def trendLine(trend: Trend, peak: Option[Peak], now: Instant, hhmm: Instant => String): String = trend match
+    case Trend.Rising =>
+      peak.filter(_.at.isAfter(now)).fold("↗ Rising")(p => s"↗ Rising · peak ${hhmm(p.at)}")
+    case Trend.Falling => "↘ Falling"
+    case Trend.Steady  => "→ Steady"
 
   /** Peaks are blood figures; with the breath unit they are shown in ‰, as on Tonight. */
   def peak(bacMgDl: Double, unit: BacUnit): String = bac(bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)

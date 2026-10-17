@@ -101,7 +101,7 @@ class ChartSvgSuite extends munit.FunSuite:
     val s = ChartSvg.render(t, at(40), Nil, _ => 0, label, bacLabel = p => f"$p%.2f‰")
     assert(s.contains("""class="oh-peak""""))
     val pk = t.summary.peak.get
-    assert(s.contains(s"${f"${pk.bacMgDl / BacUnit.MgDlPerPermille}%.2f‰"} · ${label(pk.at)}"), "peak label")
+    assert(s.contains(s"${f"${math.round(pk.bacMgDl / BacUnit.MgDlPerPermille * 100) / 100.0}%.2f‰"} · ${label(pk.at)}"), "peak label")
     assert("""<g class="oh-back"[^>]*>.*?cy="170.0"""".r.findFirstIn(s).isDefined, "back-to dot on the baseline")
   }
 
@@ -144,4 +144,11 @@ class ChartSvgSuite extends munit.FunSuite:
       label = "Blood alcohol estimate on Tue 14 Oct & co", showNow = false)
     assert(s.contains("""aria-label="Blood alcohol estimate on Tue 14 Oct &amp; co""""), s.take(200))
     assert(!s.contains("oh-now"))
+  }
+
+  test("the peak label is rounded to two decimals in every unit") {
+    val t = Tonight.of(profile, Some(session), at(40))
+    val s = ChartSvg.render(t, at(40), Nil, _ => 0, label, bacLabel = p => Display.gridLabel(p, BacUnit.Permille))
+    val shown = """<g class="oh-peak">.*?>([^<]*) · """.r.findFirstMatchIn(s).map(_.group(1))
+    assert(shown.exists(v => v.stripSuffix("‰").split('.').lift(1).forall(_.length <= 2)), shown.toString)
   }

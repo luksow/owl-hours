@@ -12,10 +12,10 @@ test("first run: disclaimer, then profile, then Tonight", async ({ page }) => {
   await page.getByLabel("Weight (kg)").fill("80");
   await page.getByLabel("Height (cm)").fill("180");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Tonight", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Tonight · /)).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText("Tonight", { exact: true })).toBeVisible(); // remembered
+  await expect(page.getByText(/^Tonight · /)).toBeVisible(); // remembered
 });
 
 test("profile errors are shown together", async ({ page }) => {

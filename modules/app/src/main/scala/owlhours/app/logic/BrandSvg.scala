@@ -40,6 +40,14 @@ object BrandSvg:
     s"""<svg class="neon-art" viewBox="0 0 560 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Owl Hours">""" +
       s"""$defs<g transform="translate(12 18) scale(1.24)">${b.out(id)}</g>$name$tagline</svg>"""
 
+  /** The glowing name alone, for Tonight's header (identity prototype, section 06). */
+  val script: String =
+    val id   = "oh-neon-script"
+    val text = """<text x="12" y="92" font-family="Mr Dafoe, cursive" font-size="92""""
+    s"""<svg class="neon-art" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Owl Hours">""" +
+      s"""<defs>${glow(id)}</defs><g filter="url(#$id)">$text fill="#FF3F8E" stroke="#FF3F8E" stroke-width="3" stroke-linejoin="round">Owl Hours</text></g>""" +
+      s"""$text fill="#FFD2E3">Owl Hours</text></svg>"""
+
   /** A bent-tube plaque for the badges that have art (§8.6: Hydration hero, Slow sipper); the title beside it says the rest. */
   def badge(badge: Badge): Option[String] =
     val drawing: Option[(String, Tube, Bender => Unit)] = badge match

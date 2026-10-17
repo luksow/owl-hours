@@ -22,7 +22,7 @@ test("log a pint an hour ago: BAC above zero, peak chip, Same again enabled", as
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
   await expect(page.getByTestId("bac")).not.toHaveText("0.00‰");
-  await expect(page.getByText(/^Peak /)).toBeVisible();
+  await expect(page.getByTestId("chips").getByText("Peak", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Same again" })).toBeEnabled();
   await expect(page.locator("svg .oh-past")).toHaveCount(1);
 });

@@ -114,7 +114,7 @@ object ChartSvg:
     // the peak, labelled, and the moment the estimate is back to ~0, as glowing dots (spec §3)
     for pk <- t.summary.peak if pk.at.toEpochMilli >= from && pk.at.toEpochMilli <= to do
       val (px, py) = (x(pk.at), y(pk.bacMgDl))
-      val text     = s"${bacLabel(pk.bacMgDl / BacUnit.MgDlPerPermille)} · ${timeLabel(pk.at)}"
+      val text     = s"${bacLabel(math.round(pk.bacMgDl / BacUnit.MgDlPerPermille * 100) / 100.0)} · ${timeLabel(pk.at)}"
       val lx       = math.max(x0 + 30, math.min(x1 - 30, px))
       sb ++= s"""<g class="oh-peak"><circle cx="${n(px)}" cy="${n(py)}" r="3.5" fill="$Amber" filter="url(#oh-glow)"/>"""
       sb ++= s"""<text x="${n(lx)}" y="${n(math.max(10, py - 8))}" text-anchor="middle" font-size="10" fill="$Ink">${Markup.escape(text)}</text></g>"""

@@ -46,7 +46,7 @@ test.describe("Chromium", () => {
     await page.getByLabel("Weight (kg)").fill("64");
     await page.getByLabel("Height (cm)").fill("168");
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Tonight", { exact: true })).toBeVisible();
+    await expect(page.getByText(/^Tonight · /)).toBeVisible();
     await expect(card(page)).toBeVisible();
   });
 

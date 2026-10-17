@@ -41,3 +41,10 @@ class BrandSvgSuite extends munit.FunSuite:
     assert(numbers.nonEmpty)
     assert(numbers.forall(v => v >= 0 && v <= 100), numbers)
   }
+
+  test("the script wordmark glows through its own filter and carries no mark") {
+    val s = BrandSvg.script
+    assert(s.contains("""aria-label="Owl Hours""""))
+    assert(s.contains("""<filter id="oh-neon-script""""))
+    assert(!s.contains(BrandSvg.Head))
+  }
