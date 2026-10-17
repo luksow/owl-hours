@@ -52,6 +52,12 @@ body {
 .watt .watt-cores path { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }
 .watt .watt-unlit path { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke: #4a2f39; }
 .watt .watt-faint { opacity: 0.28; }
+
+/* Brand drawings (BrandSvg): the same layers as Watt, with the prototype's thinner plaque tubes. */
+.neon-art .watt-glows path { fill: none; stroke-width: 4.4; stroke-linecap: round; stroke-linejoin: round; }
+.neon-art .watt-cores path { fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }
+.neon-art .watt-unlit path { fill: none; stroke-width: 4.4; stroke-linecap: round; stroke-linejoin: round; }
+.neon-art .watt-faint { opacity: 0.28; }
 .watt-hum { animation: watt-hum 3.4s ease-in-out infinite; }
 .watt-jitter { animation: watt-jitter 2.6s steps(1, end) infinite; }
 .watt-sway { animation: watt-sway 2.8s ease-in-out infinite; }

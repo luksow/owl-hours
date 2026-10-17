@@ -5,6 +5,17 @@ import owlhours.model.Impairment
 class WattSvgSuite extends munit.FunSuite:
   private val all = Impairment.values.toList
 
+  // Captured before Watt's tube bender moved to Neon (Plan 7); the markup must stay byte-identical.
+  private val Expected = List(
+    Impairment.Sober -> -1909525662, Impairment.WarmingUp -> 1896105683, Impairment.Tipsy -> 586710865,
+    Impairment.Buzzed -> -1157217691, Impairment.Drunk -> -249149426, Impairment.Wobbly -> 1146328159,
+    Impairment.TakeCare -> 256039729)
+
+  test("refactor guard: every state's markup is unchanged") {
+    val hashes = all.map(i => i -> WattSvg.render(i).hashCode)
+    assertEquals(hashes, Expected)
+  }
+
   test("every state is a labelled SVG and every state looks different") {
     for i <- all do
       val s = WattSvg.render(i)

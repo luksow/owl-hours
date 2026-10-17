@@ -69,9 +69,11 @@ object HistoryScreen:
       p(cls := "text-sm text-dim", s"Standard drink: ${Display.standardDrinkName(settings.standardDrink)}"),
       div(cls := "rounded-2xl border border-line bg-surface p-2", InnerHtml(Signal.constant(chart))),
       Option.when(n.badges.nonEmpty)(div(cls := "space-y-3", n.badges.map(b =>
-        div(cls := "rounded-2xl border border-ice/60 bg-surface p-4",
-          h3(cls := "font-display text-3xl text-ice", b.title),
-          p(cls := "mt-1 text-dim", b.why))))),
+        div(cls := "flex items-center gap-4 rounded-2xl border border-ice/60 bg-surface p-4",
+          BrandSvg.badge(b).map(art => div(dataAttr("testid") := "badge-art", cls := "size-20 shrink-0", InnerHtml(Signal.constant(art)))),
+          div(
+            h3(cls := "font-display text-3xl text-ice", b.title),
+            p(cls := "mt-1 text-dim", b.why)))))),
       ul(cls := "space-y-2", s.intakes.toList.map(i =>
         li(cls := "rounded-xl border border-line bg-surface px-3 py-2", s"${TimeFormat.hhmm(i.startsAt)} · ${Display.intake(i)}"))),
       p(cls := "text-sm text-dim", "To change an entry, open the Log.")

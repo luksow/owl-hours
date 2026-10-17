@@ -40,3 +40,10 @@ test("profile errors are announced to screen readers", async ({ page }) => {
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("alert")).toContainText("Choose the sex the model should use");
 });
+
+test("onboarding opens with the lit Owl Hours lockup", async ({ page }) => {
+  await page.goto("/");
+  const lockup = page.locator('svg[aria-label="Owl Hours"]');
+  await expect(lockup).toBeVisible();
+  await expect(lockup.locator("text").first()).toHaveText("Owl Hours");
+});

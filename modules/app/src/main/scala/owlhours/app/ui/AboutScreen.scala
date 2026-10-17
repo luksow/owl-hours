@@ -2,8 +2,10 @@ package owlhours.app.ui
 
 import calico.html.io.{*, given}
 import cats.effect.{IO, Resource}
+import fs2.concurrent.Signal
 import fs2.dom.HtmlElement
 import owlhours.app.{AppState, Route}
+import owlhours.app.logic.BrandSvg
 
 object AboutScreen:
   private def para(text: String) = p(cls := "font-body text-ink/90", text)
@@ -13,6 +15,7 @@ object AboutScreen:
     div(
       cls := Screen.frame,
       Screen.header("About the science", app.go(Route.Tonight)),
+      div(cls := "mx-auto mb-6 w-full max-w-xs", InnerHtml(Signal.constant(BrandSvg.wordmark(lit = true)))),
       Screen.section("How the estimate works")(
         para("Owl Hours runs a published physiological model of how a body handles alcohol: how quickly it leaves the stomach " +
           "(more slowly after food, and with drinks that carry other energy, such as sugar), how it is absorbed, how it spreads " +

@@ -1,7 +1,7 @@
 package owlhours.app.logic
 
-import owlhours.domain.Format
 import owlhours.model.Impairment
+import Neon.*
 
 /**
  * Watt, the hand-bent neon owl (spec §8.1), ported from docs/branding/owl-hours-identity-prototype.html.
@@ -9,35 +9,6 @@ import owlhours.model.Impairment
  * dark. Motion classes are defined in web/main.css and respect prefers-reduced-motion.
  */
 object WattSvg:
-  enum Tube(val glow: String, val core: String):
-    case Pink  extends Tube("#FF3F8E", "#FFD2E3")
-    case Amber extends Tube("#FFB03B", "#FFF0CC")
-    case Ice   extends Tube("#5CE1FF", "#E8FCFF")
-    case Warn  extends Tube("#FF6A3D", "#FFD9C9")
-    case White extends Tube("#FFE7C2", "#FFFFFF")
-
-  private def n(d: Double): String = Format.number(math.round(d * 100) / 100.0)
-
-  /** Collects glow, core and unlit layers; `off` draws an unlit tube, other classes style or animate the segment. */
-  private final class Bender:
-    private val glows = new StringBuilder
-    private val cores = new StringBuilder
-    private val unlit = new StringBuilder
-
-    def add(d: String, tube: Tube, cls: String = "", transform: String = ""): Unit =
-      val t = if transform.isEmpty then "" else s""" transform="$transform""""
-      if cls.split(' ').contains("off") then unlit ++= s"""<path d="$d"$t/>"""
-      else
-        val c = if cls.isEmpty then "" else s""" class="$cls""""
-        glows ++= s"""<path$c d="$d" stroke="${tube.glow}"$t/>"""
-        cores ++= s"""<path$c d="$d" stroke="${tube.core}"$t/>"""
-
-    def out: String =
-      s"""<g class="watt-unlit">$unlit</g><g class="watt-glows" filter="url(#watt-neon)">$glows</g><g class="watt-cores">$cores</g>"""
-
-  private def circ(cx: Double, cy: Double, r: Double): String =
-    s"M${n(cx - r)},${n(cy)} a${n(r)},${n(r)} 0 1,0 ${n(2 * r)},0 a${n(r)},${n(r)} 0 1,0 ${n(-2 * r)},0"
-
   /** The lower part of an eye below a lid at `lidY`, plus the faint upper remainder. */
   private def lidEye(b: Bender, cx: Double, cy: Double, r: Double, lidY: Double, tube: Tube): Unit =
     val dy    = lidY - cy
@@ -167,4 +138,4 @@ object WattSvg:
     s"""<svg class="watt" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Watt the owl, ${Display.impairment(i)}">""" +
       s"""<defs>$Defs$spill</defs><rect width="200" height="220" fill="url(#watt-brick)"/><rect width="200" height="220" fill="url(#watt-vig)"/>""" +
       s"""<ellipse cx="100" cy="124" rx="96" ry="100" fill="url(#watt-spill)"/>""" +
-      s"""<g transform="rotate(${l.tilt} 100 112)"><g$motion style="transform-origin:100px 112px">${b.out}</g></g></svg>"""
+      s"""<g transform="rotate(${l.tilt} 100 112)"><g$motion style="transform-origin:100px 112px">${b.out("watt-neon")}</g></g></svg>"""

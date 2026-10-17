@@ -3,9 +3,10 @@ package owlhours.app.ui
 import calico.html.io.{*, given}
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
-import fs2.concurrent.SignallingRef
+import fs2.concurrent.{Signal, SignallingRef}
 import fs2.dom.HtmlElement
 import owlhours.app.AppState
+import owlhours.app.logic.BrandSvg
 
 object Onboarding:
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
@@ -20,6 +21,7 @@ object Onboarding:
     SignallingRef[IO].of(false).toResource.flatMap { understood =>
       div(
         cls := card,
+        div(cls := "mx-auto mb-6 w-full max-w-xs", InnerHtml(Signal.constant(BrandSvg.wordmark(lit = true)))),
         h1(cls := "font-ui text-3xl font-semibold uppercase tracking-wide", "Before we start"),
         p(cls := "mt-4", "Owl Hours estimates your blood alcohol from what you log, using a published physiological model."),
         ul(

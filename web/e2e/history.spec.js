@@ -55,3 +55,12 @@ test("the open night is not in History", async ({ page }) => {
   await page.goto("/#/history");
   await expect(page.getByText("No past nights yet.", { exact: false })).toBeVisible();
 });
+
+test("a night's badges show their neon plaques where the brand has one", async ({ page }) => {
+  await onboarded(page, pastNights());
+  await page.goto("/#/history/night-a");
+  await expect(page.getByRole("heading", { name: "Hydration hero" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Fed & steady" })).toBeVisible();
+  await expect(page.locator("[data-testid=badge-art]")).toHaveCount(2); // Hydration hero, Slow sipper
+  await expect(page.locator("[data-testid=badge-art] svg[aria-hidden=true]")).toHaveCount(2);
+});
