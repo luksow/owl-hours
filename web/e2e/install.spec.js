@@ -89,13 +89,64 @@ test.describe("Chromium", () => {
   });
 });
 
+test.describe("Chromium, the awkward cases", () => {
+  test("if the browser's dialog fails, the card goes away and the next offer works", async ({ page }) => {
+    await onboarded(page);
+    await page.goto("/");
+    await expect(page.getByTestId("bac")).toBeVisible();
+    await page.evaluate(() => {
+      const e = new Event("beforeinstallprompt", { cancelable: true });
+      e.prompt = async () => { throw new DOMException("no user gesture", "NotAllowedError"); };
+      e.userChoice = new Promise(() => {});
+      window.dispatchEvent(e);
+    });
+    await card(page).getByRole("button", { name: "Install" }).click();
+    await expect(card(page)).toHaveCount(0);
+    await offerInstall(page);
+    await card(page).getByRole("button", { name: "Install" }).click();
+    await expect.poll(() => page.evaluate(() => window.__prompted)).toBe(true);
+  });
+
+  test("an offer that lands while the app is still wiring up its listener is not lost", async ({ page }) => {
+    await onboarded(page);
+    // just before the app starts listening, Chromium makes its offer (the app has already read "nothing to install")
+    await page.addInitScript(() => {
+      const add = window.addEventListener;
+      let fired = false;
+      window.addEventListener = function (type, ...rest) {
+        if (type === "oh-install-changed" && !fired) {
+          fired = true;
+          const e = new Event("beforeinstallprompt", { cancelable: true });
+          e.prompt = async () => {};
+          e.userChoice = Promise.resolve({ outcome: "accepted", platform: "web" });
+          window.dispatchEvent(e);
+        }
+        return add.call(this, type, ...rest);
+      };
+    });
+    await page.goto("/");
+    await expect(page.getByTestId("bac")).toBeVisible();
+    await expect(card(page)).toBeVisible();
+  });
+
+  test("with nothing to install, Settings has no empty gap where the card would be", async ({ page }) => {
+    await onboarded(page);
+    await page.goto("/#/settings");
+    const data = await page.getByRole("heading", { name: "Your data" }).locator("..").boundingBox();
+    const about = await page.getByRole("button", { name: "About the science" }).boundingBox();
+    expect(about.y - (data.y + data.height)).toBeLessThanOrEqual(16);
+  });
+});
+
+
 test.describe("iOS", () => {
   test.use({ userAgent: iphone });
 
   test("Safari users get the Share → Add to Home Screen hint, and Got it hides it for good", async ({ page }) => {
     await onboarded(page);
     await page.goto("/");
-    await expect(card(page)).toContainText("Add to Home Screen");
+    await expect(card(page)).toContainText("Tap Share, then Add to Home Screen");
+    await expect(card(page)).not.toContainText("Safari"); // Chrome, Firefox and Edge on iOS have the same Share menu
     await card(page).getByRole("button", { name: "Got it" }).click();
     await expect(card(page)).toHaveCount(0);
     await page.reload();

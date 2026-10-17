@@ -1,7 +1,9 @@
 package owlhours.app.platform
 
-import cats.effect.IO
+import cats.effect.std.Dispatcher
+import cats.effect.{IO, Resource}
 import cats.syntax.all.*
+import fs2.concurrent.{Signal, SignallingRef}
 import org.scalajs.dom
 import owlhours.app.logic.InstallHint
 import scala.scalajs.js
@@ -19,10 +21,26 @@ object Install {
     InstallHint.Env(ready, InstallHint.isIos(dom.window.navigator.userAgent, touch), standalone)
   }
 
-  def changes: fs2.Stream[IO, Unit] = fs2.dom.events[IO, dom.Event](dom.window, "oh-install-changed").void
+  /**
+   * `env`, kept current by web/main.js's "oh-install-changed". The listener is attached before `env` is read again,
+   * so an offer that lands while the app starts up is seen either by that read or by the listener.
+   */
+  def signal: Resource[IO, Signal[IO, InstallHint.Env]] =
+    for {
+      ref        <- env.flatMap(SignallingRef[IO].of).toResource
+      dispatcher <- Dispatcher.sequential[IO]
+      refresh     = env.flatMap(ref.set)
+      _ <- Resource.make(IO {
+        val listener: js.Function1[dom.Event, Unit] = _ => dispatcher.unsafeRunAndForget(refresh)
+        dom.window.addEventListener("oh-install-changed", listener)
+        listener
+      })(listener => IO(dom.window.removeEventListener("oh-install-changed", listener)))
+      _ <- refresh.toResource
+    } yield ref
 
+  /** A failed prompt is not an error the app can act on; the bridge reports the change either way. */
   def prompt: IO[Unit] =
     IO(js.typeOf(js.Dynamic.global.ohInstall) == "function").ifM(
-      IO.fromPromise(IO(js.Dynamic.global.ohInstall().asInstanceOf[js.Promise[String]])).void,
+      IO.fromPromise(IO(js.Dynamic.global.ohInstall().asInstanceOf[js.Promise[String]])).void.attempt.void,
       IO.unit)
 }

@@ -20,8 +20,9 @@ object InstallCard {
     })
 
   def settings(app: AppState): Resource[IO, HtmlElement[IO]] =
-    div(app.install.changes(using Eq.fromUniversalEquals).map {
-      case None    => div(())
+    // `contents` and `hidden` keep an absent card from taking a gap in the Settings column
+    div(cls := "contents", app.install.changes(using Eq.fromUniversalEquals).map {
+      case None    => div(cls := "hidden")
       case Some(h) => Screen.section("Install")(card(app, h, dismissible = false, margin = ""))
     })
 
@@ -32,7 +33,7 @@ object InstallCard {
           List(button(cls := s"$Button bg-surface-2 text-ice", onClick --> (_.foreach(_ => app.promptInstall)), "Install")) ++
             Option.when(dismissible)(button(cls := s"$Button text-dim", onClick --> (_.foreach(_ => app.dismissInstallHint)), "Not now")))
       case InstallHint.IosShare =>
-        ("In Safari, tap Share, then Add to Home Screen. It works offline after that.",
+        ("Tap Share, then Add to Home Screen. It works offline after that.",
           Option.when(dismissible)(button(cls := s"$Button text-ice", onClick --> (_.foreach(_ => app.dismissInstallHint)), "Got it")).toList)
     }
     sectionTag(

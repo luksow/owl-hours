@@ -27,10 +27,15 @@ window.ohInstall = async () => {
   const e = installEvent;
   if (!e) return "unavailable";
   installEvent = null; // prompt() works once per event
-  await e.prompt();
-  const { outcome } = await e.userChoice;
-  installChanged();
-  return outcome;
+  try {
+    await e.prompt();
+    const { outcome } = await e.userChoice;
+    return outcome;
+  } catch {
+    return "failed"; // the event is spent either way, so the card must not keep a dead Install button
+  } finally {
+    installChanged();
+  }
 };
 
 import "scalajs:main.js";

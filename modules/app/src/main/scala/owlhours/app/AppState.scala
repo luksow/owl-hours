@@ -155,8 +155,7 @@ object AppState {
       // leaving a screen dismisses its undo bar
       _ <- route.discrete.drop(1).foreach(_ => undo.set(None)).compile.drain.background
       dismissed <- store.loadInstallHintDismissed.flatMap(SignallingRef[IO].of).toResource
-      env0      <- Install.env.toResource
-      install   <- Install.changes.evalMap(_ => Install.env).holdResource(env0).map(_.map(InstallHint.of))
+      install   <- Install.signal.map(_.map(InstallHint.of))
       lock      <- Mutex[IO].toResource
     }
     yield AppState(persisted, catalogue, problems, undo, replaced, now, route, install, dismissed, store, window, lock)
