@@ -13,6 +13,7 @@ import owlhours.app.logic.{Amount, ChartSvg, Display, Durations, Edits, RecipeEd
 import owlhours.app.platform.{Now, TimeFormat}
 import owlhours.catalogue.*
 import owlhours.domain.*
+import owlhours.app.logic.WhenPick.When
 import scala.concurrent.duration.DurationInt
 
 object AddDrinkSheet:
@@ -97,7 +98,7 @@ object AddDrinkSheet:
     (
       SignallingRef[IO].of(amount0),
       SignallingRef[IO].of(duration0),
-      SignallingRef[IO].of[Pickers.When](Pickers.When.Ago(0)),
+      SignallingRef[IO].of[When](When.Ago(0)),
       SignallingRef[IO].of(Option.empty[Double]),
       SignallingRef[IO].of(List.empty[String]),
       SignallingRef[IO].of(Option.empty[(String, List[String])]),
@@ -185,7 +186,7 @@ object AddDrinkSheet:
             )
           case _ => Pickers.amountField("Amount (ml)", amount, presets)
         ,
-        Pickers.when(when),
+        Pickers.when(when, app.now),
         Pickers.minutesField(duration),
         div(dataAttr("testid") := "what-if", cls := "rounded-2xl border border-line bg-surface p-2",
           p(cls := "px-2 font-ui text-sm uppercase tracking-widest text-dim", "With this drink"),
@@ -202,7 +203,7 @@ object AddDrinkSheet:
     }
 
   /** `ingredients`: per-ingredient amounts when the person adjusted a cocktail line by line (the amount is then ignored). */
-  private def candidate(entry: Entry, abv: Option[Double], amount: String, duration: String, when: Pickers.When,
+  private def candidate(entry: Entry, abv: Option[Double], amount: String, duration: String, when: When,
       ingredients: Option[List[String]], now: Instant): EitherNel[String, Intake.Drink] =
     val volume  = Amount.drinkMl(amount).toEitherNel
     val minutes = Amount.minutes(duration).toEitherNel
@@ -223,7 +224,7 @@ object AddDrinkSheet:
       case _                        => byAmount
     (snapshot, start, minutes).parMapN((s, t, d) => Intake.Drink(s, t, d))
 
-  private def add(app: AppState, entry: Entry, abv: Option[Double], amount: String, duration: String, when: Pickers.When,
+  private def add(app: AppState, entry: Entry, abv: Option[Double], amount: String, duration: String, when: When,
       ingredients: Option[List[String]], errors: SignallingRef[IO, List[String]]): IO[Unit] =
     Now.instant.flatMap { now =>
       candidate(entry, abv, amount, duration, when, ingredients, now) match

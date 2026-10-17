@@ -12,6 +12,7 @@ import owlhours.app.logic.{Amount, Display, Edits, IntakeEdit}
 import owlhours.app.platform.{LocalDateTime, Now, TimeFormat}
 import owlhours.catalogue.Catalogue
 import owlhours.domain.*
+import owlhours.app.logic.WhenPick.When
 
 object LogScreen:
   private final case class Ref(night: Int, index: Int)
@@ -67,7 +68,7 @@ object LogScreen:
       case Intake.Water(v, _, d) => (Some(v.unwrap), Some(d.unwrap), None, None)
       case Intake.Meal(k, _)     => (None, None, None, Some(k.unwrap))
     (
-      SignallingRef[IO].of(LocalDateTime.format(intake.startsAt)),
+      SignallingRef[IO].of[When](When.At(LocalDateTime.format(intake.startsAt))),
       SignallingRef[IO].of(volume0.fold("")(Format.number)),
       SignallingRef[IO].of(duration0.fold("")(Format.number)),
       SignallingRef[IO].of(abv0.fold("")(Format.number)),
@@ -84,7 +85,7 @@ object LogScreen:
       val save: IO[Unit] =
         (start.get, volume.get, duration.get, abv.get, kcal.get, Now.instant).flatMapN { (st, v, d, a, k, now) =>
           val edit: EitherNel[String, IntakeEdit] = (
-            LocalDateTime.parseDetailed(st).flatMap(Edits.notInFuture(_, now)).toEitherNel,
+            Pickers.resolveWhen(st, now).toEitherNel,
             volume0.traverse(_ => Amount.drinkMl(v)).toEitherNel,
             duration0.traverse(_ => Amount.minutes(d)).toEitherNel,
             abv0.traverse(_ => Amount.abv(a).flatMap(x => abvLimits.fold(Right(x))((name, r) => Edits.checkAbv(x, r, name)))).toEitherNel,
@@ -96,7 +97,7 @@ object LogScreen:
         }
       div(
         cls := "mt-2 space-y-3 rounded-xl border border-line bg-surface-2 p-3",
-        text("Started at", start, "datetime-local"),
+        Pickers.when(start, app.now),
         Option.when(volume0.isDefined)(text("Amount (ml)", volume, "text")),
         Option.when(duration0.isDefined)(text("Drinking time (min)", duration, "text")),
         Option.when(abv0.isDefined)(text("ABV (%)", abv, "text")),

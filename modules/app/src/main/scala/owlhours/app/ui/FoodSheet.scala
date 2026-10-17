@@ -9,16 +9,17 @@ import owlhours.app.{AppState, Route}
 import owlhours.app.logic.Amount
 import owlhours.app.platform.Now
 import owlhours.domain.*
+import owlhours.app.logic.WhenPick.When
 
 object FoodSheet:
   private val Presets = List("Snack" -> 250, "Light meal" -> 500, "Full meal" -> 900, "Feast" -> 1400)
 
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
-    (SignallingRef[IO].of("900"), SignallingRef[IO].of[Pickers.When](Pickers.When.Ago(0)), SignallingRef[IO].of(List.empty[String]))
+    (SignallingRef[IO].of("900"), SignallingRef[IO].of[When](When.Ago(0)), SignallingRef[IO].of(List.empty[String]))
       .tupled.toResource.flatMap { (kcal, when, errors) =>
         Sheet("Food", app)(
           Pickers.amountField("Energy (kcal)", kcal, Presets.map((n, k) => s"$n · $k kcal" -> k.toString)),
-          Pickers.when(when),
+          Pickers.when(when, app.now),
           Sheet.errors(errors),
           Sheet.addButton {
             (kcal.get, when.get, Now.instant).flatMapN { (k, w, now) =>

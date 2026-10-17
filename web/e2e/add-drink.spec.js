@@ -33,7 +33,6 @@ test("custom amount, a picked start time and a custom drinking time", async ({ p
   await page.getByLabel("Search drinks").fill("pils");
   await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).click();
   await page.getByLabel("Amount (ml)").fill("400");
-  await page.getByRole("button", { name: "Pick time" }).click();
   const started = new Date(Date.now() - 90 * 60_000);
   await page.getByLabel("Started at").fill(localInput(started));
   await page.getByLabel("Drinking time (min)").fill("45");
@@ -63,7 +62,6 @@ test("bad input is explained and nothing is logged", async ({ page }) => {
   await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).click();
   await page.getByLabel("Amount (ml)").fill("abc");
   await page.getByLabel("Drinking time (min)").fill("");
-  await page.getByRole("button", { name: "Pick time" }).click();
   await page.getByLabel("Started at").fill(localInput(new Date(Date.now() + 3 * 3600_000)));
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Amount must be a number")).toBeVisible();
@@ -72,15 +70,14 @@ test("bad input is explained and nothing is logged", async ({ page }) => {
   expect(await stored(page)).toEqual([]);
 });
 
-test("review: tapping Pick time again keeps the picked time", async ({ page }) => {
+test("a typed start time survives the clock's tick", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "+ Drink" }).click();
   await page.getByLabel("Search drinks").fill("pils");
   await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).click();
-  await page.getByRole("button", { name: "Pick time" }).click();
   const started = new Date(Date.now() - 120 * 60_000);
   await page.getByLabel("Started at").fill(localInput(started));
-  await page.getByRole("button", { name: "Pick time" }).click();
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange"))); // the app re-reads the clock
   await expect(page.getByLabel("Started at")).toHaveValue(localInput(started));
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByTestId("bac")).toBeVisible();

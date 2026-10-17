@@ -38,3 +38,21 @@ test("food: invalid kcal is explained", async ({ page }) => {
   await expect(page.getByText("Energy must be between 0 and 5000 kcal, got 9000")).toBeVisible();
   expect(await stored(page)).toEqual([]);
 });
+
+test("the time field is shown from the start and the chips fill it", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("oh.v1.disclaimer", "true");
+    localStorage.setItem("oh.v1.profile", JSON.stringify({ sex: "Female", born: "1995-05-05", weight: 64, height: 168 }));
+  });
+  await page.goto("/#/water");
+  const field = page.getByLabel("Started at");
+  await expect(field).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pick time" })).toHaveCount(0);
+  const nowText = await field.inputValue();
+  await page.getByRole("button", { name: "30 min ago" }).click();
+  await expect(page.getByRole("button", { name: "30 min ago" })).toHaveAttribute("aria-pressed", "true");
+  const thirty = await field.inputValue();
+  expect(new Date(nowText) - new Date(thirty)).toBe(30 * 60_000);
+  await field.fill(thirty.slice(0, 11) + "00:05");
+  await expect(page.getByRole("button", { name: "30 min ago" })).toHaveAttribute("aria-pressed", "false");
+});
