@@ -78,9 +78,13 @@ fs.writeFileSync(out("favicon.ico"), ico(favicons));
 // The social preview shows the product (spec §8): Watt and a real curve, captured from the built app.
 {
   const app = await serve(dist);
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3 });
+  // a fixed evening, locale and time zone, so the preview's clock and weekday don't depend on who renders it, or when
+  const evening = Date.parse("2026-10-16T21:40:00Z");
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, locale: "en-GB", timezoneId: "Europe/London" });
+  const page = await context.newPage();
+  await page.clock.setFixedTime(evening);
   await page.emulateMedia({ reducedMotion: "reduce" }); // Watt holds still
-  const iso = (m) => new Date(Date.now() - m * 60_000).toISOString();
+  const iso = (m) => new Date(evening - m * 60_000).toISOString();
   const pint = { catalogueId: "pale-lager", name: "Pale lager / Pilsner", volume: 500, abv: 5, kcalPerLitre: 404.15, components: [] };
   const night = [{ id: "og", startedAt: iso(45), intakes: [
     { type: "drink", snapshot: pint, start: iso(45), duration: 15 },
@@ -100,7 +104,7 @@ fs.writeFileSync(out("favicon.ico"), ico(favicons));
   await page.addStyleTag({ content: "*, *::before, *::after { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }" });
   await page.locator("[data-testid=watt] svg").screenshot({ path: path.join(web, "brand", "og-watt.png"), omitBackground: true });
   await page.locator("[data-testid=chart-card] svg").screenshot({ path: path.join(web, "brand", "og-curve.png"), omitBackground: true });
-  await page.close();
+  await context.close();
   app.close();
 }
 fs.writeFileSync(out("og-image.png"), await shoot("/brand/poster.html?kind=social", 1200, 630));
