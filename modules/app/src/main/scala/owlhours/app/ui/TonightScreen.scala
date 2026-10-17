@@ -134,22 +134,24 @@ object TonightScreen:
 
   private def actionBar(app: AppState, session: Signal[IO, Option[Session]]) =
     val lastDrink = session.map(_.flatMap(_.lastDrink))
-    def icon(i: Icon, tube: Tube, px: Int) = span(cls := "inline-grid", InnerHtml(Signal.constant(Icons.svg(i, tube, px))))
+    def icon(i: Icon, tube: Tube) = span(cls := "inline-grid", InnerHtml(Signal.constant(Icons.svg(i, tube, 22))))
+    // four equal tiles; + Drink is the one filled, glowing tile, the others are outlined in their own colour
+    val Tile = "flex items-center justify-center gap-2 rounded-2xl border bg-surface text-lg font-semibold uppercase tracking-wide"
     div(
       dataAttr("testid") := "action-bar",
-      cls := "sticky bottom-0 mt-auto grid grid-cols-[1.5fr_1fr] grid-rows-[4rem_3.5rem] gap-2 bg-wall/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
-      button(cls := "flex items-center justify-center gap-2 rounded-2xl border border-pink bg-surface-2 text-2xl font-bold uppercase tracking-wider text-pink shadow-[0_0_18px_rgba(255,63,142,0.45)]",
-        onClick --> (_.foreach(_ => app.go(Route.AddDrink))), icon(Icon.Drink, Tube.Pink, 26), "+ Drink"),
-      button(cls := "flex items-center justify-center gap-2 rounded-2xl border border-line bg-surface text-base font-semibold uppercase disabled:opacity-40",
+      cls := "sticky bottom-0 mt-auto grid grid-cols-2 auto-rows-[3.75rem] gap-2 bg-wall/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+      button(cls := s"$Tile border-pink bg-surface-2 font-bold text-pink shadow-[0_0_18px_rgba(255,63,142,0.45)]",
+        onClick --> (_.foreach(_ => app.go(Route.AddDrink))), icon(Icon.Drink, Tube.Pink), "+ Drink"),
+      button(cls := s"$Tile border-pink/60 text-pink disabled:opacity-40",
         disabled <-- lastDrink.map(_.isEmpty),
         onClick --> (_.foreach(_ =>
           (lastDrink.get, Now.instant).flatMapN {
             case (Some(d), now) => app.addIntake(Intake.Drink(d.snapshot, now, d.duration))
             case (None, _)      => IO.unit
           })),
-        icon(Icon.Repeat, Tube.White, 20), "Same again"),
-      button(cls := "flex items-center justify-center gap-2 rounded-2xl border border-ice/60 bg-surface text-lg font-semibold uppercase text-ice",
-        onClick --> (_.foreach(_ => app.go(Route.Water))), icon(Icon.Water, Tube.Ice, 22), "Water"),
-      button(cls := "flex items-center justify-center gap-2 rounded-2xl border border-amber/60 bg-surface text-lg font-semibold uppercase text-amber",
-        onClick --> (_.foreach(_ => app.go(Route.Food))), icon(Icon.Food, Tube.Amber, 22), "Food")
+        icon(Icon.Repeat, Tube.Pink), "Same again"),
+      button(cls := s"$Tile border-ice/60 text-ice",
+        onClick --> (_.foreach(_ => app.go(Route.Water))), icon(Icon.Water, Tube.Ice), "Water"),
+      button(cls := s"$Tile border-amber/60 text-amber",
+        onClick --> (_.foreach(_ => app.go(Route.Food))), icon(Icon.Food, Tube.Amber), "Food")
     )

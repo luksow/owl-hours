@@ -148,4 +148,7 @@ test("a Negroni shows its poured 90 ml, with the melt water as a note", async ({
   await page.getByRole("button", { name: /^Negroni/ }).first().click();
   await expect(page.getByLabel("Amount (ml)")).toHaveValue("90");
   await expect(page.getByText("+ 9 ml melt water (built over ice), included in the strength")).toBeVisible();
+  const note = await page.getByText(/melt water/).boundingBox();
+  const amount = await page.getByLabel("Amount (ml)").boundingBox();
+  expect(note.y).toBeGreaterThan(amount.y + amount.height - 1); // under the amount, not above the presets
 });

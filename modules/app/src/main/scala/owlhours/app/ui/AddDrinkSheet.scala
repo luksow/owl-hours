@@ -156,7 +156,6 @@ object AddDrinkSheet:
         entry match
           case r: Recipe =>
             div(
-              meltNote(r, amount, perIngredient, ingredients),
               div(perIngredient.map {
                 case false => Pickers.amountField("Amount (ml)", amount, presets)
                 case true =>
@@ -170,6 +169,7 @@ object AddDrinkSheet:
                       })
                   })
               }),
+              meltNote(r, amount, perIngredient, ingredients), // under the amount (spec §9)
               button(cls := "mt-2 min-h-12 rounded-xl border border-line bg-surface px-3",
                 aria.expanded <-- perIngredient,
                 onClick --> (_.foreach(_ =>

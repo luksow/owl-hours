@@ -87,3 +87,27 @@ test("a long state name stays inside the screen, swash included", async ({ page 
   expect(box.x + box.width).toBeLessThanOrEqual(390);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
+
+test("the action bar is four equal tiles; Same again wears the drinks' pink like the others wear theirs", async ({ page }) => {
+  await seed(page, night());
+  await page.goto("/");
+  const tiles = page.getByTestId("action-bar").getByRole("button");
+  await expect(tiles).toHaveCount(4);
+  const boxes = await Promise.all([0, 1, 2, 3].map((i) => tiles.nth(i).boundingBox()));
+  for (const b of boxes) {
+    expect(Math.abs(b.width - boxes[0].width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(b.height - boxes[0].height)).toBeLessThanOrEqual(1);
+  }
+  const same = page.getByRole("button", { name: "Same again" });
+  // Tailwind 4 writes translucent colours in oklab, so compare with a probe that has the pink-at-60 % border
+  const pink60 = await page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.className = "border border-pink/60";
+    document.body.append(probe);
+    const c = getComputedStyle(probe).borderTopColor;
+    probe.remove();
+    return c;
+  });
+  expect(await same.evaluate((el) => getComputedStyle(el).borderTopColor)).toBe(pink60);
+  expect(await same.evaluate((el) => getComputedStyle(el).color)).toContain("255, 63, 142");
+});
