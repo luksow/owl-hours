@@ -31,13 +31,13 @@ object ChartSvg:
   private val Dim   = "#C7A6AE"
   private val MgDl12 = 1.2 * BacUnit.MgDlPerPermille
 
-  // 24×24 line pictograms from the identity prototype; declared after the colours (fields initialise in order).
+  // the app's neon line icons at half size; declared after the colours (fields initialise in order)
   private val Glyph: Map[MarkerKind, (String, String)] = Map(
-    MarkerKind.Beer  -> (Pink, "M5 8h10v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z M15 10h2.5a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H15 M5 8c0-3 2.5-4 5-3 2-2 5-1 5 3 M8.5 12v6M11.5 12v6"),
-    MarkerKind.Wine  -> (Pink, "M7 3h10c0 6-2 9.5-5 9.5S7 9 7 3z M12 12.5V20M8 20h8M7.6 7h8.8"),
-    MarkerKind.Shot  -> (Pink, "M7 4h10l-1.6 16H8.6z M8 11h8"),
-    MarkerKind.Water -> (Ice, "M12 3c-4 5.5-6.5 8.8-6.5 12a6.5 6.5 0 0 0 13 0c0-3.2-2.5-6.5-6.5-12z M9 15.5a3 3 0 0 0 2 3"),
-    MarkerKind.Meal  -> (Amber, "M4 10c0-6 16-6 16 0z M3.5 13.5h17 M5 17h14v.5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 17.5z")
+    MarkerKind.Beer  -> (Pink, Icons.path(Icon.Beer)),
+    MarkerKind.Wine  -> (Pink, Icons.path(Icon.Wine)),
+    MarkerKind.Shot  -> (Pink, Icons.path(Icon.Shot)),
+    MarkerKind.Water -> (Ice, Icons.path(Icon.Water)),
+    MarkerKind.Meal  -> (Amber, Icons.path(Icon.Food))
   )
   private val MarkerGap = 14.0 // px between pictograms in one row
 
