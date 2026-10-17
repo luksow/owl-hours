@@ -7,7 +7,8 @@
     "build": "vite build && node scripts/budget.mjs",
     "preview": "vite preview --port 4173 --strictPort",
     "assets": "node scripts/render-assets.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:subpath": "playwright test -c playwright.subpath.config.js"
   },
   "dependencies": {
     "@fontsource/barlow": "5.3.0",

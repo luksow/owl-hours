@@ -24,6 +24,23 @@ function catalogueAsset() {
   };
 }
 
+const base = process.env.OH_BASE ?? "/";
+if (!base.startsWith("/") || !base.endsWith("/")) throw new Error(`OH_BASE must start and end with "/": ${base}`);
+const site = process.env.OH_SITE_URL;
+if (site !== undefined && !/^https?:\/\/.+\/$/.test(site)) throw new Error(`OH_SITE_URL must be an absolute URL ending with "/": ${site}`);
+
+/** Absolute Open Graph URLs when the build knows where it will live (CI passes the Pages URL). */
+function siteMeta() {
+  return {
+    name: "owlhours-site-meta",
+    transformIndexHtml: () =>
+      site === undefined ? [] : [
+        { tag: "meta", attrs: { property: "og:url", content: site }, injectTo: "head" },
+        { tag: "meta", attrs: { property: "og:image", content: new URL("og-image.png", site).href }, injectTo: "head" },
+      ],
+  };
+}
+
 /** iOS launch images (spec §10): one <link> per iPhone screen, from the same list the renderer uses. */
 function iosSplash() {
   return {
@@ -38,11 +55,13 @@ function iosSplash() {
 }
 
 export default defineConfig({
+  base,
   plugins: [
     scalaJSPlugin({ cwd: "..", projectID: "app" }),
     tailwindcss(),
     catalogueAsset(),
     iosSplash(),
+    siteMeta(),
     VitePWA({
       registerType: "prompt",
       injectRegister: false,
