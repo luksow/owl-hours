@@ -111,3 +111,22 @@ test("the action bar is four equal tiles; Same again wears the drinks' pink like
   expect(await same.evaluate((el) => getComputedStyle(el).borderTopColor)).toBe(pink60);
   expect(await same.evaluate((el) => getComputedStyle(el).color)).toContain("255, 63, 142");
 });
+
+test("before the web fonts load, the header still fits the phone's width", async ({ page }) => {
+  await page.route(/\.woff2?$/, (r) => r.abort()); // the fallback font is wider than the brand's condensed face
+  await seed(page, night());
+  await page.goto("/");
+  await expect(page.getByTestId("bac")).toBeVisible();
+  const header = page.locator("header").first();
+  const [scroll, client] = await header.evaluate((h) => [h.scrollWidth, h.clientWidth]);
+  expect(scroll, "header content overflows").toBeLessThanOrEqual(client);
+  const nav = await page.getByRole("navigation", { name: "Sections" }).boundingBox();
+  expect(nav.x + nav.width).toBeLessThanOrEqual(390);
+});
+
+test("the chart legend is at least 12 px", async ({ page }) => {
+  await seed(page, night());
+  await page.goto("/");
+  // the body re-renders once the night is computed, so a node read too early can already be detached; poll a live one
+  await expect.poll(() => page.getByTestId("legend").evaluate((e) => parseFloat(getComputedStyle(e).fontSize) || 0)).toBeGreaterThanOrEqual(12);
+});
