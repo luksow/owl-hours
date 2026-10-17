@@ -45,6 +45,10 @@ body {
   text-shadow: 0 0 1px #fff, 0 0 6px var(--color-pink), 0 0 16px var(--color-pink);
 }
 
+/* Mr Dafoe's capitals swing left of their box (negative side bearing; "N" ≈ 0.39em); give every script heading room
+   for the ink. Pinned by e2e/script.spec.js. */
+.font-display { padding-inline: 0.4em; }
+
 /* Watt (spec §8.1, §8.5). Glow layers are static; animated segments change opacity or transform only.
    Flicker: at most 3 dips per second, never below 60 % opacity, also when a segment's dip combines with the
    whole sign's hum (0.65 × 0.93 ≥ 0.6); both are checked by e2e/watt.spec.js. */
