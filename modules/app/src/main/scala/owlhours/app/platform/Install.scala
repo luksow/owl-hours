@@ -1,6 +1,6 @@
 package owlhours.app.platform
 
-import cats.effect.std.Dispatcher
+import cats.effect.unsafe.IORuntime
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
 import fs2.concurrent.{Signal, SignallingRef}
@@ -13,7 +13,9 @@ object Install {
   def env: IO[InstallHint.Env] = IO {
     // js.Dynamic.global is only allowed directly before a member selection, so it is not kept in a val
     val ready =
-      js.typeOf(js.Dynamic.global.ohInstallReady) == "function" && js.Dynamic.global.ohInstallReady().asInstanceOf[Boolean]
+      js.typeOf(js.Dynamic.global.ohInstallReady) == "function" && js.Dynamic.global
+        .ohInstallReady()
+        .asInstanceOf[Boolean]
     val nav           = dom.window.navigator.asInstanceOf[js.Dynamic]
     val touch         = nav.maxTouchPoints.asInstanceOf[js.UndefOr[Int]].getOrElse(0)
     val iosStandalone = nav.standalone.asInstanceOf[js.UndefOr[Boolean]].getOrElse(false)
@@ -27,11 +29,11 @@ object Install {
    */
   def signal: Resource[IO, Signal[IO, InstallHint.Env]] =
     for {
-      ref        <- env.flatMap(SignallingRef[IO].of).toResource
-      dispatcher <- Dispatcher.sequential[IO]
-      refresh     = env.flatMap(ref.set)
+      ref <- env.flatMap(SignallingRef[IO].of).toResource
+      refresh = env.flatMap(ref.set)
       _ <- Resource.make(IO {
-        val listener: js.Function1[dom.Event, Unit] = _ => dispatcher.unsafeRunAndForget(refresh)
+        // a plain DOM listener starts the refresh on the app's runtime (a Dispatcher would add ~14 KB to the bundle)
+        val listener: js.Function1[dom.Event, Unit] = _ => refresh.unsafeRunAndForget()(using IORuntime.global)
         dom.window.addEventListener("oh-install-changed", listener)
         listener
       })(listener => IO(dom.window.removeEventListener("oh-install-changed", listener)))
@@ -42,5 +44,6 @@ object Install {
   def prompt: IO[Unit] =
     IO(js.typeOf(js.Dynamic.global.ohInstall) == "function").ifM(
       IO.fromPromise(IO(js.Dynamic.global.ohInstall().asInstanceOf[js.Promise[String]])).void.attempt.void,
-      IO.unit)
+      IO.unit
+    )
 }
