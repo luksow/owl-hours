@@ -13,6 +13,7 @@ reference/__pycache__/
 web/node_modules/
 web/dist/
 web/dist-subpath/
+web/brand/og-*.png
 web/.lighthouseci/
 web/lighthouse/
 web/dev-dist/
