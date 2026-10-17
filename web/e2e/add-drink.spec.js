@@ -123,3 +123,20 @@ test("a custom cocktail amount is named as custom", async ({ page }) => {
   await page.getByRole("button", { name: "Add", exact: true }).click();
   expect((await stored(page))[0].intakes[0].snapshot.name).toBe("Negroni (custom)");
 });
+
+test("Adjust ingredients opens and closes, and closing goes back to the amount", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Drink" }).click();
+  await page.getByLabel("Search drinks").fill("negroni");
+  await page.getByRole("button", { name: /^Negroni/ }).click();
+  const toggle = page.getByRole("button", { name: "Adjust ingredients" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByLabel("Campari (ml)")).toBeVisible();
+  await toggle.click();
+  await expect(page.getByLabel("Campari (ml)")).toHaveCount(0);
+  await expect(page.getByLabel("Amount (ml)")).toBeVisible();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  expect((await stored(page))[0].intakes[0].snapshot.name).not.toContain("custom");
+});

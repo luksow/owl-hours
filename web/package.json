@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/budget.mjs",
     "preview": "vite preview --port 4173 --strictPort",
     "icons": "pwa-assets-generator",
     "test:e2e": "playwright test"

@@ -16,27 +16,38 @@ import owlhours.store.{Persisted, Store}
 import scala.concurrent.duration.*
 
 enum Route(val hash: String):
-  case Tonight  extends Route("#/")
-  case AddDrink extends Route("#/add")
-  case Water    extends Route("#/water")
-  case Food     extends Route("#/food")
-  case Log      extends Route("#/log")
+  case Tonight              extends Route("#/")
+  case AddDrink             extends Route("#/add")
+  case Water                extends Route("#/water")
+  case Food                 extends Route("#/food")
+  case Log                  extends Route("#/log")
+  case History              extends Route("#/history")
+  case Settings             extends Route("#/settings")
+  case About                extends Route("#/about")
+  case Night(id: SessionId) extends Route(s"#/history/${id.unwrap}")
 
 object Route:
-  def parse(hash: String): Route = Route.values.filter(_ != Tonight).find(r => hash.startsWith(r.hash)).getOrElse(Tonight)
+  // an enum with a parameterised case has no `values`, so the fixed routes are listed here
+  private val fixed = List(AddDrink, Water, Food, Log, History, Settings, About)
+
+  def parse(hash: String): Route =
+    if hash.startsWith("#/history/") then SessionId.from(hash.stripPrefix("#/history/")).fold(_ => History, Night(_))
+    else fixed.find(r => hash.startsWith(r.hash)).getOrElse(Tonight)
 
 enum CatalogueState:
   case Loading
   case Ready(c: Catalogue)
   case Failed(errors: List[String])
 
-final case class Undo(message: String, sessions: Vector[Session])
+final case class Undo(message: String, before: Persisted)
 
 final class AppState(
     val persisted: SignallingRef[IO, Persisted],
     val catalogue: SignallingRef[IO, CatalogueState],
     val problems: SignallingRef[IO, List[String]],
     val undo: SignallingRef[IO, Option[Undo]],
+    /** Counts whole-state replacements (import, undo), so forms that copy the state can read it afresh. */
+    val replaced: SignallingRef[IO, Int],
     val now: Signal[IO, Instant],
     val route: Signal[IO, Route],
     store: Store[IO],
@@ -47,25 +58,47 @@ final class AppState(
 
   def saveProfile(p: Profile): IO[Unit] = persisted.update(_.copy(profile = Some(p))) *> store.saveProfile(p)
 
+  /** From Settings: nights are regrouped, because when a night closes depends on the body. */
+  def updateProfile(p: Profile): IO[Unit] =
+    lock.lock.surround(persisted.updateAndGet(x => x.copy(profile = Some(p), sessions = Sessions.regroupAll(p, x.sessions)))
+      .flatMap(x => store.saveProfile(p) *> store.saveSessions(x.sessions)))
+
+  def updateSettings(f: Settings => Settings): IO[Unit] =
+    lock.lock.surround(persisted.updateAndGet(x => x.copy(settings = f(x.settings))).flatMap(x => store.saveSettings(x.settings)))
+
+  /** Replaces everything with a backup's contents, regrouped with its profile; Undo puts the previous data back. */
+  def importBackup(next: Persisted): IO[Unit] =
+    undoable("Data imported")(cur => next.profile.fold(cur)(p => next.copy(sessions = Sessions.regroupAll(p, next.sessions)))) *>
+      replaced.update(_ + 1)
+
+  /** Not undoable on purpose: people who delete their data expect it gone. */
+  def deleteEverything: IO[Unit] =
+    undo.set(None) *> lock.lock.surround(store.clear *> persisted.set(Persisted.empty)) *> go(Route.Tonight)
+
   def addIntake(i: Intake): IO[Unit] = updateSessions((p, ss) => Sessions.add(p, ss, i)) *> undo.set(None)
 
   def replaceIntake(old: Intake, updated: Intake): IO[Unit] =
     updateSessions((p, ss) => Sessions.replace(p, ss, old, updated)) *> undo.set(None)
 
-  def deleteIntake(old: Intake): IO[Unit] =
-    // the snapshot for undo is taken inside the lock, so it is exactly the state the delete applied to
-    lock.lock.surround(persisted.get.flatMap { before =>
-      // only a delete that removed something replaces the undo snapshot
-      IO.whenA(before.sessions.exists(_.intakes.contains(old)))(
-        persisted.updateAndGet(withSessions((p, ss) => Sessions.delete(p, ss, old))).flatMap(p => store.saveSessions(p.sessions)) *> {
-          val u = Undo("Entry deleted", before.sessions)
-          // a snackbar, not a fixture: it hides itself unless a newer one replaced it
-          undo.set(Some(u)) *> (IO.sleep(UndoFor) *> undo.update(_.filterNot(_ eq u))).start.void
-        })
-    })
+  def deleteIntake(old: Intake): IO[Unit] = undoable("Entry deleted")(withSessions((p, ss) => Sessions.delete(p, ss, old)))
+
+  def endNight(at: Instant): IO[Unit] = undoable("Night ended")(withSessions((p, ss) => Sessions.end(p, ss, at)))
 
   def undoLast: IO[Unit] =
-    undo.getAndSet(None).flatMap(_.traverse_(u => saved(_.copy(sessions = u.sessions))))
+    undo.getAndSet(None).flatMap(_.traverse_(u =>
+      lock.lock.surround(persisted.set(u.before) *> store.saveAll(u.before)) *> replaced.update(_ + 1)))
+
+  /** A change that offers Undo. The snapshot is taken inside the lock, so it is exactly the state the change applied to. */
+  private def undoable(message: String)(f: Persisted => Persisted): IO[Unit] =
+    lock.lock.surround(persisted.get.flatMap { before =>
+      val after = f(before)
+      // only a change that changed something replaces the undo snapshot
+      IO.whenA(after != before)(persisted.set(after) *> store.saveAll(after) *> {
+        val u = Undo(message, before)
+        // a snackbar, not a fixture: it hides itself unless a newer one replaced it
+        undo.set(Some(u)) *> (IO.sleep(UndoFor) *> undo.update(_.filterNot(_ eq u))).start.void
+      })
+    })
 
   private def withSessions(f: (Profile, Vector[Session]) => Vector[Session])(p: Persisted): Persisted =
     p.profile.fold(p)(profile => p.copy(sessions = f(profile, p.sessions)))
@@ -91,6 +124,7 @@ object AppState:
       catalogue <- SignallingRef[IO].of[CatalogueState](CatalogueState.Loading).toResource
       problems  <- SignallingRef[IO].of(loaded.problems).toResource
       undo      <- SignallingRef[IO].of(Option.empty[Undo]).toResource
+      replaced  <- SignallingRef[IO].of(0).toResource
       _ <- CatalogueLoader.load
         .flatMap(r => catalogue.set(r.fold(CatalogueState.Failed(_), CatalogueState.Ready(_))))
         .background
@@ -107,4 +141,4 @@ object AppState:
       // leaving a screen dismisses its undo bar
       _ <- route.discrete.drop(1).foreach(_ => undo.set(None)).compile.drain.background
       lock <- Mutex[IO].toResource
-    yield AppState(persisted, catalogue, problems, undo, now, route, store, window, lock)
+    yield AppState(persisted, catalogue, problems, undo, replaced, now, route, store, window, lock)

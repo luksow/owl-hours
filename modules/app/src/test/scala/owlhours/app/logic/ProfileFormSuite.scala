@@ -29,3 +29,8 @@ class ProfileFormSuite extends munit.FunSuite:
     assertEquals(ProfileForm.validate(Fields("male", "1900-01-01", "80", "180"), today).swap.toOption.get.toList,
       List("Age must be between 18 and 110 years, got 126"))
   }
+
+  test("a saved profile fills the form so that it validates back to itself") {
+    val p = Profile(Sex.Female, LocalDate.of(1990, 5, 17), BodyWeight(64.5), Height(168))
+    assertEquals(ProfileForm.validate(ProfileForm.Fields.of(p), LocalDate.of(2026, 10, 16)), Right(p))
+  }

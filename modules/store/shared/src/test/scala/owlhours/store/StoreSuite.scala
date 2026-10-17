@@ -12,6 +12,7 @@ class StoreSuite extends munit.FunSuite:
     def set(key: String, value: String) = SyncIO(data.update(key, value))
     def remove(key: String)             = SyncIO(data.remove(key)).void
     def available                       = SyncIO.pure(true)
+    def keys                            = SyncIO(data.keys.toList)
 
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val profile = Profile(Sex.Female, LocalDate.of(1997, 1, 1), BodyWeight(64.5), Height(168))
@@ -78,6 +79,7 @@ class StoreSuite extends munit.FunSuite:
       def set(key: String, value: String) = SyncIO.unit
       def remove(key: String)             = SyncIO.unit
       def available                       = SyncIO.pure(false)
+      def keys                            = SyncIO.pure(Nil)
     val loaded = Store(blocked).load.unsafeRunSync()
     assertEquals(loaded.problems, List(Store.StorageUnavailable))
   }
@@ -85,4 +87,51 @@ class StoreSuite extends munit.FunSuite:
   test("review: a stored night without intakes is dropped on load instead of crashing later") {
     val kv = Memory(Store.Keys.sessions -> """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[]}]""")
     assertEquals(Store(kv).load.unsafeRunSync().persisted.sessions, Vector.empty)
+  }
+
+  test("instants saved in every form older versions wrote still load") {
+    val kv = Memory("oh.v1.sessions" -> """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[
+      {"type":"meal","kcal":900,"at":"2026-10-14T20:00:00.123Z"},
+      {"type":"meal","kcal":500,"at":"2026-10-14T20:30:00.123456Z"}]}]""")
+    val loaded = Store(kv).load.unsafeRunSync()
+    assertEquals(loaded.problems, Nil)
+    assertEquals(loaded.persisted.sessions.head.intakes.map(_.startsAt),
+      Vector(Instant.parse("2026-10-14T20:00:00.123Z"), Instant.parse("2026-10-14T20:30:00.123456Z")))
+  }
+
+  test("nights saved before manual ends existed still load, and an end is saved and loaded") {
+    val kv = Memory("oh.v1.sessions" ->
+      """[{"id":"s-1","startedAt":"2026-10-14T20:00:00Z","intakes":[{"type":"meal","kcal":900,"at":"2026-10-14T20:00:00Z"}]}]""")
+    val store  = Store(kv)
+    val loaded = store.load.unsafeRunSync()
+    assertEquals(loaded.problems, Nil)
+    assertEquals(loaded.persisted.sessions, Vector(Session(SessionId("s-1"), t0, Vector(Intake.Meal(Kcal(900), t0)))))
+    val ended = session.copy(endedAt = Some(t0.plusSeconds(7200)))
+    store.saveSessions(Vector(ended)).unsafeRunSync()
+    assertEquals(store.load.unsafeRunSync().persisted.sessions, Vector(ended))
+  }
+
+  test("saveAll writes every key, and a missing profile removes the stored one") {
+    val kv    = Memory()
+    val store = Store(kv)
+    val all   = Persisted(disclaimerAccepted = true, Some(profile), Settings(BacUnit.MgPer100ml), Vector(session))
+    store.saveAll(all).unsafeRunSync()
+    assertEquals(store.load.unsafeRunSync().persisted, all)
+    store.saveAll(all.copy(profile = None)).unsafeRunSync()
+    assertEquals(kv.data.get("oh.v1.profile"), None)
+  }
+
+  test("settings saved before the standard drink existed load with the 10 g default; a choice round-trips") {
+    val store = Store(Memory("oh.v1.settings" -> """{"bacUnit":"MgPer100ml"}"""))
+    val loaded = store.load.unsafeRunSync()
+    assertEquals(loaded.problems, Nil)
+    assertEquals(loaded.persisted.settings, Settings(BacUnit.MgPer100ml, StandardDrink.Grams10))
+    store.saveSettings(Settings(BacUnit.Permille, StandardDrink.Grams14)).unsafeRunSync()
+    assertEquals(store.load.unsafeRunSync().persisted.settings, Settings(BacUnit.Permille, StandardDrink.Grams14))
+  }
+
+  test("clear removes every Owl Hours key, recovery copies included, and nothing else") {
+    val kv = Memory("oh.v1.profile" -> "{}", "oh.recovery.oh.v1.sessions.1" -> "[", "other.app" -> "x")
+    Store(kv).clear.unsafeRunSync()
+    assertEquals(kv.data.keySet.toSet, Set("other.app"))
   }

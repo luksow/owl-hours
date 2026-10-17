@@ -1,6 +1,7 @@
 package owlhours.app.logic
 
-import owlhours.domain.{BacUnit, Format}
+import java.time.Duration
+import owlhours.domain.*
 import owlhours.model.Impairment
 
 object Display:
@@ -29,3 +30,29 @@ object Display:
     case Impairment.Drunk     => "Drunk"
     case Impairment.Wobbly    => "Wobbly"
     case Impairment.TakeCare  => "Take care"
+
+  def duration(d: Duration): String =
+    val (h, m) = (d.toMinutes / 60, d.toMinutes % 60)
+    if h == 0 then s"$m min" else if m == 0 then s"$h h" else s"$h h $m min"
+
+  def night(n: NightSummary, unit: BacUnit): String =
+    val drinks   = if n.drinks == 1 then "1 drink" else s"${n.drinks} drinks"
+    val std      = f"${n.standardDrinks}%.1f"
+    val standard = if std == "1.0" then "1.0 standard drink" else s"$std standard drinks"
+    List(n.peak.fold("Peak ~0")(p => s"Peak ${peak(p.bacMgDl, unit)}"), drinks, standard, duration(n.duration)).mkString(" · ")
+
+  def unitName(u: BacUnit): String = u match
+    case BacUnit.Permille     => "‰ (per mille, blood)"
+    case BacUnit.PercentBac   => "% BAC"
+    case BacUnit.MgPer100ml   => "mg/100 ml of blood"
+    case BacUnit.BreathMgPerL => "mg/L of breath"
+
+  def standardDrinkName(sd: StandardDrink): String = sd match
+    case StandardDrink.Grams10 => "10 g — most of Europe, Australia"
+    case StandardDrink.Grams8  => "8 g — UK unit"
+    case StandardDrink.Grams14 => "14 g — US"
+
+  def intake(i: Intake): String = i match
+    case Intake.Drink(s, _, d) => s"${s.name} · ${Format.number(s.volume.unwrap)} ml · ${Format.number(s.abv.unwrap)} % · ${Format.number(d.unwrap)} min"
+    case Intake.Water(v, _, d) => s"Water · ${Format.number(v.unwrap)} ml · ${Format.number(d.unwrap)} min"
+    case Intake.Meal(k, _)     => s"Food · ${Format.number(k.unwrap)} kcal"

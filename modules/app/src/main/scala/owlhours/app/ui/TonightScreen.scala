@@ -21,6 +21,8 @@ object TonightScreen:
   private final case class Key(profile: Option[Profile], session: Option[Session], unit: BacUnit, hour: Long)
 
   /** A derived signal evaluated once per distinct input, shared by all subscribers. */
+  private val Nav = "min-h-12 flex-1 rounded-xl border border-line px-3 text-sm uppercase tracking-wider"
+
   private def shared[A, B](sig: Signal[IO, A])(f: A => B): Resource[IO, Signal[IO, B]] =
     sig.get.toResource.flatMap(a0 => sig.discrete.changes(using Eq.fromUniversalEquals).map(f).holdResource(f(a0)))
 
@@ -32,7 +34,7 @@ object TonightScreen:
           p.settings.bacUnit)
       }
       key = (night, app.now).mapN { case ((profile, last, unit), now) =>
-        val session = last.collect { case (s, closes) if !now.isAfter(closes) => s }
+        val session = last.collect { case (s, closes) if s.endedAt.isEmpty && !now.isAfter(closes) => s }
         Key(profile, session, unit, if session.isEmpty then now.getEpochSecond / 3600 else 0L)
       }
       bundle <- shared(key) { k =>
@@ -45,22 +47,24 @@ object TonightScreen:
         cls := "mx-auto flex min-h-dvh max-w-md flex-col",
         headerTag(cls := "flex items-center justify-between px-5 pt-5",
           span(cls := "font-display text-4xl text-pink neon", "Owl Hours"),
-          div(cls := "flex items-center gap-3",
-            span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight"),
-            button(cls := "min-h-12 rounded-xl border border-line px-3 text-sm uppercase tracking-wider",
-              onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"))),
+          span(cls := "text-sm uppercase tracking-widest text-dim", "Tonight")),
+        navTag(aria.label := "Sections", cls := "flex flex-wrap gap-2 px-5 pt-3",
+          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.Log))), "Log"),
+          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.History))), "History"),
+          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.Settings))), "Settings"),
+          button(cls := Nav, onClick --> (_.foreach(_ => app.go(Route.About))), "About")),
         div(dataAttr("testid") := "watt", cls := "mx-auto mt-4 w-40 overflow-hidden rounded-2xl border border-line",
           InnerHtml(watt)),
         div(view.map {
           case None => div(())
-          case Some((t, s, unit, now)) => body(t, s, unit, now)
+          case Some((t, s, unit, now)) => body(app, t, s, unit, now)
         }),
         p(cls := "mt-3 px-5 text-center text-xs uppercase tracking-wider text-dim", "Estimate only · never a green light to drive"),
         actionBar(app, bundle.map(_.session))
       )
     yield screen
 
-  private def body(t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
+  private def body(app: AppState, t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
     val current = t.projection.curve.samples.findLast(!_.at.isAfter(now)).getOrElse(t.projection.curve.samples.head)
     val trend = t.summary.trend match
       case Trend.Rising  => "↗ rising"
@@ -83,8 +87,20 @@ object TonightScreen:
             s"Peak ${Display.peak(pk.bacMgDl, unit)} at ${TimeFormat.hhmm(pk.at)}")),
         t.summary.backToZeroBy.map(b =>
           div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2", s"Back to ~0 by ${TimeFormat.hhmm(b)}"))),
+      s.map(night => endNight(app, night, now)),
       Option.when(t.impairment == Impairment.TakeCare)(takeCare)
     )
+
+  /** Offered only once the estimate is back to ~0 (Sessions.canEnd), so a new night never hides alcohol still in the blood. */
+  private def endNight(app: AppState, night: Session, now: Instant): Resource[IO, HtmlElement[IO]] =
+    div(app.persisted.map(_.profile.exists(Sessions.canEnd(_, night, now))).changes.map {
+      case false => div(())
+      case true =>
+        div(cls := "mt-3 flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3 py-2",
+          span(cls := "text-dim", "Back to ~0."),
+          button(cls := "min-h-12 rounded-xl px-3 font-semibold text-ice",
+            onClick --> (_.foreach(_ => Now.instant.flatMap(app.endNight))), "End night"))
+    })
 
   private def takeCare: Resource[IO, HtmlElement[IO]] =
     div(

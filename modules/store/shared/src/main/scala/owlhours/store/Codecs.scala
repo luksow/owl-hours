@@ -2,7 +2,7 @@ package owlhours.store
 
 import io.circe.*
 import io.circe.syntax.*
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 import pl.iterators.kebs.circe.*
 
@@ -15,6 +15,14 @@ object Codecs:
   given Decoder[Sex]     = byName(Sex.values, "sex")
   given Encoder[BacUnit] = Encoder.encodeString.contramap(_.toString)
   given Decoder[BacUnit] = byName(BacUnit.values, "BAC unit")
+  given Encoder[StandardDrink] = Encoder.encodeString.contramap(_.toString)
+  given Decoder[StandardDrink] = byName(StandardDrink.values, "standard drink")
+
+  // hand-written ISO text keeps java.time's formatter out of the Scala.js bundle (IsoTime)
+  given Encoder[Instant]   = Encoder.encodeString.contramap(IsoTime.formatInstant)
+  given Decoder[Instant]   = Decoder.decodeString.emap(s => IsoTime.parseInstant(s).toRight(s"'$s' is not a time"))
+  given Encoder[LocalDate] = Encoder.encodeString.contramap(IsoTime.formatDate)
+  given Decoder[LocalDate] = Decoder.decodeString.emap(s => IsoTime.parseDate(s).toRight(s"'$s' is not a date"))
 
   given Encoder[Intake] = Encoder.instance {
     case Intake.Drink(snapshot, start, duration) =>
@@ -49,5 +57,12 @@ object Codecs:
   }
 
   val profileCodec: Codec[Profile]           = Codec.from(summon[Decoder[Profile]], summon[Encoder[Profile]])
-  val settingsCodec: Codec[Settings]         = Codec.from(summon[Decoder[Settings]], summon[Encoder[Settings]])
+  val settingsCodec: Codec[Settings] = Codec.from(
+    Decoder.instance(c =>
+      for
+        unit     <- c.downField("bacUnit").as[BacUnit]
+        standard <- c.downField("standardDrink").as[Option[StandardDrink]]
+      yield Settings(unit, standard.getOrElse(StandardDrink.default))),
+    Encoder.instance(s => Json.obj("bacUnit" -> s.bacUnit.asJson, "standardDrink" -> s.standardDrink.asJson))
+  )
   val sessionsCodec: Codec[Vector[Session]]  = Codec.from(summon[Decoder[Vector[Session]]], summon[Encoder[Vector[Session]]])
