@@ -1,6 +1,6 @@
 package owlhours.app.logic
 
-object Markup:
+object Markup {
   def escape(s: String): String =
     s.flatMap {
       case '&'  => "&amp;"
@@ -10,3 +10,4 @@ object Markup:
       case '\'' => "&#39;"
       case c    => c.toString
     }
+}

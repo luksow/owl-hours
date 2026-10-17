@@ -8,7 +8,7 @@ import fs2.concurrent.Signal
 import fs2.dom.HtmlElement
 import owlhours.app.ui.{AboutScreen, AddDrinkSheet, FoodSheet, HistoryScreen, LogScreen, Onboarding, SettingsScreen, TonightScreen, UndoBar, UpdateToast, WaterSheet}
 
-object Main extends IOWebApp:
+object Main extends IOWebApp {
   def render: Resource[IO, HtmlElement[IO]] =
     AppState.resource(window).flatMap { app =>
       val screen: Signal[IO, Resource[IO, HtmlElement[IO]]] =
@@ -56,3 +56,4 @@ object Main extends IOWebApp:
           button(cls := "mt-2 min-h-12 rounded-xl px-4 text-ice", onClick --> (_.foreach(_ => app.dismissProblems)), "OK")
         )
     })
+}

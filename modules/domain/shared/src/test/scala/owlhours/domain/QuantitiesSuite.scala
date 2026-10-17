@@ -1,6 +1,6 @@
 package owlhours.domain
 
-class QuantitiesSuite extends munit.FunSuite:
+class QuantitiesSuite extends munit.FunSuite {
   test("Abv accepts 0 and 100 and rejects outside") {
     assertEquals(Abv.from(0).map(_.unwrap), Right(0.0))
     assertEquals(Abv.from(100).map(_.unwrap), Right(100.0))
@@ -37,3 +37,4 @@ class QuantitiesSuite extends munit.FunSuite:
     assertEquals(CatalogueId.from("Negroni!"), Left("Catalogue id must be a lowercase slug (a-z, 0-9, -), got Negroni!"))
     assertEquals(SessionId.from(""), Left("Session id must not be empty"))
   }
+}

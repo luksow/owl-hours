@@ -6,14 +6,15 @@ import io.circe.{CursorOp, DecodingFailure, ParsingFailure, parser}
 import owlhours.domain.*
 import CatalogueJson.*
 
-final case class Catalogue(schemaVersion: Int, styles: List[Style], products: List[Product], recipes: List[Recipe]):
+final case class Catalogue(schemaVersion: Int, styles: List[Style], products: List[Product], recipes: List[Recipe]) {
   val all: List[Entry]              = styles ++ products ++ recipes
   val byId: Map[CatalogueId, Entry] = all.map(e => e.id -> e).toMap
 
   def get(id: CatalogueId): Option[Entry] = byId.get(id)
   def inGroup(g: Group): List[Entry]       = all.filter(_.category.group == g)
+}
 
-object Catalogue:
+object Catalogue {
   val SchemaVersion: Int = 1
 
   /** Rounding allowance when comparing label energy with the alcohol floor (3 kcal per 100 ml). */
@@ -29,11 +30,12 @@ object Catalogue:
       .toEither
       .flatMap(link)
 
-  private def describe(e: io.circe.Error): String = e match
+  private def describe(e: io.circe.Error): String = e match {
     case p: ParsingFailure  => s"catalogue is not valid JSON: ${p.message}"
     case d: DecodingFailure => s"${CursorOp.opsToPath(d.history)}: ${d.message}"
+  }
 
-  private def link(f: CatalogueFile): Either[NonEmptyList[String], Catalogue] =
+  private def link(f: CatalogueFile): Either[NonEmptyList[String], Catalogue] = {
     val version: ValidatedNel[String, Unit] =
       if f.schemaVersion == SchemaVersion then ().validNel
       else s"unsupported schemaVersion ${f.schemaVersion} (expected $SchemaVersion)".invalidNel
@@ -91,6 +93,7 @@ object Catalogue:
       }
       Catalogue(f.schemaVersion, ss, ps, recipes)
     }.toEither.flatMap(resolvesAtStandardServe)
+  }
 
   /** The loader is the single gate: a cocktail that cannot be resolved at its standard serve does not load. */
   private def resolvesAtStandardServe(c: Catalogue): Either[NonEmptyList[String], Catalogue] =
@@ -100,3 +103,4 @@ object Catalogue:
       .as(c)
 
   private def servings(xs: List[ServingJson]): List[Serving] = xs.map(s => Serving(s.label, s.ml))
+}

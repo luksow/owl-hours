@@ -3,7 +3,7 @@ package owlhours.catalogue
 import owlhours.domain.*
 import Fixtures.*
 
-class ResolveSuite extends munit.FunSuite:
+class ResolveSuite extends munit.FunSuite {
   private def ok(c: Choice): DrinkSnapshot = Resolve(c).fold(e => fail(e), identity)
 
   test("style at a chosen ABV and size") {
@@ -108,3 +108,4 @@ class ResolveSuite extends munit.FunSuite:
     assertEquals(undiluted.meltWater, None)
     assertEquals(undiluted.poured, undiluted.volume)
   }
+}

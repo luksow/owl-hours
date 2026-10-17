@@ -2,7 +2,7 @@ package owlhours.catalogue
 
 import owlhours.domain.*
 
-object Fixtures:
+object Fixtures {
   private def product(id: String, name: String, cat: Category, abv: Double, kcal100: Double, adjustable: Boolean) =
     Product(CatalogueId(id), name, cat, Abv(abv), KcalPerLitre(kcal100 * 10), adjustable,
       List(Serving("shot", Millilitres(40))), Nil, "test", estimate = false)
@@ -30,3 +30,4 @@ object Fixtures:
   val daiquiri = Recipe(CatalogueId("daiquiri"), "Daiquiri", Method.Shaken,
     List(RecipeLine(rum, Millilitres(60)), RecipeLine(lime, Millilitres(20))), solidsKcal = 40, Nil, "test",
     estimate = false)
+}

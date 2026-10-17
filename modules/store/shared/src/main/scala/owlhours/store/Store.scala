@@ -8,7 +8,7 @@ import java.time.Instant
 import owlhours.domain.*
 
 /** Minimal storage interface; the browser implementation wraps localStorage. */
-trait KeyValue[F[_]]:
+trait KeyValue[F[_]] {
   def get(key: String): F[Option[String]]
   def set(key: String, value: String): F[Unit]
   def remove(key: String): F[Unit]
@@ -18,25 +18,28 @@ trait KeyValue[F[_]]:
 
   /** Every key currently stored (for deleting all of ours). */
   def keys: F[List[String]]
+}
 
 final case class Persisted(disclaimerAccepted: Boolean, profile: Option[Profile], settings: Settings, sessions: Vector[Session])
 
-object Persisted:
+object Persisted {
   val empty: Persisted = Persisted(disclaimerAccepted = false, None, Settings.default, Vector.empty)
+}
 
 final case class Loaded(persisted: Persisted, problems: List[String])
 
-final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
+final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]) {
   import Store.Keys
 
   def load: F[Loaded] =
-    for
+    for {
       usable     <- kv.available
       now        <- F.realTime.map(d => Instant.ofEpochMilli(d.toMillis)) // realTimeInstant is JVM-only
       disclaimer <- read(Keys.disclaimer, "your disclaimer choice", now)(using Decoder.decodeBoolean)
       profile    <- read(Keys.profile, "your profile", now)(using Codecs.profileCodec)
       settings   <- read(Keys.settings, "your settings", now)(using Codecs.settingsCodec)
       sessions   <- read(Keys.sessions, "your nights", now)(using Codecs.sessionsCodec)
+    }
     yield Loaded(
       Persisted(
         disclaimer._1.getOrElse(false),
@@ -70,26 +73,31 @@ final class Store[F[_]](kv: KeyValue[F])(using F: Sync[F]):
     kv.get(key).flatMap {
       case None => F.pure((None, None))
       case Some(raw) =>
-        parser.decode[A](raw) match
+        parser.decode[A](raw) match {
           case Right(a) => F.pure((Some(a), None))
           case Left(e) =>
             val backup = s"oh.recovery.$key.${now.toEpochMilli}"
             // The reason without circe's cursor history ("DecodingFailure at .x: …"), which means nothing to people.
-            val reason = e match
+            val reason = e match {
               case d: DecodingFailure => d.message
               case other              => other.getMessage
+            }
             // Copy, then remove the original so the problem is reported once, not on every launch.
             (kv.set(backup, raw) *> kv.remove(key))
               .as((None, Some(s"Could not read $what, so it was reset. A copy was kept as $backup ($reason).")))
+        }
     }
+}
 
-object Store:
+object Store {
   val StorageUnavailable: String =
     "Owl Hours can't save on this device or browser (storage is blocked), so tonight will be forgotten when you close the app."
 
-  object Keys:
+  object Keys {
     val disclaimer  = "oh.v1.disclaimer"
     val profile     = "oh.v1.profile"
     val settings    = "oh.v1.settings"
     val sessions    = "oh.v1.sessions"
     val installHint = "oh.v1.installHint"
+  }
+}

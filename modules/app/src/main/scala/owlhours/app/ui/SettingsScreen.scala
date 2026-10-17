@@ -11,7 +11,7 @@ import owlhours.app.platform.{Files, LocalDateTime, Now}
 import owlhours.domain.*
 import owlhours.store.{Backup, Persisted}
 
-object SettingsScreen:
+object SettingsScreen {
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
     div(
       cls := Screen.frame,
@@ -58,9 +58,10 @@ object SettingsScreen:
               onChange --> (_.foreach(_ => Files.read(self).flatMap {
                 case None => IO.unit
                 case Some(text) =>
-                  Backup.decode(text) match
+                  Backup.decode(text) match {
                     case Left(e)     => errors.set(List(e))
                     case Right(next) => errors.set(Nil) *> app.importBackup(next)
+                  }
               })))
           }),
         Sheet.errors(errors),
@@ -91,3 +92,4 @@ object SettingsScreen:
         span(text)
       )
     })
+}

@@ -4,7 +4,7 @@ import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 import owlhours.model.*
 
-class ChartSvgSuite extends munit.FunSuite:
+class ChartSvgSuite extends munit.FunSuite {
   private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
@@ -149,9 +149,10 @@ class ChartSvgSuite extends munit.FunSuite:
   test("final review: the peak label is the chip's text, in every unit") {
     val t  = Tonight.of(profile, Some(session), at(40))
     val pk = t.summary.peak.get
-    for u <- BacUnit.values do
+    for u <- BacUnit.values do {
       val s = ChartSvg.render(t, at(40), Nil, _ => 0, label, unit = u)
       assert(s.contains(s">${Markup.escape(Display.peak(pk.bacMgDl, u))} · ${label(pk.at)}<"), s"$u")
+    }
   }
 
   test("final review: a 30-hour chart draws at most eight hour labels") {
@@ -161,3 +162,4 @@ class ChartSvgSuite extends munit.FunSuite:
     val ticks = """font-size="11"""".r.findAllIn(ChartSvg.render(t, at(60), Nil, _ => 0, label)).size
     assert(ticks >= 4 && ticks <= 8, s"$ticks hour labels")
   }
+}

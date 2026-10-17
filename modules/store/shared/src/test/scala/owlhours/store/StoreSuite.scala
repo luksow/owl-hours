@@ -5,14 +5,15 @@ import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 import scala.collection.mutable
 
-class StoreSuite extends munit.FunSuite:
-  final class Memory(initial: (String, String)*) extends KeyValue[SyncIO]:
+class StoreSuite extends munit.FunSuite {
+  final class Memory(initial: (String, String)*) extends KeyValue[SyncIO] {
     val data = mutable.Map.from(initial)
     def get(key: String)                = SyncIO(data.get(key))
     def set(key: String, value: String) = SyncIO(data.update(key, value))
     def remove(key: String)             = SyncIO(data.remove(key)).void
     def available                       = SyncIO.pure(true)
     def keys                            = SyncIO(data.keys.toList)
+  }
 
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val profile = Profile(Sex.Female, LocalDate.of(1997, 1, 1), BodyWeight(64.5), Height(168))
@@ -74,12 +75,13 @@ class StoreSuite extends munit.FunSuite:
   }
 
   test("review: storage that cannot be used is reported to the user") {
-    val blocked = new KeyValue[SyncIO]:
+    val blocked = new KeyValue[SyncIO] {
       def get(key: String)                = SyncIO.pure(None)
       def set(key: String, value: String) = SyncIO.unit
       def remove(key: String)             = SyncIO.unit
       def available                       = SyncIO.pure(false)
       def keys                            = SyncIO.pure(Nil)
+    }
     val loaded = Store(blocked).load.unsafeRunSync()
     assertEquals(loaded.problems, List(Store.StorageUnavailable))
   }
@@ -160,3 +162,4 @@ class StoreSuite extends munit.FunSuite:
     Store(kv).saveSessions(Vector(Session(SessionId("s-1"), t0, Vector(withMelt)))).unsafeRunSync()
     assertEquals(Store(kv).load.unsafeRunSync().persisted.sessions.head.intakes.head, withMelt)
   }
+}

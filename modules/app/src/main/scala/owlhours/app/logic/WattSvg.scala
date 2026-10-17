@@ -8,14 +8,15 @@ import Neon.*
  * Each tube is drawn twice — a blurred glow and a bright core — so one filter per drawing suffices; unlit tubes are
  * dark. Motion classes are defined in web/main.css and respect prefers-reduced-motion.
  */
-object WattSvg:
+object WattSvg {
   /** The lower part of an eye below a lid at `lidY`, plus the faint upper remainder. */
-  private def lidEye(b: Bender, cx: Double, cy: Double, r: Double, lidY: Double, tube: Tube): Unit =
+  private def lidEye(b: Bender, cx: Double, cy: Double, r: Double, lidY: Double, tube: Tube): Unit = {
     val dy    = lidY - cy
     val dx    = math.round(math.sqrt(r * r - dy * dy) * 100) / 100.0
     val large = if lidY < cy then 1 else 0
     b.add(s"M${n(cx - dx)},${n(lidY)} A${n(r)},${n(r)} 0 $large,0 ${n(cx + dx)},${n(lidY)} Z", tube)
     b.add(s"M${n(cx - dx)},${n(lidY)} A${n(r)},${n(r)} 0 ${1 - large},1 ${n(cx + dx)},${n(lidY)}", tube, "watt-faint")
+  }
 
   private def star(x: Double, y: Double, s: Double): String = s"M${n(x)},${n(y - s)} V${n(y + s)} M${n(x - s)},${n(y)} H${n(x + s)}"
 
@@ -50,7 +51,7 @@ object WattSvg:
       care: Boolean = false
   )
 
-  private def look(i: Impairment): Look = i match
+  private def look(i: Impairment): Look = i match {
     case Impairment.Sober =>
       Look(0, "watt-hum", Tube.Pink, Tube.Pink.glow, b =>
         b.add(circ(82, 110, 15), Tube.Ice); b.add(circ(118, 110, 15), Tube.Ice)
@@ -107,6 +108,7 @@ object WattSvg:
         b.add("M94,125 L100,132 L106,125", Tube.White)
         b.add(Tie, Tube.White)
         b.add("M153,150 l3,24 h12 l3,-24 Z M156,161 h12", Tube.White)) // the glass of water
+  }
 
   private val Defs =
     """<filter id="watt-neon" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">""" +
@@ -121,7 +123,7 @@ object WattSvg:
       """<stop offset="1" stop-color="#000" stop-opacity=".62"/></radialGradient>"""
 
   /** `wall = false` leaves out the brick and vignette, for a page that draws the wall itself (Tonight's sign panel). */
-  def render(i: Impairment, wall: Boolean = true): String =
+  def render(i: Impairment, wall: Boolean = true): String = {
     val l      = look(i)
     val accent = if l.care then Tube.White else Tube.Amber
     val wings  = if l.care then Tube.White else Tube.Pink
@@ -141,3 +143,5 @@ object WattSvg:
       (if wall then """<rect width="200" height="220" fill="url(#watt-brick)"/><rect width="200" height="220" fill="url(#watt-vig)"/>""" else "") +
       s"""<ellipse cx="100" cy="124" rx="96" ry="100" fill="url(#watt-spill)"/>""" +
       s"""<g transform="rotate(${l.tilt} 100 112)"><g$motion style="transform-origin:100px 112px">${b.out("watt-neon")}</g></g></svg>"""
+  }
+}

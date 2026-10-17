@@ -2,12 +2,13 @@ package owlhours.app.logic
 
 import Neon.Tube
 
-class IconsSuite extends munit.FunSuite:
+class IconsSuite extends munit.FunSuite {
   test("every icon is stroke path data that stays on its 24-unit grid") {
-    for i <- Icon.values do
+    for i <- Icon.values do {
       val nums = "-?\\d+(\\.\\d+)?".r.findAllIn(Icons.path(i)).map(_.toDouble).toList
       assert(nums.nonEmpty, i.toString)
       assert(Icons.path(i).startsWith("M"), i.toString)
+    }
   }
 
   test("an icon is decorative neon: glow and core layers, its own filter, the tube's colours") {
@@ -24,3 +25,4 @@ class IconsSuite extends munit.FunSuite:
       """<filter id="([^"]+)"""".r.findFirstMatchIn(Icons.svg(i, t, 24)).get.group(1)
     assertEquals(ids.distinct.size, 4)
   }
+}

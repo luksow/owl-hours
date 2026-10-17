@@ -1,6 +1,6 @@
 package owlhours.catalogue
 
-class NormalizeSuite extends munit.FunSuite:
+class NormalizeSuite extends munit.FunSuite {
   test("normalize folds case, accents, ampersands and punctuation on every platform") {
     assertEquals(Search.normalize("Żubrówka Bison Grass"), "zubrowka bison grass")
     assertEquals(Search.normalize("G&T"), "g and t")
@@ -13,4 +13,5 @@ class NormalizeSuite extends munit.FunSuite:
     assertEquals(Search.normalize("소주"), "소주")
     assertEquals(Search.normalize("Водка"), "водка")
   }
+}
 

@@ -16,7 +16,7 @@ import owlhours.domain.*
 import owlhours.app.logic.WhenPick.When
 import scala.concurrent.duration.DurationInt
 
-object AddDrinkSheet:
+object AddDrinkSheet {
   private final case class Pick(entry: Entry)
 
   /** Catalogue ids of drinks logged before, most recent first, as search boosts. */
@@ -34,10 +34,11 @@ object AddDrinkSheet:
       .tupled.toResource.flatMap { (query, group, pick) =>
         val results: Signal[IO, List[Entry]] = (query, group, app.persisted.map(p => recents(p.sessions))).mapN { (q, g, recent) =>
           val boost = (id: CatalogueId) => recent.getOrElse(id, 0)
-          g match
+          g match {
             case Some(gr) if q.trim.isEmpty => Search.search("", catalogue.inGroup(gr), boost, limit = 200)
             case Some(gr)                   => Search.search(q, catalogue.inGroup(gr), boost)
             case None                       => Search.search(q, catalogue.all, boost)
+          }
         }
         // The detail panel is built once per picked drink; its parts follow `pick`, so the slider is never replaced mid-drag.
         val picked = pick.map(_.map(_.entry.id)).changes(using Eq.fromUniversalEquals)
@@ -86,13 +87,15 @@ object AddDrinkSheet:
 
   private def ml(x: Double): String = Format.number(math.round(x * 10) / 10.0)
 
-  private def detail(app: AppState, entry: Entry, pick: SignallingRef[IO, Option[Pick]]): Resource[IO, HtmlElement[IO]] =
-    val presets: List[(String, String)] = entry match
+  private def detail(app: AppState, entry: Entry, pick: SignallingRef[IO, Option[Pick]]): Resource[IO, HtmlElement[IO]] = {
+    val presets: List[(String, String)] = entry match {
       case i: Ingredient => i.servings.map(sv => sv.display -> ml(sv.volume.unwrap))
       case r: Recipe     => recipePresets(r).map((t, v, _) => t -> v)
-    val lines     = entry match
+    }
+    val lines     = entry match {
       case r: Recipe => r.lines
       case _         => Nil
+    }
     val amount0   = presets.headOption.fold("")(_._2)
     val duration0 = Amount.ml(amount0).toOption.fold("15")(v => Format.number(Durations.default(entry, v).unwrap))
     (
@@ -116,7 +119,7 @@ object AddDrinkSheet:
         }.compile.drain.background.void
       val readIngredients: IO[Option[List[String]]] =
         perIngredient.get.ifM(ingredients.traverse(_.get).map(Some(_)), IO.pure(None))
-      val adjust: Resource[IO, HtmlElement[IO]] = entry match
+      val adjust: Resource[IO, HtmlElement[IO]] = entry match {
         case s: Style =>
           div(
             label(cls := "block font-ui uppercase tracking-wider text-dim",
@@ -129,6 +132,7 @@ object AddDrinkSheet:
             }
           )
         case _ => div(())
+      }
       val submit =
         (amount.get, duration.get, when.get, abv.get, readIngredients).flatMapN((a, d, w, x, ing) => add(app, entry, x, a, d, w, ing, errors))
       // At most once per 300 ms, with the latest input; cancelled with the sheet. Invalid input or a failure clears it.
@@ -139,21 +143,23 @@ object AddDrinkSheet:
           300.millis
         ) {
           (app.persisted.get, Now.instant, amount.get, duration.get, when.get, abv.get, readIngredients).mapN { (p, now, a, d, w, x, ing) =>
-            for
+            for {
               profile <- p.profile
               drink   <- candidate(entry, x, a, d, w, ing, now).toOption
-            yield
+            }
+            yield {
               val wi = WhatIf.of(profile, p.sessions, drink, now)
               (ChartSvg.render(wi.tonight, now, wi.markers, TimeFormat.utcOffsetMinutes, TimeFormat.hhmm, wi.ghost,
                 unit = p.settings.bacUnit, label = "Blood alcohol estimate with this drink"),
                 WhatIf.describe(wi, p.settings.bacUnit, TimeFormat.hhmm))
+            }
           }
         }.foreach(preview.set).compile.drain.background.void
       followSize *> previewLoop *> div(
         cls := "mt-4 space-y-4",
         h2(cls := "font-display text-4xl text-ice", entry.name),
         adjust,
-        entry match
+        entry match {
           case r: Recipe =>
             div(
               div(perIngredient.map {
@@ -186,6 +192,7 @@ object AddDrinkSheet:
                 "Adjust ingredients")
             )
           case _ => Pickers.amountField("Amount (ml)", amount, presets)
+        }
         ,
         Pickers.when(when, app.now),
         Pickers.minutesField(duration),
@@ -202,23 +209,26 @@ object AddDrinkSheet:
             onClick --> (_.foreach(_ => submit)), "Add"))
       )
     }
+  }
 
   /** A preset amount resolves at that strength exactly; any other amount scales the ×1 recipe so it pours `v`. */
   private def recipeByAmount(r: Recipe, amount: String, v: Millilitres): Either[String, DrinkSnapshot] =
-    recipePresets(r).find(_._2 == amount.trim) match
+    recipePresets(r).find(_._2 == amount.trim) match {
       case Some((_, _, k)) => Resolve(Choice.OfRecipe(r, strength = k))
       case None            => Resolve(Choice.OfRecipe(r)).map(s => Edits.rescalePoured(s, v).copy(name = s"${r.name} (custom)"))
+    }
 
-  private def methodText(m: Method): String = m match
+  private def methodText(m: Method): String = m match {
     case Method.Built   => "built over ice"
     case Method.Stirred => "stirred with ice"
     case Method.Shaken  => "shaken with ice"
     case Method.Blended => "blended with ice"
     case Method.Neat    => "served without ice"
+  }
 
   /** Spec §9: what the ice adds, under the amount; read-only, and nothing for drinks without melt water. */
   private def meltNote(r: Recipe, amount: Signal[IO, String], perIngredient: Signal[IO, Boolean],
-      ingredients: List[Signal[IO, String]]): Resource[IO, HtmlElement[IO]] =
+      ingredients: List[Signal[IO, String]]): Resource[IO, HtmlElement[IO]] = {
     val note = (amount, perIngredient, ingredients.sequence).mapN { (a, per, ing) =>
       val snapshot =
         if per then RecipeEdit.resolve(r, ing).toOption
@@ -226,29 +236,35 @@ object AddDrinkSheet:
       snapshot.flatMap(Display.meltNote(_, methodText(r.method))).getOrElse("")
     }
     p(cls := "mt-1 text-sm text-dim", note)
+  }
 
   /** `ingredients`: per-ingredient amounts when the person adjusted a cocktail line by line (the amount is then ignored). */
   private def candidate(entry: Entry, abv: Option[Double], amount: String, duration: String, when: When,
-      ingredients: Option[List[String]], now: Instant): EitherNel[String, Intake.Drink] =
+      ingredients: Option[List[String]], now: Instant): EitherNel[String, Intake.Drink] = {
     val volume  = Amount.drinkMl(amount).toEitherNel
     val minutes = Amount.minutes(duration).toEitherNel
     val start   = Pickers.resolveWhen(when, now).toEitherNel
     def byAmount: EitherNel[String, DrinkSnapshot] = volume.flatMap { v =>
-      (entry match
+      (entry match {
         case s: Style   => Abv.from(abv.getOrElse(s.abv.unwrap)).flatMap(a => Resolve(Choice.OfStyle(s, a, v)))
         case p: Product => Resolve(Choice.OfProduct(p, v))
         case r: Recipe  => recipeByAmount(r, amount, v)
+      }
       ).toEitherNel
     }
-    val snapshot: EitherNel[String, DrinkSnapshot] = (entry, ingredients) match
+    val snapshot: EitherNel[String, DrinkSnapshot] = (entry, ingredients) match {
       case (r: Recipe, Some(texts)) => RecipeEdit.resolve(r, texts)
       case _                        => byAmount
+    }
     (snapshot, start, minutes).parMapN((s, t, d) => Intake.Drink(s, t, d))
+  }
 
   private def add(app: AppState, entry: Entry, abv: Option[Double], amount: String, duration: String, when: When,
       ingredients: Option[List[String]], errors: SignallingRef[IO, List[String]]): IO[Unit] =
     Now.instant.flatMap { now =>
-      candidate(entry, abv, amount, duration, when, ingredients, now) match
+      candidate(entry, abv, amount, duration, when, ingredients, now) match {
         case Left(es)     => errors.set(es.toList)
         case Right(drink) => errors.set(Nil) *> app.addIntake(drink) *> app.go(Route.Tonight)
+      }
     }
+}

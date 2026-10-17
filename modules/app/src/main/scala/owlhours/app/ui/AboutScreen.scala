@@ -7,7 +7,7 @@ import fs2.dom.HtmlElement
 import owlhours.app.{AppState, Route}
 import owlhours.app.logic.BrandSvg
 
-object AboutScreen:
+object AboutScreen {
   private def para(text: String) = p(cls := "font-body text-ink/90", text)
   private def cite(text: String) = li(cls := "font-body text-sm text-dim", text)
 
@@ -50,3 +50,4 @@ object AboutScreen:
           cite("Brand names in the drink list are used only to describe drinks."))),
       Screen.makersPlate
     )
+}

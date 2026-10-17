@@ -7,7 +7,7 @@ final case class BacSample(at: Instant, bacMgDl: Double, bracMgL: Double)
 final case class Curve(samples: Vector[BacSample])
 final case class Projection(curve: Curve, low: Vector[Double], high: Vector[Double])
 
-object Simulation:
+object Simulation {
   /** "Back to ~0": 0.1 ‰. */
   val ZeroThresholdMgDl: Double = 0.1 * BacUnit.MgDlPerPermille
 
@@ -29,7 +29,7 @@ object Simulation:
       to: Instant,
       stepMinutes: Int = 1,
       params: Params = Params.published
-  ): Curve =
+  ): Curve = {
     require(to.isAfter(from), s"to ($to) must be after from ($from)")
     require(stepMinutes > 0, "stepMinutes must be positive")
     val leadMin   = intakes.map(_.startsAt).minOption.fold(0.0)(first => math.max(0.0, minutesBetween(first, from) + 1))
@@ -45,24 +45,26 @@ object Simulation:
         BacSample(origin.plusSeconds(math.round(result.times(i) * 60)), bac, brac)
       }.toVector
     )
+  }
 
   /**
    * Central curve plus the person-to-person variation band (pointwise min/max of three runs). The upper edge also
    * includes a classic Widmark estimate (never lower than the model runs).
    */
-  def project(profile: Profile, intakes: Seq[Intake], from: Instant, to: Instant, stepMinutes: Int = 1): Projection =
+  def project(profile: Profile, intakes: Seq[Intake], from: Instant, to: Instant, stepMinutes: Int = 1): Projection = {
     val base = simulate(profile, intakes, from, to, stepMinutes, Params.published)
     val slow = simulate(profile, intakes, from, to, stepMinutes, Params.slowMetaboliser(Params.published))
     val fast = simulate(profile, intakes, from, to, stepMinutes, Params.fastMetaboliser(Params.published))
     val runs = Seq(base, slow, fast).map(_.samples.map(_.bacMgDl))
     val widmark = Widmark.curveMgDl(profile, intakes, base.samples.map(_.at))
     Projection(base, runs.transpose.map(_.min).toVector, runs.transpose.map(_.max).zip(widmark).map((a, b) => math.max(a, b)).toVector)
+  }
 
   /**
    * The model's `kcal_liquid_per_vol` is non-alcohol energy: the authors' example gives a 5.1 % drink 129.82 kcal/L,
    * less than its ethanol alone (~282). Feeding total energy would brake gastric emptying ever harder as people drink.
    */
-  private[model] def schedule(intakes: Seq[Intake], origin: Instant): Schedule =
+  private[model] def schedule(intakes: Seq[Intake], origin: Instant): Schedule = {
     val drinks = intakes.collect {
       case Intake.Drink(s, start, dur) =>
         DrinkInput(minutesBetween(origin, start), math.max(dur.unwrap, MinDrinkMinutes), s.volume.unwrap / 1000,
@@ -72,5 +74,7 @@ object Simulation:
     }
     val meals = intakes.collect { case Intake.Meal(kcal, at) => MealInput(minutesBetween(origin, at), kcal.unwrap) }
     Schedule(drinks, meals)
+  }
 
   private[model] def minutesBetween(a: Instant, b: Instant): Double = (b.toEpochMilli - a.toEpochMilli) / 60000.0
+}

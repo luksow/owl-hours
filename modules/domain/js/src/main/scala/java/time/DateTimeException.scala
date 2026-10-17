@@ -2,5 +2,6 @@ package java.time
 
 class DateTimeException(message: String) extends RuntimeException(message)
 
-package format:
+package format {
   class DateTimeParseException(message: String, parsed: CharSequence, errorIndex: Int) extends DateTimeException(message)
+}

@@ -11,7 +11,7 @@ import owlhours.app.platform.Now
 import owlhours.domain.*
 import owlhours.app.logic.WhenPick.When
 
-object WaterSheet:
+object WaterSheet {
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
     (SignallingRef[IO].of("250"), SignallingRef[IO].of("5"), SignallingRef[IO].of[When](When.Ago(0)),
       SignallingRef[IO].of(List.empty[String])).tupled.toResource.flatMap { (amount, duration, when, errors) =>
@@ -30,3 +30,4 @@ object WaterSheet:
         }
       )
     }
+}

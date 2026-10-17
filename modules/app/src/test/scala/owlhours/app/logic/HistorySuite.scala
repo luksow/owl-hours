@@ -3,7 +3,7 @@ package owlhours.app.logic
 import java.time.{Duration, Instant, LocalDate}
 import owlhours.domain.*
 
-class HistorySuite extends munit.FunSuite:
+class HistorySuite extends munit.FunSuite {
   private val profile = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
@@ -44,3 +44,4 @@ class HistorySuite extends munit.FunSuite:
     assert(t.viewFrom.isBefore(at(0)))
     assert(end.isAfter(at(60)) && !t.viewTo.isBefore(end), s"$end ${t.viewTo}")
   }
+}

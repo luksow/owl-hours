@@ -2,7 +2,7 @@ package owlhours.catalogue
 
 import owlhours.domain.*
 
-class EntrySuite extends munit.FunSuite:
+class EntrySuite extends munit.FunSuite {
   test("ethanol energy uses 7.0 kcal/g, matching EU spirit labels (40 % → 221 kcal/100 ml)") {
     assertEqualsDouble(Energy.ethanolKcalPerLitre(40), 2209.2, 1e-9)
   }
@@ -43,4 +43,5 @@ class EntrySuite extends munit.FunSuite:
     assertEquals(Serving("UK pint", Millilitres(568)).display, "UK pint · 568 ml")
     assertEquals(Serving("ochoko", Millilitres(45.5)).display, "ochoko · 45.5 ml")
   }
+}
 

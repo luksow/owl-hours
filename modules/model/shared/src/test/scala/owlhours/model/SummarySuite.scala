@@ -2,7 +2,7 @@ package owlhours.model
 
 import java.time.Instant
 
-class SummarySuite extends munit.FunSuite:
+class SummarySuite extends munit.FunSuite {
   private val t0 = Instant.parse("2026-10-14T20:00:00Z")
   private def curve(values: Double*): Curve =
     Curve(values.toVector.zipWithIndex.map((v, i) => BacSample(t0.plusSeconds(i * 300L), v, 0))) // 5-min steps
@@ -33,3 +33,4 @@ class SummarySuite extends munit.FunSuite:
     assertEquals(Summary.of(c, t0.minusSeconds(60)).currentMgDl, 10.0)
     assertEquals(Summary.of(c, t0.plusSeconds(99999)).currentMgDl, 30.0)
   }
+}

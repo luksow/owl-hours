@@ -2,7 +2,7 @@ package owlhours.catalogue
 
 import owlhours.domain.*
 
-class CatalogueJsonSuite extends munit.FunSuite:
+class CatalogueJsonSuite extends munit.FunSuite {
   private def doc(styles: String, products: String, cocktails: String, version: Int = 1) =
     s"""{"schemaVersion": $version, "styles": [$styles], "products": [$products], "cocktails": [$cocktails]}"""
 
@@ -85,4 +85,5 @@ class CatalogueJsonSuite extends munit.FunSuite:
     val errors = Catalogue.fromJson(doc(lager, s"$gin, $tonic", dense)).swap.toOption.get.toList
     assert(errors.exists(_.startsWith("cocktails[gin-tonic]: Gin & Tonic: Energy density")), errors.mkString("\n"))
   }
+}
 

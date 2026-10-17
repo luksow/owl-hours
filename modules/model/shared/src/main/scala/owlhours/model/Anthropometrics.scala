@@ -13,8 +13,8 @@ final case class Volumes(
     totalBodyWater: Double
 )
 
-object Volumes:
-  def of(a: Anthropometrics, p: Params): Volumes =
+object Volumes {
+  def of(a: Anthropometrics, p: Params): Volumes = {
     val s = a.sex
     val w = a.weightKg
     val h = a.heightM
@@ -32,3 +32,5 @@ object Volumes:
       plasmaPeripheral = p.kBloodPlasmaRatio * 0.85 * blood,
       totalBodyWater = tbw
     )
+  }
+}

@@ -13,9 +13,9 @@ import owlhours.app.platform.{Now, TimeFormat}
 import owlhours.app.logic.Neon.Tube
 import owlhours.catalogue.Catalogue
 import owlhours.domain.*
-import owlhours.model.{Impairment, Trend}
+import owlhours.model.Impairment
 
-object TonightScreen:
+object TonightScreen {
 
   /** Everything that needs a simulation, recomputed only when its inputs change (spec §7.4). */
   private final case class Bundle(session: Option[Session], unit: BacUnit, projected: Option[Projected])
@@ -26,7 +26,7 @@ object TonightScreen:
     sig.get.toResource.flatMap(a0 => sig.discrete.changes(using Eq.fromUniversalEquals).map(f).holdResource(f(a0)))
 
   def apply(app: AppState, catalogue: Catalogue): Resource[IO, HtmlElement[IO]] =
-    for
+    for {
       // closesAt runs a 24 h simulation: once per saved change, not per tick
       night <- shared(app.persisted) { p =>
         (p.profile, p.profile.flatMap(prof => p.sessions.lastOption.filter(_.intakes.nonEmpty).map(s => (s, Sessions.closesAt(prof, s)))),
@@ -66,6 +66,7 @@ object TonightScreen:
         InstallCard.tonight(app),
         actionBar(app, bundle.map(_.session))
       )
+    }
     yield screen
 
   private def iconButton(app: AppState, icon: Icon, name: String, route: Route): Resource[IO, HtmlElement[IO]] =
@@ -73,7 +74,7 @@ object TonightScreen:
       onClick --> (_.foreach(_ => app.go(route))), InnerHtml(Signal.constant(Icons.svg(icon, Tube.White, 22))))
 
   /** The number, the trend and the state, beside Watt. */
-  private def reading(t: Tonight, unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
+  private def reading(t: Tonight, unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] = {
     val current          = t.projection.curve.samples.findLast(!_.at.isAfter(now)).getOrElse(t.projection.curve.samples.head)
     val (number, suffix) = Display.bacParts(current.bacMgDl, current.bracMgL, unit)
     div(cls := "min-w-0",
@@ -82,11 +83,12 @@ object TonightScreen:
       div(cls := "mt-1 font-ui text-sm uppercase tracking-widest text-amber",
         Display.trendLine(t.summary.trend, t.summary.peak, now, TimeFormat.hhmm)),
       div(dataAttr("testid") := "state", cls := "font-display text-4xl leading-tight text-pink neon", Display.impairment(t.impairment)))
+  }
 
   private def legend(swatch: String, text: String) =
     span(cls := "flex items-center gap-1", span(cls := swatch), text)
 
-  private def body(app: AppState, t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
+  private def body(app: AppState, t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] = {
     val chart = ChartSvg.render(t, now, Marker.of(s.toList.flatMap(_.intakes)), TimeFormat.utcOffsetMinutes, TimeFormat.hhmm,
       unit = unit)
     val peak = t.summary.peak.map(pk => s"${Display.peak(pk.bacMgDl, unit)} at ${TimeFormat.hhmm(pk.at)}")
@@ -112,6 +114,7 @@ object TonightScreen:
       div(cls := "px-4", s.map(night => endNight(app, night, now))),
       Option.when(t.impairment == Impairment.TakeCare)(div(cls := "px-4", takeCare))
     )
+  }
 
   /** Offered only once the estimate is back to ~0 (Sessions.canEnd), so a new night never hides alcohol still in the blood. */
   private def endNight(app: AppState, night: Session, now: Instant): Resource[IO, HtmlElement[IO]] =
@@ -132,7 +135,7 @@ object TonightScreen:
       p(cls := "mt-2", "If someone can't be woken, is breathing slowly or irregularly, is cold or pale, or is vomiting while drowsy, call emergency services now (112 in Europe, 911 in the US).")
     )
 
-  private def actionBar(app: AppState, session: Signal[IO, Option[Session]]) =
+  private def actionBar(app: AppState, session: Signal[IO, Option[Session]]) = {
     val lastDrink = session.map(_.flatMap(_.lastDrink))
     def icon(i: Icon, tube: Tube) = span(cls := "inline-grid", InnerHtml(Signal.constant(Icons.svg(i, tube, 22))))
     // four equal tiles; + Drink is the one filled, glowing tile, the others are outlined in their own colour
@@ -155,3 +158,5 @@ object TonightScreen:
       button(cls := s"$Tile border-amber/60 text-amber",
         onClick --> (_.foreach(_ => app.go(Route.Food))), icon(Icon.Food, Tube.Amber), "Food")
     )
+  }
+}

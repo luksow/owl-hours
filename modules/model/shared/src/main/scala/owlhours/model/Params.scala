@@ -38,7 +38,7 @@ final case class Params(
     kPEthRelease: Double
 )
 
-object Params:
+object Params {
   val published: Params = Params(
     vmaxGastric = 0.10028847533601028,
     kmGastric = 0.8115471295053232,
@@ -88,3 +88,4 @@ object Params:
   def fastMetaboliser(p: Params): Params =
     p.copy(vmaxADH1 = p.vmaxADH1 * 1.2, vmaxCYP2E1 = p.vmaxCYP2E1 * 1.2, kEtOHUptake = p.kEtOHUptake * 0.7,
       vmaxGastric = p.vmaxGastric * 0.7)
+}

@@ -5,7 +5,7 @@ import owlhours.catalogue.*
 import owlhours.domain.*
 import owlhours.model.{Impairment, Trend}
 
-class TonightSuite extends munit.FunSuite:
+class TonightSuite extends munit.FunSuite {
   private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
@@ -76,3 +76,4 @@ class TonightSuite extends munit.FunSuite:
     assertEquals(pr.to, at(15 * 8L + 2).plusSeconds(3600))
     assertEquals(Tonight.at(pr, at(130)).viewTo, pr.to, "a capped night's chart runs to the end of its window")
   }
+}

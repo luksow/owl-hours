@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import owlhours.catalogue.*
 import owlhours.domain.*
 
-class RecipeEditSuite extends munit.FunSuite:
+class RecipeEditSuite extends munit.FunSuite {
   private def spirit(id: String, name: String, abv: Double, kcal: Double) =
     Product(CatalogueId(id), name, Category.Spirit, Abv(abv), KcalPerLitre(kcal), false, List(Serving("shot", Millilitres(40))), Nil, "test", false)
   private val gin      = spirit("gin", "Gin", 40, 2200)
@@ -45,3 +45,4 @@ class RecipeEditSuite extends munit.FunSuite:
     val e = RecipeEdit.resolve(negroni, List("3000", "3000", "0")).swap.toOption.get.head
     assert(e.startsWith("Negroni"), e)
   }
+}

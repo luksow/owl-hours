@@ -3,7 +3,7 @@ package owlhours.model
 import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
-class BandSuite extends munit.FunSuite:
+class BandSuite extends munit.FunSuite {
   private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(65), Height(168))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val wine    = DrinkSnapshot(None, "Red wine", Millilitres(150), Abv(13), KcalPerLitre(830), Nil)
@@ -31,3 +31,4 @@ class BandSuite extends munit.FunSuite:
     assertEqualsDouble(fast.vmaxADH1, base.vmaxADH1 * 1.2, 1e-15)
     assertEqualsDouble(fast.kEtOHUptake, base.kEtOHUptake * 0.7, 1e-15)
   }
+}

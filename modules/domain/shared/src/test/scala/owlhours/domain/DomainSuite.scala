@@ -2,7 +2,7 @@ package owlhours.domain
 
 import java.time.Instant
 
-class DomainSuite extends munit.FunSuite:
+class DomainSuite extends munit.FunSuite {
   private val beer =
     DrinkSnapshot(None, "Lager", Millilitres(500), Abv(5), KcalPerLitre(430), Nil)
 
@@ -24,3 +24,4 @@ class DomainSuite extends munit.FunSuite:
     assertEqualsDouble(BacUnit.BreathMgPerL.fromModel(52.5, 0.2), 0.2, 1e-12)
     assertEquals(BacUnit.values.map(_.symbol).toList, List("‰", "%", "mg/100 ml", "mg/L"))
   }
+}

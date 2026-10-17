@@ -1,6 +1,6 @@
 package owlhours.model
 
-class SolverSuite extends munit.FunSuite:
+class SolverSuite extends munit.FunSuite {
   private val decay: Solver.Rhs = (_, y, dy) => dy(0) = -0.5 * y(0)
 
   test("exponential decay matches the exact solution at grid points") {
@@ -41,3 +41,4 @@ class SolverSuite extends munit.FunSuite:
     val bad: Solver.Rhs = (_, _, dy) => dy(0) = Double.NaN
     intercept[IllegalStateException](Solver.integrate(bad, 0.0, Array(1.0), 1.0, Array(0.0), 1, new Array[Array[Double]](1), None))
   }
+}

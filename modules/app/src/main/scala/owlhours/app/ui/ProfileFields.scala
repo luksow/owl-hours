@@ -11,8 +11,8 @@ import owlhours.app.platform.Now
 import owlhours.domain.*
 
 /** The body-data form, empty for onboarding or filled from a saved profile in Settings. */
-object ProfileFields:
-  def apply(initial: Option[Profile], submit: String, save: Profile => IO[Unit]): Resource[IO, HtmlElement[IO]] =
+object ProfileFields {
+  def apply(initial: Option[Profile], submit: String, save: Profile => IO[Unit]): Resource[IO, HtmlElement[IO]] = {
     val start = initial.fold(ProfileForm.Fields("", "", "", ""))(ProfileForm.Fields.of)
     (
       SignallingRef[IO].of(start),
@@ -59,3 +59,5 @@ object ProfileFields:
         )
       )
     }
+  }
+}

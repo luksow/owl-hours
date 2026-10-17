@@ -6,11 +6,12 @@
 package owlhours.model
 
 final case class Inputs(etohConcPercent: Double, volRateLPerMin: Double, kcalPerLitre: Double)
-object Inputs:
+object Inputs {
   val zero: Inputs = Inputs(0, 0, 0)
+}
 
 /** State vector layout; same order as SUND's state_names. */
-object State:
+object State {
   val VolStomach          = 0
   val KcalLiquid          = 1
   val KcalRemain          = 2
@@ -39,24 +40,26 @@ object State:
   val TimeElapsed         = 25
   val Size                = 26
 
-  def initial(p: Params): Array[Double] =
+  def initial(p: Params): Array[Double] = {
     val y = new Array[Double](Size)
     y(VolStomach) = AlcoholModel2.SsVol
     y(Vasopressin) = p.kBasalVasopressin / p.kClearanceVasopressin
     y(UrineVolume) = AlcoholModel2.SsUrineVol
     y
+  }
+}
 
-object AlcoholModel2:
+object AlcoholModel2 {
   val SsVol: Double      = 0.001 // L
   val SsUrineVol: Double = 0.05  // dL
 
   /** Breath alcohol in mg/L from central blood concentration (mg/dL), as defined in the model's features. */
   def bracMgL(bloodConcCentral: Double): Double = (10.0 / 2.1) * (0.840 * (bloodConcCentral / 1000) + 0.00367)
 
-  final class Rhs(p: Params, v: Volumes) extends Solver.Rhs:
+  final class Rhs(p: Params, v: Volumes) extends Solver.Rhs {
     var inputs: Inputs = Inputs.zero
 
-    def apply(t: Double, y: Array[Double], dy: Array[Double]): Unit =
+    def apply(t: Double, y: Array[Double], dy: Array[Double]): Unit = {
       import State.*
       val volS    = y(VolStomach)
       val kcalLiq = y(KcalLiquid)
@@ -169,3 +172,6 @@ object AlcoholModel2:
       dy(PEth) = rPEth - rPEthBound + rPEthRel - rPEthCl
       dy(PEthBound) = rPEthBound - rPEthRel
       dy(TimeElapsed) = 1
+    }
+  }
+}

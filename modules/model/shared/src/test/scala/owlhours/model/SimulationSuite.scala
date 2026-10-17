@@ -3,7 +3,7 @@ package owlhours.model
 import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
-class SimulationSuite extends munit.FunSuite:
+class SimulationSuite extends munit.FunSuite {
   private val profile = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
@@ -57,7 +57,7 @@ class SimulationSuite extends munit.FunSuite:
   test("back-to-back drinks whose end and start coincide to the millisecond do not crash the solver") {
     // Found in review: tiny floating-point gaps between "end of drink A" and "start of drink B" created
     // sub-1e-11-minute segments, and the step-size underflow check fired after a successful final step.
-    for k <- 0 until 60 do
+    for k <- 0 until 60 do {
       val first  = t0.plusMillis(10 * 60000L + k)
       val second = t0.plusMillis(30 * 60000L + k)
       val curve = Simulation.simulate(
@@ -67,6 +67,7 @@ class SimulationSuite extends munit.FunSuite:
         at(240)
       )
       assert(curve.samples.map(_.bacMgDl).max > 5, s"k=$k")
+    }
   }
 
   test("breath alcohol shows 0 below the back-to-~0 threshold (0.1 ‰)") {
@@ -99,3 +100,4 @@ class SimulationSuite extends munit.FunSuite:
     val peak  = Simulation.simulate(profile, Seq(Intake.Drink(vodka, t0, Minutes(30))), t0, at(600)).samples.map(_.bacMgDl).max
     assert(peak / BacUnit.MgDlPerPermille > 3.0, peak.toString)
   }
+}

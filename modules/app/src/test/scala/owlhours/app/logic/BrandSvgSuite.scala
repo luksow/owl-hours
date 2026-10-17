@@ -1,6 +1,6 @@
 package owlhours.app.logic
 
-class BrandSvgSuite extends munit.FunSuite:
+class BrandSvgSuite extends munit.FunSuite {
   private def count(s: String, sub: String) = s.sliding(sub.length).count(_ == sub)
 
   test("the lit lockup is the owl-head mark, the script name and the short tagline, glowing through its own filter") {
@@ -48,3 +48,4 @@ class BrandSvgSuite extends munit.FunSuite:
     assert(s.contains("""<filter id="oh-neon-script""""))
     assert(!s.contains(BrandSvg.Head))
   }
+}

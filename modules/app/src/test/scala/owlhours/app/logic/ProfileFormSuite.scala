@@ -4,7 +4,7 @@ import java.time.LocalDate
 import owlhours.domain.*
 import ProfileForm.Fields
 
-class ProfileFormSuite extends munit.FunSuite:
+class ProfileFormSuite extends munit.FunSuite {
   private val today = LocalDate.of(2026, 10, 15)
 
   test("valid input, typed the way people type it") {
@@ -34,3 +34,4 @@ class ProfileFormSuite extends munit.FunSuite:
     val p = Profile(Sex.Female, LocalDate.of(1990, 5, 17), BodyWeight(64.5), Height(168))
     assertEquals(ProfileForm.validate(ProfileForm.Fields.of(p), LocalDate.of(2026, 10, 16)), Right(p))
   }
+}

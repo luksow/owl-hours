@@ -1,6 +1,6 @@
 package owlhours.model
 
-class AlcoholModel2Suite extends munit.FunSuite:
+class AlcoholModel2Suite extends munit.FunSuite {
   private val male   = Anthropometrics(sex = 1, weightKg = 80, heightM = 1.80, ageYears = 30)
   private val female = Anthropometrics(sex = 0, weightKg = 65, heightM = 1.68, ageYears = 30)
 
@@ -48,3 +48,4 @@ class AlcoholModel2Suite extends munit.FunSuite:
     assertEqualsDouble(AlcoholModel2.bracMgL(0), 10.0 / 2.1 * 0.00367, 1e-12)
     assertEqualsDouble(AlcoholModel2.bracMgL(100), 10.0 / 2.1 * (0.084 + 0.00367), 1e-12)
   }
+}

@@ -4,7 +4,7 @@ import java.time.{Duration, Instant, LocalDate}
 import owlhours.domain.*
 import owlhours.model.{Peak, Trend}
 
-class DisplaySuite extends munit.FunSuite:
+class DisplaySuite extends munit.FunSuite {
   private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
@@ -94,3 +94,4 @@ class DisplaySuite extends munit.FunSuite:
     val capped = far.copy(summary = far.summary.copy(backToZeroBy = None), capped = true, viewTo = at(10 + 30 * 60))
     assertEquals(Display.backTo(capped, at(10), hhmm, day), Some(s"Back to ~0 after Sun ${hhmm(at(10 + 30 * 60))}+"))
   }
+}

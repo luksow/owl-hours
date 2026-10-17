@@ -3,11 +3,12 @@ package owlhours.app.logic
 import Neon.*
 
 /** The app's pictograms (spec §5): stroke paths on a 24-unit grid, drawn as neon tubes like Watt. */
-enum Icon:
+enum Icon {
   case Drink, Repeat, Water, Food, Log, History, Settings, Beer, Wine, Shot
+}
 
-object Icons:
-  def path(icon: Icon): String = icon match
+object Icons {
+  def path(icon: Icon): String = icon match {
     // Drink, Food and Settings are traced from Recraft candidates (Plan 8, Task 4); the others are hand-drawn
     case Icon.Drink    => "M4.5 7.5h15c-.8 3.5-3.8 5.8-7.5 5.8s-6.7-2.3-7.5-5.8z M12 13.3v6 M8 19.8h8 M11 11l3.5-7h3.5"
     case Icon.Repeat   => "M17 3l3 3-3 3 M20 6H9a4 4 0 0 0-4 4v1 M7 21l-3-3 3-3 M4 18h11a4 4 0 0 0 4-4v-1"
@@ -23,15 +24,18 @@ object Icons:
     case Icon.Beer     => "M5 8h10v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z M15 10h2.5a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H15 M5 8c0-3 2.5-4 5-3 2-2 5-1 5 3 M8.5 12v6M11.5 12v6"
     case Icon.Wine     => "M7 3h10c0 6-2 9.5-5 9.5S7 9 7 3z M12 12.5V20M8 20h8M7.6 7h8.8"
     case Icon.Shot     => "M7 4h10l-1.6 16H8.6z M8 11h8"
+  }
 
   private def glow(id: String): String =
     s"""<filter id="$id" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">""" +
       """<feGaussianBlur stdDeviation=".6" result="a"/><feGaussianBlur stdDeviation="1.6" result="b"/>""" +
       """<feMerge><feMergeNode in="b"/><feMergeNode in="a"/><feMergeNode in="SourceGraphic"/></feMerge></filter>"""
 
-  def svg(icon: Icon, tube: Tube, px: Int): String =
+  def svg(icon: Icon, tube: Tube, px: Int): String = {
     val id = s"oh-icon-${icon.toString.toLowerCase}-${tube.toString.toLowerCase}"
     val b  = Bender()
     b.add(path(icon), tube)
     s"""<svg class="neon-icon" viewBox="0 0 24 24" width="$px" height="$px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">""" +
       s"""<defs>${glow(id)}</defs>${b.out(id)}</svg>"""
+  }
+}

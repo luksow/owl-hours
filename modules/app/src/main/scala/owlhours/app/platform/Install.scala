@@ -7,7 +7,7 @@ import owlhours.app.logic.InstallHint
 import scala.scalajs.js
 
 /** Reads the install bridge in web/main.js and the platform facts InstallHint needs. */
-object Install:
+object Install {
   def env: IO[InstallHint.Env] = IO {
     // js.Dynamic.global is only allowed directly before a member selection, so it is not kept in a val
     val ready =
@@ -25,3 +25,4 @@ object Install:
     IO(js.typeOf(js.Dynamic.global.ohInstall) == "function").ifM(
       IO.fromPromise(IO(js.Dynamic.global.ohInstall().asInstanceOf[js.Promise[String]])).void,
       IO.unit)
+}

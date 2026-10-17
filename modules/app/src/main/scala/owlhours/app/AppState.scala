@@ -15,7 +15,7 @@ import owlhours.domain.*
 import owlhours.store.{Persisted, Store}
 import scala.concurrent.duration.*
 
-enum Route(val hash: String):
+enum Route(val hash: String) {
   case Tonight              extends Route("#/")
   case AddDrink             extends Route("#/add")
   case Water                extends Route("#/water")
@@ -25,19 +25,22 @@ enum Route(val hash: String):
   case Settings             extends Route("#/settings")
   case About                extends Route("#/about")
   case Night(id: SessionId) extends Route(s"#/history/${id.unwrap}")
+}
 
-object Route:
+object Route {
   // an enum with a parameterised case has no `values`, so the fixed routes are listed here
   private val fixed = List(AddDrink, Water, Food, Log, History, Settings, About)
 
   def parse(hash: String): Route =
     if hash.startsWith("#/history/") then SessionId.from(hash.stripPrefix("#/history/")).fold(_ => History, Night(_))
     else fixed.find(r => hash.startsWith(r.hash)).getOrElse(Tonight)
+}
 
-enum CatalogueState:
+enum CatalogueState {
   case Loading
   case Ready(c: Catalogue)
   case Failed(errors: List[String])
+}
 
 final case class Undo(message: String, before: Persisted)
 
@@ -55,7 +58,7 @@ final class AppState(
     store: Store[IO],
     window: Window[IO],
     lock: Mutex[IO]
-):
+) {
   def installHintDismissed: Signal[IO, Boolean] = installDismissed
 
   /** Hides the Tonight card; remembered when storage allows, and for this visit regardless. */
@@ -124,11 +127,12 @@ final class AppState(
   def go(r: Route): IO[Unit] = window.location.hash.set(r.hash)
 
   def dismissProblems: IO[Unit] = problems.set(Nil)
+}
 
-object AppState:
-  def resource(window: Window[IO]): Resource[IO, AppState] =
+object AppState {
+  def resource(window: Window[IO]): Resource[IO, AppState] = {
     val store = Store[IO](BrowserKeyValue(window))
-    for
+    for {
       loaded    <- store.load.toResource
       persisted <- SignallingRef[IO].of(loaded.persisted).toResource
       catalogue <- SignallingRef[IO].of[CatalogueState](CatalogueState.Loading).toResource
@@ -154,4 +158,7 @@ object AppState:
       env0      <- Install.env.toResource
       install   <- Install.changes.evalMap(_ => Install.env).holdResource(env0).map(_.map(InstallHint.of))
       lock      <- Mutex[IO].toResource
+    }
     yield AppState(persisted, catalogue, problems, undo, replaced, now, route, install, dismissed, store, window, lock)
+  }
+}

@@ -2,7 +2,7 @@ package owlhours.catalogue
 
 import owlhours.domain.DrinkSnapshot
 
-object Energy:
+object Energy {
   val EthanolKcalPerGram: Double = DrinkSnapshot.EthanolKcalPerGram
   val CarbKcalPerGram: Double    = 4.0
 
@@ -15,3 +15,4 @@ object Energy:
   /** Same product at a different ABV: keep the non-alcohol calories, swap the alcohol part. */
   def withAbv(kcalPerLitre: Double, fromAbv: Double, toAbv: Double): Double =
     math.max(0.0, kcalPerLitre - ethanolKcalPerLitre(fromAbv)) + ethanolKcalPerLitre(toAbv)
+}

@@ -2,7 +2,7 @@ package owlhours.app.logic
 
 import owlhours.model.Impairment
 
-class WattSvgSuite extends munit.FunSuite:
+class WattSvgSuite extends munit.FunSuite {
   private val all = Impairment.values.toList
 
   // Captured before Watt's tube bender moved to Neon (Plan 7); the markup must stay byte-identical.
@@ -17,11 +17,12 @@ class WattSvgSuite extends munit.FunSuite:
   }
 
   test("every state is a labelled SVG and every state looks different") {
-    for i <- all do
+    for i <- all do {
       val s = WattSvg.render(i)
       assert(s.startsWith("<svg class=\"watt\""), i.toString)
       assert(s.contains(s"""aria-label="Watt the owl, ${Display.impairment(i)}""""), i.toString)
       assert(s.endsWith("</svg>"), i.toString)
+    }
     assertEquals(all.map(WattSvg.render(_)).distinct.size, all.size)
   }
 
@@ -56,8 +57,10 @@ class WattSvgSuite extends munit.FunSuite:
   }
 
   test("without its wall Watt is transparent: no brick or vignette, same tubes") {
-    for i <- all do
+    for i <- all do {
       val bare = WattSvg.render(i, wall = false)
       assert(!bare.contains("url(#watt-brick)") && !bare.contains("url(#watt-vig)"), i.toString)
       assert(bare.contains("watt-glows"))
+    }
   }
+}

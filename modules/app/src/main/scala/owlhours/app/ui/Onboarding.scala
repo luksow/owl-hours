@@ -8,7 +8,7 @@ import fs2.dom.HtmlElement
 import owlhours.app.AppState
 import owlhours.app.logic.BrandSvg
 
-object Onboarding:
+object Onboarding {
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
     div(app.persisted.map(_.disclaimerAccepted).changes.map {
       case false => disclaimer(app)
@@ -54,3 +54,4 @@ object Onboarding:
       p(cls := "mt-2 text-dim", "The model uses these to size your blood, body water and liver. They stay on this device."),
       ProfileFields(None, "Save", app.saveProfile)
     )
+}

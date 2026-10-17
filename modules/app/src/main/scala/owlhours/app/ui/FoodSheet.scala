@@ -11,7 +11,7 @@ import owlhours.app.platform.Now
 import owlhours.domain.*
 import owlhours.app.logic.WhenPick.When
 
-object FoodSheet:
+object FoodSheet {
   private val Presets = List("Snack" -> 250, "Light meal" -> 500, "Full meal" -> 900, "Feast" -> 1400)
 
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
@@ -30,3 +30,4 @@ object FoodSheet:
           }
         )
       }
+}

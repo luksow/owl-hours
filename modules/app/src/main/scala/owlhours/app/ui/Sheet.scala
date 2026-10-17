@@ -7,7 +7,7 @@ import fs2.dom.HtmlElement
 import owlhours.app.{AppState, Route}
 
 /** Common frame for the logging sheets: title, Cancel, content, then the actions. */
-object Sheet:
+object Sheet {
   def apply(title: String, app: AppState)(content: Resource[IO, HtmlElement[IO]]*): Resource[IO, HtmlElement[IO]] =
     div(
       cls := "mx-auto flex min-h-dvh max-w-md flex-col gap-4 p-4",
@@ -26,3 +26,4 @@ object Sheet:
       onClick --> (_.foreach(_ => action)),
       "Add"
     )
+}

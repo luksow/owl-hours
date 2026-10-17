@@ -4,7 +4,7 @@ import java.time.Instant
 import scala.scalajs.js
 
 /** Uses the browser's locale and time zone (java.time on Scala.js has no time-zone database). */
-object TimeFormat:
+object TimeFormat {
   def hhmm(t: Instant): String =
     new js.Date(t.toEpochMilli.toDouble)
       .asInstanceOf[js.Dynamic]
@@ -20,3 +20,4 @@ object TimeFormat:
       .asInstanceOf[String]
 
   def utcOffsetMinutes(at: Instant): Int = -new js.Date(at.toEpochMilli.toDouble).getTimezoneOffset().toInt
+}

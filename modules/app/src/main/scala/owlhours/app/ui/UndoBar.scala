@@ -5,7 +5,7 @@ import cats.effect.{IO, Resource}
 import fs2.dom.HtmlElement
 import owlhours.app.AppState
 
-object UndoBar:
+object UndoBar {
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
     div(app.undo.map(_.map(_.message)).changes.map {
       case None => div(())
@@ -16,3 +16,4 @@ object UndoBar:
           button(cls := "min-h-12 rounded-xl px-4 font-semibold text-ice", onClick --> (_.foreach(_ => app.undoLast)), "Undo")
         )
     })
+}

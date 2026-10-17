@@ -7,7 +7,7 @@ import java.time.format.DateTimeParseException
  * Literal JDK results. On the JVM this runs against the JDK; on Node against Owl Hours' own java.time
  * (modules/domain/js), so both must give the same answers.
  */
-class JavaTimeSuite extends munit.FunSuite:
+class JavaTimeSuite extends munit.FunSuite {
   test("instants before the epoch, and milliseconds") {
     val t = Instant.ofEpochMilli(-1)
     assertEquals((t.getEpochSecond, t.getNano, t.toEpochMilli), (-1L, 999000000, -1L))
@@ -64,3 +64,4 @@ class JavaTimeSuite extends munit.FunSuite:
     val dt = LocalDateTime.ofEpochSecond(1792100458L, 949000000, ZoneOffset.UTC)
     assertEquals((dt.getHour, dt.getMinute, dt.getSecond, dt.toLocalDate), (21, 40, 58, LocalDate.of(2026, 10, 15)))
   }
+}

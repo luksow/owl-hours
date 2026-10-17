@@ -2,7 +2,7 @@ package owlhours.app.logic
 
 import InstallHint.*
 
-class InstallHintSuite extends munit.FunSuite:
+class InstallHintSuite extends munit.FunSuite {
   test("the browser's own install dialog wins when it is on offer") {
     assertEquals(of(Env(promptReady = true, ios = false, standalone = false)), Some(Prompt))
   }
@@ -29,3 +29,4 @@ class InstallHintSuite extends munit.FunSuite:
     assert(!isIos(ipados, 0)) // a Mac
     assert(!isIos(android, 5))
   }
+}

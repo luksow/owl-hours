@@ -9,7 +9,7 @@ import owlhours.app.AppState
 import owlhours.app.logic.InstallHint
 
 /** Spec §10: an install button where the browser offers one, the Share → Add to Home Screen hint on iOS. */
-object InstallCard:
+object InstallCard {
   private val Title  = "Keep Owl Hours on your home screen"
   private val Button = "min-h-12 rounded-xl px-4 font-semibold"
 
@@ -25,8 +25,8 @@ object InstallCard:
       case Some(h) => Screen.section("Install")(card(app, h, dismissible = false, margin = ""))
     })
 
-  private def card(app: AppState, h: InstallHint, dismissible: Boolean, margin: String): Resource[IO, HtmlElement[IO]] =
-    val (text, actions) = h match
+  private def card(app: AppState, h: InstallHint, dismissible: Boolean, margin: String): Resource[IO, HtmlElement[IO]] = {
+    val (text, actions) = h match {
       case InstallHint.Prompt =>
         ("It opens like an app and works offline, even in a basement bar.",
           List(button(cls := s"$Button bg-surface-2 text-ice", onClick --> (_.foreach(_ => app.promptInstall)), "Install")) ++
@@ -34,6 +34,7 @@ object InstallCard:
       case InstallHint.IosShare =>
         ("In Safari, tap Share, then Add to Home Screen. It works offline after that.",
           Option.when(dismissible)(button(cls := s"$Button text-ice", onClick --> (_.foreach(_ => app.dismissInstallHint)), "Got it")).toList)
+    }
     sectionTag(
       aria.label := "Install Owl Hours",
       cls := s"$margin rounded-2xl border border-ice/60 bg-surface p-4 font-body",
@@ -41,3 +42,5 @@ object InstallCard:
       p(cls := "mt-1 text-sm text-dim", text),
       div(cls := "mt-3 flex gap-2", actions)
     )
+  }
+}

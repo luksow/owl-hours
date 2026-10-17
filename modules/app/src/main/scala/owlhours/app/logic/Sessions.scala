@@ -8,25 +8,27 @@ import owlhours.model.Simulation
  * A night closes two hours after blood alcohol is back to ~0 (spec §7.1). Nights are regrouped by this rule after
  * every change; ids are derived from the first intake, so nothing stored can disagree with the intakes.
  */
-object Sessions:
+object Sessions {
   val CloseAfter: Duration = Duration.ofHours(2)
 
   /** `closesAt` looks at most a day past the last intake, so a night can close no later than this. */
   private val LatestClose: Duration = Duration.ofHours(24).plus(CloseAfter)
 
-  def endOf(i: Intake): Instant = i match
+  def endOf(i: Intake): Instant = i match {
     case Intake.Drink(_, start, d) => start.plusSeconds(math.round(d.unwrap * 60))
     case Intake.Water(_, start, d) => start.plusSeconds(math.round(d.unwrap * 60))
     case Intake.Meal(_, at)        => at
+  }
 
   /** A night ended by hand closes at its end; otherwise two hours after blood alcohol is back to ~0. */
   def closesAt(p: Profile, s: Session): Instant = s.endedAt.getOrElse(ruleClose(p, s))
 
-  private def ruleClose(p: Profile, s: Session): Instant =
+  private def ruleClose(p: Profile, s: Session): Instant = {
     val lastEnd   = s.intakes.map(endOf).maxBy(_.toEpochMilli)
     val curve     = Simulation.simulate(p, s.intakes, s.startedAt, lastEnd.plusSeconds(24 * 3600), stepMinutes = 5)
     val lastAbove = curve.samples.findLast(_.bacMgDl >= Simulation.ZeroThresholdMgDl).map(_.at).getOrElse(lastEnd)
     later(lastAbove, lastEnd).plus(CloseAfter)
+  }
 
   /** A night ended by hand is closed at once, even to a clock that ticked just before the tap. */
   def active(p: Profile, ss: Vector[Session], now: Instant): Option[Session] =
@@ -52,11 +54,12 @@ object Sessions:
    * or after a manual end. An end belongs to the night it falls in, and holds only while that night is back to ~0 at
    * it (as `canEnd` requires): a drink re-timed to before the end reopens the night. Other ends are dropped.
    */
-  def group(p: Profile, intakes: Vector[Intake], ends: Vector[Instant] = Vector.empty): Vector[Session] =
+  def group(p: Profile, intakes: Vector[Intake], ends: Vector[Instant] = Vector.empty): Vector[Session] = {
     val sortedEnds = ends.sortBy(_.toEpochMilli)
-    def endBefore(s: Session, limit: Instant) =
+    def endBefore(s: Session, limit: Instant) = {
       val close = ruleClose(p, s)
       sortedEnds.find(e => !e.isBefore(close.minus(CloseAfter)) && e.isBefore(limit))
+    }
     def open(i: Intake) = Session(SessionId(s"night-${i.startsAt.toEpochMilli}"), i.startsAt, Vector(i))
     val (done, current) = intakes.sortBy(_.startsAt.toEpochMilli).foldLeft((Vector.empty[Session], Option.empty[Session])) {
       case ((done, None), i) => (done, Some(open(i)))
@@ -64,11 +67,13 @@ object Sessions:
         val close = ruleClose(p, s)
         if i.startsAt.isAfter(close) then (done :+ s.copy(endedAt = endBefore(s, close)), Some(open(i)))
         else
-          endBefore(s, i.startsAt) match
+          endBefore(s, i.startsAt) match {
             case Some(e) => (done :+ s.copy(endedAt = Some(e)), Some(open(i)))
             case None    => (done, Some(s.copy(intakes = s.intakes :+ i)))
+          }
     }
     done ++ current.map(s => s.copy(endedAt = endBefore(s, ruleClose(p, s))))
+  }
 
   def add(p: Profile, ss: Vector[Session], i: Intake): Vector[Session] =
     regroup(p, ss, i.startsAt)(_ :+ i)
@@ -86,13 +91,16 @@ object Sessions:
    * Grouping is a left fold over time, so nights that closed before the change are unaffected and kept as they are.
    * The cheap upper bound on closing avoids simulating every past night.
    */
-  private def regroup(p: Profile, ss: Vector[Session], changedAt: Instant)(f: Vector[Intake] => Vector[Intake]) =
+  private def regroup(p: Profile, ss: Vector[Session], changedAt: Instant)(f: Vector[Intake] => Vector[Intake]) = {
     val (keep, redo) = ss.span(s => s.intakes.map(endOf).maxBy(_.toEpochMilli).plus(LatestClose).isBefore(changedAt))
     keep ++ group(p, f(redo.flatMap(_.intakes)), redo.flatMap(_.endedAt))
+  }
 
-  private def removeFirst(xs: Vector[Intake], x: Intake): Vector[Intake] =
+  private def removeFirst(xs: Vector[Intake], x: Intake): Vector[Intake] = {
     val i = xs.indexOf(x)
     if i < 0 then xs else xs.patch(i, Nil, 1)
+  }
 
   private def later(a: Instant, b: Instant): Instant   = if a.isAfter(b) then a else b
   private def earlier(a: Instant, b: Instant): Instant = if a.isBefore(b) then a else b
+}

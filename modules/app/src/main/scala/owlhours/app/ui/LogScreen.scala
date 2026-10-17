@@ -14,14 +14,15 @@ import owlhours.catalogue.Catalogue
 import owlhours.domain.*
 import owlhours.app.logic.WhenPick.When
 
-object LogScreen:
+object LogScreen {
   private final case class Ref(night: Int, index: Int)
 
   def apply(app: AppState): Resource[IO, HtmlElement[IO]] =
     (SignallingRef[IO].of(Option.empty[Ref]), app.catalogue.get).tupled.toResource.flatMap { (editing, state) =>
-      val catalogue = state match
+      val catalogue = state match {
         case CatalogueState.Ready(c) => Some(c)
         case _                       => None
+      }
       div(
         cls := "mx-auto flex min-h-dvh max-w-md flex-col gap-4 p-4",
         div(cls := "flex items-center justify-between",
@@ -58,15 +59,17 @@ object LogScreen:
 
 
   private def editor(app: AppState, catalogue: Option[Catalogue], n: Int, i: Int, intake: Intake,
-      editing: SignallingRef[IO, Option[Ref]]) =
-    val abvLimits = intake match
+      editing: SignallingRef[IO, Option[Ref]]) = {
+    val abvLimits = intake match {
       case Intake.Drink(s, _, _) => Edits.abvRange(s.catalogueId.flatMap(id => catalogue.flatMap(_.get(id)))).map((s.name, _))
       case _                     => None
-    val (volume0, duration0, abv0, kcal0) = intake match
+    }
+    val (volume0, duration0, abv0, kcal0) = intake match {
       case Intake.Drink(s, _, d) =>
         (Some(math.round(s.poured.unwrap * 10) / 10.0), Some(d.unwrap), Option.when(s.components.isEmpty && abvLimits.isDefined)(s.abv.unwrap), None)
       case Intake.Water(v, _, d) => (Some(v.unwrap), Some(d.unwrap), None, None)
       case Intake.Meal(k, _)     => (None, None, None, Some(k.unwrap))
+    }
     (
       SignallingRef[IO].of[When](When.At(LocalDateTime.format(intake.startsAt))),
       SignallingRef[IO].of(volume0.fold("")(Format.number)),
@@ -91,9 +94,10 @@ object LogScreen:
             abv0.traverse(_ => Amount.abv(a).flatMap(x => abvLimits.fold(Right(x))((name, r) => Edits.checkAbv(x, r, name)))).toEitherNel,
             kcal0.traverse(_ => Amount.kcal(k)).toEitherNel
           ).parMapN((start, volume, duration, abv, kcal) => IntakeEdit(start, duration, volume, abv, kcal))
-          edit.flatMap(e => Edits(intake, e).toEitherNel) match
+          edit.flatMap(e => Edits(intake, e).toEitherNel) match {
             case Left(es)       => errors.set(es.toList)
             case Right(updated) => editing.set(None) *> app.replaceIntake(intake, updated)
+          }
         }
       div(
         cls := "mt-2 space-y-3 rounded-xl border border-line bg-surface-2 p-3",
@@ -110,3 +114,5 @@ object LogScreen:
             onClick --> (_.foreach(_ => save)), "Save"))
       )
     }
+  }
+}

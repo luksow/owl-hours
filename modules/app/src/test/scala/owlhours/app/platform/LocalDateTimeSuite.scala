@@ -2,7 +2,7 @@ package owlhours.app.platform
 
 import java.time.Instant
 
-class LocalDateTimeSuite extends munit.FunSuite:
+class LocalDateTimeSuite extends munit.FunSuite {
   test("format then parse returns the same minute in the local zone") {
     val t = Instant.parse("2026-10-14T21:37:42Z")
     val s = LocalDateTime.format(t)
@@ -26,3 +26,4 @@ class LocalDateTimeSuite extends munit.FunSuite:
     assertEquals(LocalDateTime.parseDetailed(""), Left("Pick a date and time"))
     assertEquals(LocalDateTime.parseDetailed("2026-03-29T03:30"), Right(Instant.parse("2026-03-29T01:30:00Z")))
   }
+}

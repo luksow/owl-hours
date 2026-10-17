@@ -3,42 +3,47 @@ package owlhours.model
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 
-class PropertiesSuite extends munit.ScalaCheckSuite:
+class PropertiesSuite extends munit.ScalaCheckSuite {
   override def scalaCheckTestParameters = super.scalaCheckTestParameters.withMinSuccessfulTests(25)
 
-  private val anth = for
+  private val anth = for {
     sex    <- Gen.oneOf(0.0, 1.0)
     weight <- Gen.choose(45.0, 130.0)
     height <- Gen.choose(1.50, 2.00)
     age    <- Gen.choose(18.0, 80.0)
+  }
   yield Anthropometrics(sex, weight, height, age)
 
-  private val drink = for
+  private val drink = for {
     start <- Gen.choose(5.0, 300.0)
     dur   <- Gen.choose(0.5, 60.0)
     vol   <- Gen.choose(0.03, 0.6)
     abv   <- Gen.choose(0.0, 45.0)
     kcal  <- Gen.choose(0.0, 2500.0)
+  }
   yield DrinkInput(start, dur, vol, abv, kcal)
 
-  private val meal = for
+  private val meal = for {
     at   <- Gen.choose(5.0, 300.0)
     kcal <- Gen.choose(100.0, 1500.0)
+  }
   yield MealInput(at, kcal)
 
-  private val night = for
+  private val night = for {
     a      <- anth
     drinks <- Gen.choose(1, 6).flatMap(Gen.listOfN(_, drink))
     meals  <- Gen.choose(0, 2).flatMap(Gen.listOfN(_, meal))
+  }
   yield (a, Schedule(drinks, meals))
 
   private val ethanolMgPerLPerPercent = 789.1 * 10
 
-  private def bodyEthanolMg(s: Array[Double], v: Volumes): Double =
+  private def bodyEthanolMg(s: Array[Double], v: Volumes): Double = {
     import State.*
     val tissue = v.totalBodyWater - v.blood - v.liver + s(TissueExtraWater)
     s(StomachConc) * s(VolStomach) + s(EtOHPool) + s(MassEtOHIntestines) + s(BloodConcCentral) * v.bloodCentral +
       s(BloodConcPeripheral) * v.bloodPeripheral + s(TissueConc) * tissue + s(LiverConc) * v.liver + s(UrineMassEtOH)
+  }
 
   property("blood alcohol is finite and never negative") {
     forAll(night) { (a, sched) =>
@@ -94,3 +99,4 @@ class PropertiesSuite extends munit.ScalaCheckSuite:
     assert(p.curve.samples.size == 12 * 60 + 1)
     assert(elapsed < 1000, s"took $elapsed ms")
   }
+}

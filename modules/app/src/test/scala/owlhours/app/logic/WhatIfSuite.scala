@@ -3,7 +3,7 @@ package owlhours.app.logic
 import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
-class WhatIfSuite extends munit.FunSuite:
+class WhatIfSuite extends munit.FunSuite {
   private val profile = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private def at(min: Long) = t0.plusSeconds(min * 60)
@@ -43,3 +43,4 @@ class WhatIfSuite extends munit.FunSuite:
     val first = WhatIf.describe(WhatIf.of(profile, Vector.empty, drink(0), at(0)), BacUnit.Permille, label)
     assert(first.head.matches("""Peak \d\.\d\d‰ at \d\d:\d\d"""), first.head)
   }
+}

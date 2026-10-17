@@ -3,7 +3,7 @@ package owlhours.app.logic
 import java.time.Instant
 import WhenPick.*
 
-class WhenPickSuite extends munit.FunSuite:
+class WhenPickSuite extends munit.FunSuite {
   private val now    = Instant.parse("2026-10-17T21:47:20Z")
   private val format = (t: Instant) => t.toString.substring(0, 16) // UTC "yyyy-MM-ddTHH:mm" stands in for local time
   private val parse  = (s: String) => scala.util.Try(Instant.parse(s + ":00Z")).toEither.left.map(_ => "Pick a date and time")
@@ -32,3 +32,4 @@ class WhenPickSuite extends munit.FunSuite:
     assert(resolve(When.At("2026-10-18T09:00"), now, parse).isLeft)
     assert(resolve(When.At(""), now, parse).isLeft)
   }
+}

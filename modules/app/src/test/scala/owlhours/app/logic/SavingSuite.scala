@@ -3,11 +3,10 @@ package owlhours.app.logic
 import cats.effect.{Deferred, IO, Ref}
 import cats.effect.std.Mutex
 import cats.effect.unsafe.implicits.global
-import cats.syntax.all.*
 
-class SavingSuite extends munit.FunSuite:
+class SavingSuite extends munit.FunSuite {
   test("concurrent updates are saved in order, so storage ends with the latest state") {
-    (for
+    (for {
       state  <- Ref[IO].of(0)
       saved  <- Ref[IO].of(List.empty[Int])
       gate   <- Deferred[IO, Unit]
@@ -20,5 +19,7 @@ class SavingSuite extends munit.FunSuite:
       _      <- IO.cede.replicateA_(10) *> gate.complete(())
       _      <- first.join *> second.join
       result <- saved.get
+    }
     yield assertEquals(result, List(1, 2))).unsafeToFuture()
   }
+}

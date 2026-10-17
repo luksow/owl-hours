@@ -3,7 +3,7 @@ package owlhours.model
 import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
-class WidmarkSuite extends munit.FunSuite:
+class WidmarkSuite extends munit.FunSuite {
   private val male   = Profile(Sex.Male, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val female = Profile(Sex.Female, LocalDate.of(1996, 1, 1), BodyWeight(80), Height(180))
   private val t0     = Instant.parse("2026-10-14T20:00:00Z")
@@ -44,3 +44,4 @@ class WidmarkSuite extends munit.FunSuite:
     for i <- p.curve.samples.indices do
       assert(p.high(i) >= w(i) - 1e-9 && p.high(i) >= p.curve.samples(i).bacMgDl - 1e-9, s"sample $i")
   }
+}

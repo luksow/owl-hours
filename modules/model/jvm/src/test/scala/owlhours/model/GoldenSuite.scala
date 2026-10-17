@@ -9,7 +9,7 @@ import scala.io.Source
  * total energy minus ethanol). The older scenarios use larger values and exercise the engine's gastric brake; the
  * `authors-*` scenarios use the authors' own drink specs, the regime the app actually runs in.
  */
-class GoldenSuite extends munit.FunSuite:
+class GoldenSuite extends munit.FunSuite {
   final case class P(sex: String, weightKg: Double, heightM: Double, age: Double) derives Decoder
   final case class D(startMin: Double, durationMin: Double, volumeMl: Double, abv: Double, kcalPerLitre: Double)
       derives Decoder
@@ -17,10 +17,11 @@ class GoldenSuite extends munit.FunSuite:
   final case class Scenario(name: String, profile: P, drinks: List[D], meals: List[M], horizonMin: Double, stepMin: Double)
       derives Decoder
 
-  private def resource(name: String): String =
+  private def resource(name: String): String = {
     val src = Source.fromResource(s"golden/$name")
     try src.mkString
     finally src.close()
+  }
 
   private val scenarios = decode[List[Scenario]](resource("scenarios.json")).fold(throw _, identity)
 
@@ -35,7 +36,7 @@ class GoldenSuite extends munit.FunSuite:
       val r = Engine.run(anth, schedule, 0, s.horizonMin, s.stepMin)
       assertEquals(r.size, rows.size)
       var worst = (0.0, 0.0, 0.0, 0.0) // (excess, t, ours, theirs)
-      for (row, i) <- rows.zipWithIndex do
+      for (row, i) <- rows.zipWithIndex do {
         val (t, bac, brac) = (row(0), row(1), row(2))
         assertEqualsDouble(r.times(i), t, 1e-9)
         val bacTol  = math.max(0.005 * math.abs(bac), 0.1)
@@ -43,5 +44,7 @@ class GoldenSuite extends munit.FunSuite:
         val excess  = math.abs(r.bacMgDl(i) - bac) / bacTol
         if excess > worst._1 then worst = (excess, t, r.bacMgDl(i), bac)
         assert(math.abs(r.bracMgL(i) - brac) <= bracTol, s"BrAC at t=$t: ours ${r.bracMgL(i)}, SUND $brac")
+      }
       assert(worst._1 <= 1.0, s"worst BAC mismatch at t=${worst._2}: ours ${worst._3}, SUND ${worst._4}")
     }
+}

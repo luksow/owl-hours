@@ -5,7 +5,7 @@ import owlhours.domain.*
 import pl.iterators.kebs.circe.*
 
 /** Wire format of catalogue.json. Opaque fields (Abv, Millilitres…) decode through their kebs validators. */
-private[catalogue] object CatalogueJson:
+private[catalogue] object CatalogueJson {
   final case class ServingJson(label: String, ml: Millilitres)
   final case class StyleJson(
       id: CatalogueId,
@@ -57,3 +57,4 @@ private[catalogue] object CatalogueJson:
   given Decoder[Method]   = byName(Method.values, "method")
 
   val fileDecoder: Decoder[CatalogueFile] = summon[Decoder[CatalogueFile]]
+}

@@ -6,7 +6,7 @@ import java.time.Instant
 import owlhours.domain.IsoTime
 
 /** The export file: everything on the device, versioned so a newer file is refused instead of misread. */
-object Backup:
+object Backup {
   val Format  = "owl-hours-backup"
   val Version = 1
 
@@ -25,7 +25,7 @@ object Backup:
     ).spaces2
 
   def decode(text: String): Either[String, Persisted] =
-    for
+    for {
       json     <- parser.parse(text).left.map(_ => NotABackup)
       c         = json.hcursor
       _        <- c.get[String]("format").toOption.filter(_ == Format).toRight(NotABackup)
@@ -34,4 +34,6 @@ object Backup:
       profile  <- c.downField("profile").as(using Codecs.profileCodec).left.map(_ => damaged("profile"))
       settings <- c.downField("settings").as(using Codecs.settingsCodec).left.map(_ => damaged("settings"))
       sessions <- c.downField("sessions").as(using Codecs.sessionsCodec).left.map(_ => damaged("nights"))
+    }
     yield Persisted(disclaimerAccepted = true, Some(profile), settings, sessions.filter(_.intakes.nonEmpty))
+}

@@ -3,7 +3,7 @@ package owlhours.store
 import java.time.{Instant, LocalDate}
 import owlhours.domain.*
 
-class BackupSuite extends munit.FunSuite:
+class BackupSuite extends munit.FunSuite {
   private val t0      = Instant.parse("2026-10-14T20:00:00Z")
   private val profile = Profile(Sex.Female, LocalDate.of(1997, 1, 1), BodyWeight(64.5), Height(168))
   private val night   = Session(SessionId("night-1"), t0, Vector(Intake.Meal(Kcal(900), t0)), endedAt = Some(t0.plusSeconds(3600)))
@@ -35,3 +35,4 @@ class BackupSuite extends munit.FunSuite:
     val noProfile = Backup.encode(all.copy(profile = None), t0)
     assert(Backup.decode(noProfile).left.exists(_.contains("profile")), Backup.decode(noProfile).toString)
   }
+}

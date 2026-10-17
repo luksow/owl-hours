@@ -1,6 +1,6 @@
 package owlhours.model
 
-class EngineSuite extends munit.FunSuite:
+class EngineSuite extends munit.FunSuite {
   private val male = Anthropometrics(1, 80, 1.80, 30)
   private val beer = DrinkInput(startMin = 10, durationMin = 20, volumeL = 0.5, abvPercent = 5, kcalPerLitre = 430)
 
@@ -62,10 +62,12 @@ class EngineSuite extends munit.FunSuite:
   test("review: each drink is its own drinking episode, so back-to-back pints do not stall absorption") {
     // Before the fix the calorie brake accumulated across touching drinks: three back-to-back pints peaked at 17 mg/dL,
     // barely above one pint. The authors' app gives every drink its own on/off stimulus, which fires new_drink each time.
-    def peak(pints: Seq[DrinkInput]) =
+    def peak(pints: Seq[DrinkInput]) = {
       val r = Engine.run(male, Schedule(pints, Nil), 0, 600, 2)
       (0 until r.size).map(r.bacMgDl).max
+    }
     val one   = peak(Seq(DrinkInput(10, 30, 0.568, 5, 404)))
     val three = peak((0 until 3).map(i => DrinkInput(10 + i * 30.0, 30, 0.568, 5, 404)))
     assert(three >= 2 * one, s"three back-to-back pints peak $three mg/dL vs one pint $one mg/dL")
   }
+}

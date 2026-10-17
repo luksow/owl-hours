@@ -2,7 +2,7 @@ package owlhours.catalogue
 
 import owlhours.domain.CatalogueId
 
-class SearchSuite extends munit.FunSuite:
+class SearchSuite extends munit.FunSuite {
   private def ids(q: String, boost: CatalogueId => Int = _ => 0) =
     Search.search(q, TestData.catalogue.all, boost).map(_.id.unwrap)
 
@@ -48,4 +48,5 @@ class SearchSuite extends munit.FunSuite:
     assertEquals(ids("소주").head, "soju")
     assertEquals(ids("白酒").head, "baijiu")
   }
+}
 

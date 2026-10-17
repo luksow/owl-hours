@@ -6,7 +6,7 @@ import org.scalajs.dom
 import owlhours.store.KeyValue
 
 /** localStorage can throw (private mode, blocked storage); the app then works without persistence. */
-final class BrowserKeyValue(window: Window[IO]) extends KeyValue[IO]:
+final class BrowserKeyValue(window: Window[IO]) extends KeyValue[IO] {
   def get(key: String): IO[Option[String]] = IO.defer(window.localStorage.getItem(key)).handleError(_ => None)
   def set(key: String, value: String): IO[Unit] = IO.defer(window.localStorage.setItem(key, value)).handleError(_ => ())
   def remove(key: String): IO[Unit] = IO.defer(window.localStorage.removeItem(key)).handleError(_ => ())
@@ -17,3 +17,4 @@ final class BrowserKeyValue(window: Window[IO]) extends KeyValue[IO]:
 
   def keys: IO[List[String]] =
     IO(List.tabulate(dom.window.localStorage.length)(i => dom.window.localStorage.key(i))).handleError(_ => Nil)
+}

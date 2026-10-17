@@ -5,7 +5,7 @@ import org.scalajs.dom
 import scala.scalajs.js
 
 /** Local files only: nothing is uploaded anywhere (spec §9). */
-object Files:
+object Files {
   def download(name: String, text: String): IO[Unit] = IO {
     val blob = new dom.Blob(js.Array[dom.BlobPart](text), new dom.BlobPropertyBag { `type` = "application/json" })
     val url  = dom.URL.createObjectURL(blob)
@@ -20,9 +20,11 @@ object Files:
   }
 
   /** The chosen file's text; the input is cleared so choosing the same file again fires again. */
-  def read(input: fs2.dom.HtmlInputElement[IO]): IO[Option[String]] =
+  def read(input: fs2.dom.HtmlInputElement[IO]): IO[Option[String]] = {
     val el = input.asInstanceOf[dom.HTMLInputElement]
     IO(Option(el.files).filter(_.length > 0).map(_(0))).flatMap {
       case None       => IO.none
       case Some(file) => IO.fromPromise(IO(file.text())).map(Some(_)) <* IO(el.value = "")
     }
+  }
+}

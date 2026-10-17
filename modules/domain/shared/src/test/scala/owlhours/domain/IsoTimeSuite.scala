@@ -4,10 +4,11 @@ import java.time.{Instant, LocalDate}
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 
-class IsoTimeSuite extends munit.ScalaCheckSuite:
-  private val instants = for
+class IsoTimeSuite extends munit.ScalaCheckSuite {
+  private val instants = for {
     seconds <- Gen.choose(Instant.parse("1900-01-01T00:00:00Z").getEpochSecond, Instant.parse("2200-01-01T00:00:00Z").getEpochSecond)
     nanos   <- Gen.oneOf(Gen.const(0), Gen.choose(0, 999).map(_ * 1000000), Gen.choose(0, 999999).map(_ * 1000), Gen.choose(0, 999999999))
+  }
   yield Instant.ofEpochSecond(seconds, nanos.toLong)
 
   property("instants are written exactly as Instant.toString writes them, and read back") {
@@ -44,3 +45,4 @@ class IsoTimeSuite extends munit.ScalaCheckSuite:
     assert(!IsoTime.isLocalDateTime("2026-10-14T25:00"))
     assert(!IsoTime.isLocalDateTime("2026-10-14T20:00:00"))
   }
+}

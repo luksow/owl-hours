@@ -8,17 +8,18 @@ import owlhours.domain.*
  * drinking time, distributed in r × body weight, eliminated at 0.10 ‰/h (slow end of the healthy range, Jones 2010).
  * It is deliberately conservative where the physiological model predicts slow gastric emptying.
  */
-object Widmark:
+object Widmark {
   val EliminationPermillePerHour: Double = 0.10
 
-  def r(sex: Sex): Double = sex match
+  def r(sex: Sex): Double = sex match {
     case Sex.Male   => 0.68
     case Sex.Female => 0.55
+  }
 
-  def curveMgDl(profile: Profile, intakes: Seq[Intake], times: Vector[Instant]): Vector[Double] =
+  def curveMgDl(profile: Profile, intakes: Seq[Intake], times: Vector[Instant]): Vector[Double] = {
     val drinks = intakes.collect { case d: Intake.Drink => d }
     if drinks.isEmpty || times.isEmpty then Vector.fill(times.size)(0.0)
-    else
+    else {
       val distribution = r(profile.sex) * profile.weight.unwrap // kg
       def absorbedGrams(t: Long): Double = drinks.map { d =>
         val start    = d.start.toEpochMilli
@@ -33,14 +34,19 @@ object Widmark:
       var absorbed   = absorbedGrams(t)
       val out        = Vector.newBuilder[Double]
       var i          = 0
-      while i < times.size do
+      while i < times.size do {
         val target = times(i).toEpochMilli
-        while t < target do
+        while t < target do {
           val next   = math.min(t + stepMs, target)
           val now    = absorbedGrams(next)
           permille   = math.max(0.0, permille + (now - absorbed) / distribution - EliminationPermillePerHour * (next - t) / 3600000.0)
           absorbed   = now
           t          = next
+        }
         out += permille * BacUnit.MgDlPerPermille
         i += 1
+      }
       out.result()
+    }
+  }
+}

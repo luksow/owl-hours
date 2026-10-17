@@ -9,7 +9,7 @@ import org.scalajs.dom
 import scala.scalajs.js
 
 /** Shown when a new version is ready (main.js dispatches "oh-update-ready"); never reloads on its own. */
-object UpdateToast:
+object UpdateToast {
   def apply(): Resource[IO, HtmlElement[IO]] =
     SignallingRef[IO].of(false).toResource.flatMap { ready =>
       fs2.dom.events[IO, dom.Event](dom.window, "oh-update-ready").foreach(_ => ready.set(true)).compile.drain.background *>
@@ -28,3 +28,4 @@ object UpdateToast:
             )
         })
     }
+}

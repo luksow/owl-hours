@@ -12,7 +12,7 @@ import owlhours.app.platform.{LocalDateTime, Now, TimeFormat}
 import owlhours.domain.*
 import owlhours.store.Persisted
 
-object HistoryScreen:
+object HistoryScreen {
   /** One simulation per night: recomputed when the saved data changes, never on the clock tick. */
   private def cards(app: AppState): Resource[IO, Signal[IO, Option[(Vector[NightSummary], BacUnit)]]] =
     app.persisted.discrete.changes(using Eq.fromUniversalEquals)
@@ -56,7 +56,7 @@ object HistoryScreen:
       })
     )
 
-  private def detail(profile: Profile, s: Session, settings: Settings): Resource[IO, HtmlElement[IO]] =
+  private def detail(profile: Profile, s: Session, settings: Settings): Resource[IO, HtmlElement[IO]] = {
     val n        = History.summary(profile, s, settings.standardDrink)
     val (t, end) = History.chart(profile, s)
     val day      = LocalDateTime.dayLabel(s.startedAt)
@@ -78,3 +78,5 @@ object HistoryScreen:
         li(cls := "rounded-xl border border-line bg-surface px-3 py-2", s"${TimeFormat.hhmm(i.startsAt)} · ${Display.intake(i)}"))),
       p(cls := "text-sm text-dim", "To change an entry, open the Log.")
     )
+  }
+}

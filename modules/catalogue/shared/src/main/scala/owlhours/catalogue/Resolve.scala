@@ -3,16 +3,17 @@ package owlhours.catalogue
 import cats.syntax.all.*
 import owlhours.domain.*
 
-enum Choice:
+enum Choice {
   case OfStyle(style: Style, abv: Abv, volume: Millilitres)
   case OfProduct(product: Product, volume: Millilitres, abvOverride: Option[Abv] = None)
   case OfRecipe(recipe: Recipe, strength: Double = 1.0, volumes: Option[List[Millilitres]] = None, dilution: Boolean = true)
+}
 
-object Resolve:
+object Resolve {
   val MinStrength: Double = 0.75
   val MaxStrength: Double = 2.0
 
-  def apply(choice: Choice): Either[String, DrinkSnapshot] = choice match
+  def apply(choice: Choice): Either[String, DrinkSnapshot] = choice match {
     case Choice.OfStyle(style, abv, volume) =>
       if abv.unwrap < style.abvMin.unwrap || abv.unwrap > style.abvMax.unwrap then
         Left(s"ABV for ${style.name} must be between ${Format.number(style.abvMin.unwrap)} and " +
@@ -20,7 +21,7 @@ object Resolve:
       else Right(DrinkSnapshot(Some(style.id), style.name, volume, abv, style.kcalPerLitreAt(abv), Nil))
 
     case Choice.OfProduct(product, volume, abvOverride) =>
-      abvOverride match
+      abvOverride match {
         case Some(_) if !product.abvAdjustable => Left(s"${product.name} has a fixed ABV")
         case Some(abv) =>
           KcalPerLitre
@@ -28,10 +29,11 @@ object Resolve:
             .map(kcal => DrinkSnapshot(Some(product.id), product.name, volume, abv, kcal, Nil))
         case None =>
           Right(DrinkSnapshot(Some(product.id), product.name, volume, product.abv, product.kcalPerLitre, Nil))
+      }
 
     case Choice.OfRecipe(recipe, strength, volumes, dilution) =>
       def checked[A](e: Either[String, A]): Either[String, A] = e.left.map(m => s"${recipe.name}: $m")
-      for
+      for {
         amounts <- amountsFor(recipe, strength, volumes)
         lines     = recipe.lines.zip(amounts)
         liquidMl  = amounts.sum
@@ -44,16 +46,19 @@ object Resolve:
         abv        <- checked(Abv.from(ethanolMl / totalMl * 100))
         density    <- checked(KcalPerLitre.from(kcal / totalMl * 1000))
         components <- checked(lines.traverse((l, v) => Millilitres.from(v).map(ComponentLine(l.ingredient.name, _, l.ingredient.defaultAbv))))
-      yield
+      }
+      yield {
         val name =
           if volumes.isDefined then s"${recipe.name} (custom)"
           else if strength != 1.0 then s"${recipe.name} (×${Format.number(strength)})"
           else recipe.name
         val melt = Option.when(totalMl - liquidMl > 0)(totalMl - liquidMl).flatMap(Millilitres.from(_).toOption)
         DrinkSnapshot(Some(recipe.id), name, volume, abv, density, components, melt)
+      }
+  }
 
   private def amountsFor(recipe: Recipe, strength: Double, volumes: Option[List[Millilitres]]): Either[String, List[Double]] =
-    volumes match
+    volumes match {
       case Some(vs) if vs.size != recipe.lines.size =>
         Left(s"${recipe.name} needs ${recipe.lines.size} amounts, got ${vs.size}")
       case Some(vs) => Right(vs.map(_.unwrap))
@@ -61,3 +66,5 @@ object Resolve:
         Left(s"Strength must be between ×${Format.number(MinStrength)} and ×${Format.number(MaxStrength)}, " +
           s"got ×${Format.number(strength)}")
       case None => Right(recipe.lines.map(_.volume.unwrap * strength))
+    }
+}

@@ -2,10 +2,11 @@ package owlhours.model
 
 import owlhours.domain.BacUnit
 
-enum Impairment:
+enum Impairment {
   case Sober, WarmingUp, Tipsy, Buzzed, Drunk, Wobbly, TakeCare
+}
 
-object Impairment:
+object Impairment {
   def fromPermille(p: Double): Impairment =
     if p < 0.2 then Sober
     else if p < 0.5 then WarmingUp
@@ -16,3 +17,4 @@ object Impairment:
     else TakeCare
 
   def fromMgDl(bacMgDl: Double): Impairment = fromPermille(bacMgDl / BacUnit.MgDlPerPermille)
+}

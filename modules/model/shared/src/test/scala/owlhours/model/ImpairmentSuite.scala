@@ -2,7 +2,7 @@ package owlhours.model
 
 import Impairment.*
 
-class ImpairmentSuite extends munit.FunSuite:
+class ImpairmentSuite extends munit.FunSuite {
   test("thresholds in per mille, lower bound inclusive") {
     val cases = List(
       0.0 -> Sober, 0.19 -> Sober, 0.2 -> WarmingUp, 0.49 -> WarmingUp, 0.5 -> Tipsy, 0.8 -> Buzzed,
@@ -15,3 +15,4 @@ class ImpairmentSuite extends munit.FunSuite:
     assertEquals(Impairment.fromMgDl(52.5), Tipsy)   // 0.5 ‰
     assertEquals(Impairment.fromMgDl(315.1), TakeCare)
   }
+}

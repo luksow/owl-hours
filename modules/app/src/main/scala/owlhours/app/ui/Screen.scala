@@ -5,7 +5,7 @@ import cats.effect.{IO, Resource}
 import fs2.dom.HtmlElement
 
 /** The frame shared by the full-page screens (Log, History, Settings, About). */
-object Screen:
+object Screen {
   val frame = "mx-auto flex min-h-dvh max-w-md flex-col gap-4 p-4"
 
   def header(title: String, back: IO[Unit], backLabel: String = "Done"): Resource[IO, HtmlElement[IO]] =
@@ -22,3 +22,4 @@ object Screen:
   def makersPlate: Resource[IO, HtmlElement[IO]] =
     p(cls := "mt-6 rounded-xl border border-line bg-surface-2 px-4 py-3 text-center font-ui text-sm uppercase tracking-widest text-dim",
       "Model inside — Podéus & Cedersund, Linköping University")
+}
