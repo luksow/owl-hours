@@ -8,7 +8,6 @@ val V = new {
   val kebs            = "2.2.2"
   val munit           = "1.3.6"
   val munitScalaCheck = "1.3.1"
-  val scalaJavaTime   = "2.7.0"
   val circe           = "0.14.17"
   val catsEffect      = "3.5.7"
   val calico          = "0.2.3"
@@ -29,7 +28,7 @@ lazy val domain = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "pl.iterators" %%% "kebs-opaque" % V.kebs,
     testDeps
   )
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % V.scalaJavaTime)
+  // Scala.js gets a small java.time of its own (modules/domain/js), not scala-java-time: see learning note 06
 
 lazy val model = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
