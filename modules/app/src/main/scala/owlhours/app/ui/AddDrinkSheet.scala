@@ -145,7 +145,7 @@ object AddDrinkSheet:
             yield
               val wi = WhatIf.of(profile, p.sessions, drink, now)
               (ChartSvg.render(wi.tonight, now, wi.markers, TimeFormat.utcOffsetMinutes, TimeFormat.hhmm, wi.ghost,
-                p0 => Display.gridLabel(p0.toInt, p.settings.bacUnit), label = "Blood alcohol estimate with this drink"),
+                unit = p.settings.bacUnit, label = "Blood alcohol estimate with this drink"),
                 WhatIf.describe(wi, p.settings.bacUnit, TimeFormat.hhmm))
           }
         }.foreach(preview.set).compile.drain.background.void

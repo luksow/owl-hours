@@ -60,7 +60,7 @@ object ChartSvg:
 
   /** `utcOffsetMinutes` gives the local offset at an instant, so hour ticks land on local wall-clock hours. */
   def render(t: Tonight, now: Instant, markers: List[Marker], utcOffsetMinutes: Instant => Int, timeLabel: Instant => String,
-      ghost: Option[Curve] = None, bacLabel: Double => String = p => s"${Format.number(p)}‰",
+      ghost: Option[Curve] = None, unit: BacUnit = BacUnit.Permille,
       label: String = "Blood alcohol estimate over tonight", showNow: Boolean = true): String =
     val from    = t.viewFrom.toEpochMilli.toDouble
     val to      = t.viewTo.toEpochMilli.toDouble
@@ -89,14 +89,14 @@ object ChartSvg:
     sb ++= """<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>"""
     sb ++= s"""<line x1="${n(x0)}" x2="${n(x1)}" y1="${n(yBottom)}" y2="${n(yBottom)}" stroke="$Dim" stroke-opacity="0.3"/>"""
     // a scale cue every half per mille, all alike, so no line reads as a target (spec §3)
-    for k <- gridSteps(yMax / BacUnit.MgDlPerPermille) do
-      val gy = y(k * BacUnit.MgDlPerPermille)
+    for (mg, text) <- Display.gridLines(unit, yMax) do
+      val gy = y(mg)
       sb ++= """<g class="oh-grid">"""
-      if k > 0 then
+      if mg > 0 then
         sb ++= s"""<line x1="${n(x0)}" x2="${n(x1)}" y1="${n(gy)}" y2="${n(gy)}" stroke="$Dim" stroke-opacity="0.18" stroke-dasharray="1 5"/>"""
       // a label that would sit under the peak label's top band goes below its line instead
-      val ly = if k == 0 then gy - 3 else if gy - 3 < 16 then gy + 10 else gy - 3
-      sb ++= s"""<text x="${n(x1)}" y="${n(ly)}" text-anchor="end" font-size="9" fill="$Dim">${Markup.escape(bacLabel(k))}</text></g>"""
+      val ly = if mg == 0 then gy - 3 else if gy - 3 < 16 then gy + 10 else gy - 3
+      sb ++= s"""<text x="${n(x1)}" y="${n(ly)}" text-anchor="end" font-size="9" fill="$Dim">${Markup.escape(text)}</text></g>"""
     if bandTop.nonEmpty then
       sb ++= s"""<path class="oh-band" d="${path(bandTop ++ bandLow)} Z" fill="url(#oh-trail)" fill-opacity="0.16"/>"""
     for g <- ghost do
@@ -114,7 +114,7 @@ object ChartSvg:
     // the peak, labelled, and the moment the estimate is back to ~0, as glowing dots (spec §3)
     for pk <- t.summary.peak if pk.at.toEpochMilli >= from && pk.at.toEpochMilli <= to do
       val (px, py) = (x(pk.at), y(pk.bacMgDl))
-      val text     = s"${bacLabel(math.round(pk.bacMgDl / BacUnit.MgDlPerPermille * 100) / 100.0)} · ${timeLabel(pk.at)}"
+      val text     = s"${Display.peak(pk.bacMgDl, unit)} · ${timeLabel(pk.at)}" // the chip's own wording
       val lx       = math.max(x0 + 30, math.min(x1 - 30, px))
       sb ++= s"""<g class="oh-peak"><circle cx="${n(px)}" cy="${n(py)}" r="3.5" fill="$Amber" filter="url(#oh-glow)"/>"""
       sb ++= s"""<text x="${n(lx)}" y="${n(math.max(10, py - 8))}" text-anchor="middle" font-size="10" fill="$Ink">${Markup.escape(text)}</text></g>"""
@@ -130,7 +130,8 @@ object ChartSvg:
       val (colour, d) = Glyph(m.kind)
       sb ++= s"""<g class="oh-marker" transform="translate(${n(mx - 6)} ${n(176 + row * 15.0)})">"""
       sb ++= s"""<path d="$d" transform="scale(0.5)" fill="none" stroke="$colour" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>"""
-    val stepMs = if to - from < 6 * 3600 * 1000 then 3600 * 1000L else 2 * 3600 * 1000L
+    // at most eight hour labels, however long the window (a heavy night runs to 36 h)
+    val stepMs = List(1, 2, 3, 4, 6, 12).find(h => (to - from) / (h * 3600000.0) <= 7).getOrElse(12) * 3600 * 1000L
     // the offset is read at every tick, so ticks stay on local hours across a DST change
     def align(t: Long): Long =
       val off = utcOffsetMinutes(Instant.ofEpochMilli(t)) * 60000L

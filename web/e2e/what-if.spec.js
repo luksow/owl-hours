@@ -51,3 +51,11 @@ test("the preview follows the amount and clears on bad input; Add still explains
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Amount must be a number")).toBeVisible();
 });
+
+test("final review: the preview chart's peak label matches the peak line below it", async ({ page }) => {
+  await onboarded(page);
+  await page.goto("/");
+  await pickPils(page);
+  const preview = page.getByTestId("what-if");
+  await expect(preview.locator("svg .oh-peak text")).toHaveText(/^\d\.\d\d‰ · \d\d:\d\d/);
+});

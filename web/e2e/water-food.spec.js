@@ -56,3 +56,23 @@ test("the time field is shown from the start and the chips fill it", async ({ pa
   await field.fill(thirty.slice(0, 11) + "00:05");
   await expect(page.getByRole("button", { name: "30 min ago" })).toHaveAttribute("aria-pressed", "false");
 });
+
+test.describe("desktop keyboard editing", () => {
+  test.use({ viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false, locale: "en-US" });
+
+  test("final review: clearing one segment of the time and retyping it keeps the rest", async ({ page }) => {
+    await page.goto("/#/water");
+    const field = page.getByLabel("Started at");
+    await page.getByRole("button", { name: "30 min ago" }).click();
+    const before = await field.inputValue(); // yyyy-MM-ddTHH:mm
+    await field.click({ position: { x: 14, y: 24 } }); // a date segment
+    await page.keyboard.press("Backspace");
+    await expect(field).toHaveValue(""); // one segment empty makes the whole value empty
+    await page.keyboard.type("10"); // retype a value into the cleared segment
+    // the other segments survive: before the fix, echoing "" back made Chromium clear them all
+    await expect(field).not.toHaveValue("");
+    const after = await field.inputValue();
+    expect(after.slice(0, 4)).toBe(before.slice(0, 4));
+    expect(after.slice(11)).toBe(before.slice(11));
+  });
+});

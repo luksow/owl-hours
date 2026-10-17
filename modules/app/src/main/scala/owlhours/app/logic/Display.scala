@@ -28,12 +28,25 @@ object Display:
   /** Peaks are blood figures; with the breath unit they are shown in ‰, as on Tonight. */
   def peak(bacMgDl: Double, unit: BacUnit): String = bac(bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)
 
-  /** The back-to chip (spec §4): the time, or the end of the window when the estimate is still above ~0 there. */
-  def backTo(t: Tonight, hhmm: Instant => String): Option[String] =
+  /** The back-to chip (spec §4): the time, or the end of the window when the estimate is still above ~0 there. A time
+    * more than 16 hours away names its day, so "by 21:35" is never read as tonight when it means tomorrow evening. */
+  def backTo(t: Tonight, now: Instant, hhmm: Instant => String, weekday: Instant => String): Option[String] =
+    def at(i: Instant) = if i.isAfter(now.plusSeconds(16 * 3600)) then s"${weekday(i)} ${hhmm(i)}" else hhmm(i)
     t.summary.backToZeroBy match
-      case Some(b)          => Some(s"Back to ~0 by ${hhmm(b)}")
-      case None if t.capped => Some(s"Back to ~0 after ${hhmm(t.viewTo)}+")
+      case Some(b)          => Some(s"Back to ~0 by ${at(b)}")
+      case None if t.capped => Some(s"Back to ~0 after ${at(t.viewTo)}+")
       case None             => None
+
+  /** The chart's grid as (mg/dL, label), in round steps of the chosen unit (spec §3): every 0.5 ‰ (1 ‰ above 3 ‰), or
+    * every 50 mg/100 ml = 0.05 % (100 mg = 0.1 % above about 3 ‰). Breath users see blood ‰: the chart is a blood curve. */
+  def gridLines(unit: BacUnit, topMgDl: Double): List[(Double, String)] = unit match
+    case BacUnit.MgPer100ml | BacUnit.PercentBac =>
+      val step = if topMgDl > 3 * BacUnit.MgDlPerPermille then 100.0 else 50.0
+      Iterator.iterate(0.0)(_ + step).takeWhile(_ <= topMgDl + 1e-9).map { v =>
+        v -> (if v == 0 then "0" else if unit == BacUnit.MgPer100ml then f"$v%.0f mg" else f"${v / 1000}%.2f%%")
+      }.toList
+    case _ =>
+      ChartSvg.gridSteps(topMgDl / BacUnit.MgDlPerPermille).map(k => k * BacUnit.MgDlPerPermille -> gridLabel(k, BacUnit.Permille))
 
   /** Grid labels in the chosen unit, at half-‰ steps; the chart is a blood curve, so breath users see ‰. */
   def gridLabel(permille: Double, unit: BacUnit): String =

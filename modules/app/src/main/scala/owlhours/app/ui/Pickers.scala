@@ -37,9 +37,12 @@ object Pickers:
       label(cls := "mt-2 block",
         span(cls := caption, "Started at"),
         input.withSelf { self =>
-          (typ := "datetime-local", cls := field, value <-- shown, maxAttr <-- now.map(LocalDateTime.format),
+          (typ := "datetime-local", cls := field, maxAttr <-- now.map(LocalDateTime.format),
             onInput --> (_.foreach(_ => (self.value.get, Now.instant).flatMapN((v, t) =>
               state.set(WhenPick.typed(v, t, LocalDateTime.format))))))
+        }.flatTap { el =>
+          // written only when it differs: echoing a half-typed (empty) value back makes Chromium clear every segment
+          shown.discrete.foreach(v => el.value.get.flatMap(cur => IO.whenA(cur != v)(el.value.set(v)))).compile.drain.background
         })
     )
 

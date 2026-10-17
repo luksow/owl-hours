@@ -88,9 +88,9 @@ object TonightScreen:
 
   private def body(app: AppState, t: Tonight, s: Option[Session], unit: BacUnit, now: Instant): Resource[IO, HtmlElement[IO]] =
     val chart = ChartSvg.render(t, now, Marker.of(s.toList.flatMap(_.intakes)), TimeFormat.utcOffsetMinutes, TimeFormat.hhmm,
-      bacLabel = p => Display.gridLabel(p, unit))
+      unit = unit)
     val peak = t.summary.peak.map(pk => s"${Display.peak(pk.bacMgDl, unit)} at ${TimeFormat.hhmm(pk.at)}")
-    val back = Display.backTo(t, TimeFormat.hhmm).map(_.stripPrefix("Back to ~0 "))
+    val back = Display.backTo(t, now, TimeFormat.hhmm, TimeFormat.weekday).map(_.stripPrefix("Back to ~0 "))
     def chip(dot: String, label: String, value: String) =
       div(cls := "flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-1.5",
         span(cls := s"oh-dot $dot"),
