@@ -24,7 +24,7 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: sbt
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11 (third-party: pinned to a commit)
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -79,7 +79,7 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: sbt
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11 (third-party: pinned to a commit)
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
