@@ -91,7 +91,7 @@ class ChartSvgSuite extends munit.FunSuite:
     val peak    = 2 * BacUnit.MgDlPerPermille / 1.15 + 1e-6 // puts the 2‰ line on the chart's top edge
     val samples = (0 to 120 by 2).map(m => BacSample(at(m), peak, 0.0)).toVector
     val t = Tonight(Projection(Curve(samples), samples.map(_.bacMgDl), samples.map(_.bacMgDl)),
-      Summary(peak, Trend.Steady, None, None), Impairment.Drunk, at(0), at(120))
+      Summary(peak, Trend.Steady, None, None), Impairment.Drunk, at(0), at(120), capped = false)
     val ys = """<g class="oh-grid">.*?<text x="[^"]+" y="([^"]+)"""".r
       .findAllMatchIn(ChartSvg.render(t, at(60), Nil, _ => 0, label)).map(_.group(1).toDouble).toList
     assert(ys.size == 2 && ys.forall(_ >= 16), ys.toString)

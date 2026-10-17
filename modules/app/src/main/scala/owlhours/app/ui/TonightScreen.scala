@@ -86,8 +86,8 @@ object TonightScreen:
         t.summary.peak.map(pk =>
           div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2",
             s"Peak ${Display.peak(pk.bacMgDl, unit)} at ${TimeFormat.hhmm(pk.at)}")),
-        t.summary.backToZeroBy.map(b =>
-          div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2", s"Back to ~0 by ${TimeFormat.hhmm(b)}"))),
+        Display.backTo(t, TimeFormat.hhmm).map(text =>
+          div(cls := "flex-1 rounded-xl border border-line bg-surface px-3 py-2", text))),
       s.map(night => endNight(app, night, now)),
       Option.when(t.impairment == Impairment.TakeCare)(takeCare)
     )

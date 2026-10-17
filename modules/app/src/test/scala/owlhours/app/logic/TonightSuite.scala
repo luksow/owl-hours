@@ -48,3 +48,31 @@ class TonightSuite extends munit.FunSuite:
     assertEquals(Display.bac(0, 0, BacUnit.Permille), "0.00‰")
     assertEquals(Display.impairment(Impairment.WarmingUp), "Warming up")
   }
+
+  private val shot = DrinkSnapshot(None, "Vodka", Millilitres(40), Abv(40), KcalPerLitre(2210), Nil)
+  /** About 2.5 ‰ for this profile: 16 shots over two hours. */
+  private val heavy = Session(SessionId("h"), at(0), Vector.tabulate(16)(k => Intake.Drink(shot, at(k * 8L), Minutes(2))))
+
+  test("a heavy night still has a back-to-~0 time, and its curve reaches ~0 inside the window") {
+    val t = Tonight.of(profile, Some(heavy), at(130))
+    assert(t.summary.peak.exists(_.bacMgDl > 2.0 * BacUnit.MgDlPerPermille), t.summary.peak.toString)
+    val back = t.summary.backToZeroBy
+    assert(back.isDefined, "back to ~0 is missing")
+    assert(!t.capped)
+    assert(t.projection.curve.samples.last.bacMgDl < owlhours.model.Simulation.ZeroThresholdMgDl)
+    assert(!t.viewTo.isBefore(back.get))
+  }
+
+  test("a light night keeps the short window (no extra simulation)") {
+    val s = Session(SessionId("a"), at(0), Vector(Intake.Drink(wine, at(0), Minutes(20))))
+    val pr = Tonight.project(profile, Some(s), at(30))
+    assertEquals(pr.to, at(20).plusSeconds(10 * 3600))
+    assert(!pr.capped)
+  }
+
+  test("when even the longest window ends above ~0, the night is capped and the window ends at the cap") {
+    val pr = Tonight.project(profile, Some(heavy), at(130), horizons = List(1))
+    assert(pr.capped)
+    assertEquals(pr.to, at(15 * 8L + 2).plusSeconds(3600))
+    assertEquals(Tonight.at(pr, at(130)).viewTo, pr.to, "a capped night's chart runs to the end of its window")
+  }

@@ -1,6 +1,6 @@
 package owlhours.app.logic
 
-import java.time.Duration
+import java.time.{Duration, Instant}
 import owlhours.domain.*
 import owlhours.model.Impairment
 
@@ -17,6 +17,13 @@ object Display:
   def peak(bacMgDl: Double, unit: BacUnit): String = bac(bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)
 
   /** Labels for whole-‰ grid lines in the chosen unit; the chart is a blood curve, so breath users see ‰. */
+  /** The back-to chip (spec §4): the time, or the end of the window when the estimate is still above ~0 there. */
+  def backTo(t: Tonight, hhmm: Instant => String): Option[String] =
+    t.summary.backToZeroBy match
+      case Some(b)          => Some(s"Back to ~0 by ${hhmm(b)}")
+      case None if t.capped => Some(s"Back to ~0 after ${hhmm(t.viewTo)}+")
+      case None             => None
+
   def gridLabel(permille: Int, unit: BacUnit): String = unit match
     case BacUnit.PercentBac => s"${Format.number(permille / 10.0)}%"
     case BacUnit.MgPer100ml => s"${permille * 100} mg"

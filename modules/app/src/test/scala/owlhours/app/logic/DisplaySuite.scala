@@ -1,9 +1,17 @@
 package owlhours.app.logic
 
-import java.time.Duration
+import java.time.{Duration, Instant, LocalDate}
 import owlhours.domain.*
 
 class DisplaySuite extends munit.FunSuite:
+  private val profile = Profile(Sex.Female, LocalDate.of(1998, 1, 1), BodyWeight(62), Height(165))
+  private val t0      = Instant.parse("2026-10-14T20:00:00Z")
+  private def at(min: Long) = t0.plusSeconds(min * 60)
+  private val wine    = DrinkSnapshot(None, "Red wine", Millilitres(175), Abv(13.5), KcalPerLitre(860), Nil)
+  private val shot    = DrinkSnapshot(None, "Vodka", Millilitres(40), Abv(40), KcalPerLitre(2210), Nil)
+  private val heavy   = Session(SessionId("h"), at(0), Vector.tabulate(16)(k => Intake.Drink(shot, at(k * 8L), Minutes(2))))
+  private val hhmm    = (t: Instant) => t.toString.substring(11, 16)
+
   test("grid labels speak the chosen unit (breath figures stay blood ‰ on the chart)") {
     assertEquals(Display.gridLabel(1, BacUnit.Permille), "1‰")
     assertEquals(Display.gridLabel(2, BacUnit.PercentBac), "0.2%")
@@ -29,4 +37,13 @@ class DisplaySuite extends munit.FunSuite:
     val at = java.time.Instant.EPOCH
     assertEquals(Display.intake(Intake.Water(Millilitres(250), at, Minutes(5))), "Water · 250 ml · 5 min")
     assertEquals(Display.intake(Intake.Meal(Kcal(700), at)), "Food · 700 kcal")
+  }
+
+  test("back-to chip: a time when there is one, 'after …+' when capped, nothing once back to ~0") {
+    val two = Session(SessionId("a"), at(0), Vector(Intake.Drink(wine, at(0), Minutes(20)), Intake.Drink(wine, at(30), Minutes(20))))
+    val t = Tonight.of(profile, Some(two), at(40))
+    assertEquals(Display.backTo(t, hhmm), Some(s"Back to ~0 by ${hhmm(t.summary.backToZeroBy.get)}"))
+    val capped = Tonight.at(Tonight.project(profile, Some(heavy), at(130), horizons = List(1)), at(130))
+    assertEquals(Display.backTo(capped, hhmm), Some(s"Back to ~0 after ${hhmm(capped.viewTo)}+"))
+    assertEquals(Display.backTo(Tonight.of(profile, Some(two), at(24 * 60)), hhmm), None)
   }
