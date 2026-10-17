@@ -12,11 +12,14 @@ class DisplaySuite extends munit.FunSuite:
   private val heavy   = Session(SessionId("h"), at(0), Vector.tabulate(16)(k => Intake.Drink(shot, at(k * 8L), Minutes(2))))
   private val hhmm    = (t: Instant) => t.toString.substring(11, 16)
 
-  test("grid labels speak the chosen unit (breath figures stay blood ‰ on the chart)") {
-    assertEquals(Display.gridLabel(1, BacUnit.Permille), "1‰")
-    assertEquals(Display.gridLabel(2, BacUnit.PercentBac), "0.2%")
-    assertEquals(Display.gridLabel(1, BacUnit.MgPer100ml), "100 mg")
-    assertEquals(Display.gridLabel(1, BacUnit.BreathMgPerL), "1‰")
+  test("grid labels at half-‰ steps speak the chosen unit (breath figures stay blood ‰ on the chart)") {
+    assertEquals(Display.gridLabel(0.5, BacUnit.Permille), "0.5‰")
+    assertEquals(Display.gridLabel(1.0, BacUnit.Permille), "1‰")
+    assertEquals(Display.gridLabel(0.5, BacUnit.PercentBac), "0.05%")
+    assertEquals(Display.gridLabel(2.0, BacUnit.PercentBac), "0.2%")
+    assertEquals(Display.gridLabel(1.5, BacUnit.MgPer100ml), "150 mg")
+    assertEquals(Display.gridLabel(1.0, BacUnit.BreathMgPerL), "1‰")
+    assertEquals(Display.gridLabel(0.0, BacUnit.Permille), "0")
   }
 
   test("durations read as hours and minutes") {

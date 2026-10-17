@@ -26,8 +26,14 @@ class ChartSvgSuite extends munit.FunSuite:
     assert(s.contains("""class="oh-now""""))
   }
 
-  test("no horizontal threshold line is drawn (a 0.5 ‰ line would read as a target)") {
-    assert(!svg(at(60)).contains("oh-threshold"))
+  test("grid lines every 0.5 ‰ from 0, every 1 ‰ on a tall scale; all styled the same") {
+    assertEquals(ChartSvg.gridSteps(1.3), List(0.0, 0.5, 1.0))
+    assertEquals(ChartSvg.gridSteps(3.0), List(0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0))
+    assertEquals(ChartSvg.gridSteps(4.2), List(0.0, 1.0, 2.0, 3.0, 4.0))
+    val s     = svg(at(60))
+    val lines = """<g class="oh-grid"><line [^>]*>""".r.findAllIn(s).map(_.replaceAll("""y[12]="[^"]*"""", "")).toList.distinct
+    assertEquals(lines.size, 1, "every grid line has the same style")
+    assert(!s.contains("oh-threshold"))
   }
 
   test("markers inside the view are drawn on the time axis with their kind's colour") {
@@ -48,7 +54,9 @@ class ChartSvgSuite extends munit.FunSuite:
 
   test("hour ticks are placed on local hours (UTC+5:30)") {
     val seen = scala.collection.mutable.ListBuffer.empty[Instant]
-    ChartSvg.render(Tonight.of(profile, Some(session), at(60)), at(60), Nil, _ => 330, t => { seen += t; "x" })
+    val t0   = Tonight.of(profile, Some(session), at(60))
+    ChartSvg.render(t0, at(60), Nil, _ => 330, t => { seen += t; "x" })
+    seen --= t0.summary.peak.map(_.at) // the peak label also names its time; only the hour ticks are checked
     assert(seen.nonEmpty)
     assert(seen.forall(t => (t.getEpochSecond / 60 + 330) % 60 == 0), seen.toString)
   }
@@ -65,24 +73,58 @@ class ChartSvgSuite extends munit.FunSuite:
     assertEquals(ms.map(_.at), List(at(0), at(5), at(10)))
   }
 
-  test("markers are neon pictograms on the time axis, in a second row when they would overlap") {
+  test("markers are neon pictograms on the time axis: drinks on the top row, water and food on the second") {
     val s = svg(at(60), List(Marker(at(0), MarkerKind.Beer), Marker(at(1), MarkerKind.Water), Marker(at(30), MarkerKind.Shot)))
     assertEquals("""class="oh-marker"""".r.findAllMatchIn(s).size, 3)
     val rows = """class="oh-marker" transform="translate\([\d.]+ ([\d.]+)\)"""".r.findAllMatchIn(s).map(_.group(1)).toList
-    assertEquals(rows.distinct.size, 2) // the water a minute after the beer moves down a row
+    assertEquals(rows.distinct.size, 2)
+    assertEquals(rows(0), rows(2), "both drinks share the top row")
   }
 
-  test("a faint grid line at each whole per mille, never at 0.5") {
+  test("marker rows by kind: drinks on top, water and food below; close markers in a row are nudged apart") {
+    val placed = ChartSvg.rows(List(100.0 -> MarkerKind.Beer, 104.0 -> MarkerKind.Wine, 102.0 -> MarkerKind.Water, 160.0 -> MarkerKind.Meal))
+    assertEquals(placed.map(_._2), List(0, 0, 1, 1))
+    assertEquals(placed(0)._1, 100.0)
+    assertEquals(placed(1)._1, 114.0) // nudged right by the marker gap
+    assertEquals(placed(2)._1, 102.0)
+  }
+
+  test("the now dot sits where the curve meets the now line; the now pill is on the time axis") {
     val s = svg(at(60))
-    assert(s.contains("""class="oh-grid"""") && s.contains(">1‰<"), s)
-    assert(!s.contains(">0.5"))
+    assert(s.contains("""class="oh-now-dot""""))
+    val pillY = """class="oh-now-pill"><rect [^>]*?y="([\d.]+)"""".r.findFirstMatchIn(s).map(_.group(1).toDouble)
+    assert(pillY.exists(_ > 200), s"pill at $pillY")
+  }
+
+  test("peak and back-to dots: amber at the peak with its label, ice on the baseline at the back-to time") {
+    val t = Tonight.of(profile, Some(session), at(40))
+    val s = ChartSvg.render(t, at(40), Nil, _ => 0, label, bacLabel = p => f"$p%.2f‰")
+    assert(s.contains("""class="oh-peak""""))
+    val pk = t.summary.peak.get
+    assert(s.contains(s"${f"${pk.bacMgDl / BacUnit.MgDlPerPermille}%.2f‰"} · ${label(pk.at)}"), "peak label")
+    assert("""<g class="oh-back"[^>]*>.*?cy="170.0"""".r.findFirstIn(s).isDefined, "back-to dot on the baseline")
+  }
+
+  test("history: no now line, dot or pill; peak and back-to dots stay") {
+    val t = Tonight.of(profile, Some(session), at(300))
+    val s = ChartSvg.render(t, at(300), Nil, _ => 0, label, showNow = false)
+    assert(!s.contains("oh-now"))
+    assert(s.contains("oh-peak") && s.contains("oh-back"))
+  }
+
+  test("no night: no peak or back-to dot") {
+    val t = Tonight.of(profile, None, at(0))
+    val s = ChartSvg.render(t, at(0), Nil, _ => 0, label)
+    assert(!s.contains("oh-peak") && !s.contains("oh-back"))
   }
 
   test("hour ticks stay on local hours across a DST change") {
     val change = at(120)
     val offset = (t: Instant) => if t.isBefore(change) then 60 else 120
     val seen   = scala.collection.mutable.ListBuffer.empty[Instant]
-    ChartSvg.render(Tonight.of(profile, Some(session), at(60)), at(60), Nil, offset, t => { seen += t; "x" })
+    val t0     = Tonight.of(profile, Some(session), at(60))
+    ChartSvg.render(t0, at(60), Nil, offset, t => { seen += t; "x" })
+    seen --= t0.summary.peak.map(_.at) // the peak label also names its time; only the hour ticks are checked
     assert(seen.size >= 2)
     assert(seen.forall(t => (t.getEpochSecond / 60 + offset(t)) % 60 == 0), seen.toString)
   }
@@ -94,7 +136,7 @@ class ChartSvgSuite extends munit.FunSuite:
       Summary(peak, Trend.Steady, None, None), Impairment.Drunk, at(0), at(120), capped = false)
     val ys = """<g class="oh-grid">.*?<text x="[^"]+" y="([^"]+)"""".r
       .findAllMatchIn(ChartSvg.render(t, at(60), Nil, _ => 0, label)).map(_.group(1).toDouble).toList
-    assert(ys.size == 2 && ys.forall(_ >= 16), ys.toString)
+    assert(ys.size == ChartSvg.gridSteps(2.0).size && ys.forall(_ >= 16), ys.toString)
   }
 
   test("a past night's chart has its own label and no now marker") {

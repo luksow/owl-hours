@@ -61,7 +61,7 @@ object HistoryScreen:
     val (t, end) = History.chart(profile, s)
     val day      = LocalDateTime.dayLabel(s.startedAt)
     val chart = ChartSvg.render(t, end, Marker.of(s.intakes), TimeFormat.utcOffsetMinutes, TimeFormat.hhmm,
-      bacLabel = p => Display.gridLabel(p.toInt, settings.bacUnit), label = s"Blood alcohol estimate on $day", showNow = false)
+      bacLabel = p => Display.gridLabel(p, settings.bacUnit), label = s"Blood alcohol estimate on $day", showNow = false)
     div(
       cls := "space-y-4",
       h2(cls := "font-ui text-lg uppercase tracking-widest text-amber", day),

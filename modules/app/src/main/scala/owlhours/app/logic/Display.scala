@@ -16,7 +16,6 @@ object Display:
   /** Peaks are blood figures; with the breath unit they are shown in ‰, as on Tonight. */
   def peak(bacMgDl: Double, unit: BacUnit): String = bac(bacMgDl, 0, if unit == BacUnit.BreathMgPerL then BacUnit.Permille else unit)
 
-  /** Labels for whole-‰ grid lines in the chosen unit; the chart is a blood curve, so breath users see ‰. */
   /** The back-to chip (spec §4): the time, or the end of the window when the estimate is still above ~0 there. */
   def backTo(t: Tonight, hhmm: Instant => String): Option[String] =
     t.summary.backToZeroBy match
@@ -24,10 +23,13 @@ object Display:
       case None if t.capped => Some(s"Back to ~0 after ${hhmm(t.viewTo)}+")
       case None             => None
 
-  def gridLabel(permille: Int, unit: BacUnit): String = unit match
-    case BacUnit.PercentBac => s"${Format.number(permille / 10.0)}%"
-    case BacUnit.MgPer100ml => s"${permille * 100} mg"
-    case _                  => s"$permille‰"
+  /** Grid labels in the chosen unit, at half-‰ steps; the chart is a blood curve, so breath users see ‰. */
+  def gridLabel(permille: Double, unit: BacUnit): String =
+    if permille == 0 then "0"
+    else unit match
+      case BacUnit.PercentBac => s"${Format.number(permille / 10.0)}%"
+      case BacUnit.MgPer100ml => s"${Format.number(permille * 100)} mg"
+      case _                  => s"${Format.number(permille)}‰"
 
   def impairment(i: Impairment): String = i match
     case Impairment.Sober     => "Sober"

@@ -72,7 +72,7 @@ object TonightScreen:
       case Trend.Falling => "↘ falling"
       case Trend.Steady  => "→ steady"
     val chart = ChartSvg.render(t, now, Marker.of(s.toList.flatMap(_.intakes)), TimeFormat.utcOffsetMinutes, TimeFormat.hhmm,
-      bacLabel = p => Display.gridLabel(p.toInt, unit))
+      bacLabel = p => Display.gridLabel(p, unit))
     div(
       cls := "px-5",
       div(cls := "mt-6 flex items-end gap-4",
