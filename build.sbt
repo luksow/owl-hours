@@ -29,7 +29,7 @@ lazy val domain = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "pl.iterators" %%% "kebs-opaque" % V.kebs,
     testDeps
   )
-// Scala.js gets a small java.time of its own (modules/domain/js), not scala-java-time: see learning note 06
+// Scala.js gets a small java.time of its own (modules/domain/js), not scala-java-time, whose formatters and locale data were ~9 % of the bundle
 
 lazy val model = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)

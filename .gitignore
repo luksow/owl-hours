@@ -21,3 +21,4 @@ web/test-results/
 web/playwright-report/
 .playwright-mcp/
 docs/
+.lh/

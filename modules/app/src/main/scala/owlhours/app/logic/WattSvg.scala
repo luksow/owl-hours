@@ -4,7 +4,7 @@ import owlhours.model.Impairment
 import Neon.*
 
 /**
- * Watt, the hand-bent neon owl (spec §8.1), ported from docs/branding/owl-hours-identity-prototype.html.
+ * Watt, the hand-bent neon owl (spec §8.1), ported from the brand identity prototype.
  * Each tube is drawn twice — a blurred glow and a bright core — so one filter per drawing suffices; unlit tubes are
  * dark. Motion classes are defined in web/main.css and respect prefers-reduced-motion.
  */

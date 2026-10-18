@@ -5,7 +5,7 @@ import scala.util.Try
 
 /**
  * ISO-8601 text for instants and dates without java.time's DateTimeFormatter. On Scala.js the formatter and its
- * locale data are a large share of the bundle, and one `Instant.parse` keeps them all (see learning note 06).
+ * locale data are a large share of the bundle, and one `Instant.parse` keeps them all.
  */
 object IsoTime {
   private val InstantShape = """(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?Z""".r

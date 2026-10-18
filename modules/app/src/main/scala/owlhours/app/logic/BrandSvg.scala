@@ -3,7 +3,7 @@ package owlhours.app.logic
 import Neon.*
 
 /**
- * The brand drawings of spec §8.6, ported from docs/branding/owl-hours-identity-prototype.html: the owl-head mark,
+ * The brand drawings of spec §8.6, ported from the brand identity prototype: the owl-head mark,
  * the horizontal lockup (lit for the app, unlit for daytime surfaces) and the two badge plaques. The same head path
  * is in web/public/owl.svg and web/public/icon.svg; e2e/assets.spec.js checks they match.
  */

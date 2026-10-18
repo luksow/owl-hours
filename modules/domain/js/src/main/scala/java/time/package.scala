@@ -2,7 +2,7 @@ package java.time
 
 /**
  * The slice of java.time Owl Hours uses, for Scala.js only (the JVM uses the JDK's own classes). scala-java-time is
- * a complete port, with formatters, chronologies and locale data, and was ~9 % of the bundle (learning note 06).
+ * a complete port, with formatters, chronologies and locale data, and was ~9 % of the bundle.
  * Semantics follow the JDK: the shared test suites run against the JDK on the JVM and against these on Node.
  *
  * Code compiled for Scala.js resolves java.* names against the JDK, and an incremental compile of one file here can
