@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://luksow.github.io/owl-hours/"><b>Open the app</b></a> ·
+  <a href="https://owlhours.app/"><b>Open the app</b></a> ·
   <a href="https://github.com/luksow/owl-hours/actions/workflows/ci.yml"><img src="https://github.com/luksow/owl-hours/actions/workflows/ci.yml/badge.svg" alt="CI" align="center"></a>
 </p>
 
