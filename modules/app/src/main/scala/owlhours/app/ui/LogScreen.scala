@@ -121,7 +121,7 @@ object LogScreen {
       val save: IO[Unit] =
         (start.get, volume.get, duration.get, abv.get, kcal.get, Now.instant).flatMapN { (st, v, d, a, k, now) =>
           val edit: EitherNel[String, IntakeEdit] = (
-            Pickers.resolveWhen(st, now).toEitherNel,
+            Pickers.resolveWhen(st, now, keep = Some(intake.startsAt)).toEitherNel,
             volume0.traverse(_ => Amount.drinkMl(v)).toEitherNel,
             duration0.traverse(_ => Amount.minutes(d)).toEitherNel,
             abv0

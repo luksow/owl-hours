@@ -25,8 +25,8 @@ object Pickers {
       text
     )
 
-  def resolveWhen(w: When, now: Instant): Either[String, Instant] =
-    WhenPick.resolve(w, now, LocalDateTime.parseDetailed)
+  def resolveWhen(w: When, now: Instant, keep: Option[Instant] = None): Either[String, Instant] =
+    WhenPick.resolve(w, now, LocalDateTime.parseDetailed, keep)
 
   /** Spec §6: shortcut chips fill a date-time field that is always shown; typing a chip's time selects that chip. */
   def when(state: SignallingRef[IO, When], now: Signal[IO, Instant]): Resource[IO, HtmlElement[IO]] = {

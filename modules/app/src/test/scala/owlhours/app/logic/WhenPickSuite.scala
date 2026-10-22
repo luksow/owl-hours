@@ -33,4 +33,10 @@ class WhenPickSuite extends munit.FunSuite {
     assert(resolve(When.At("2026-10-18T09:00"), now, parse).isLeft)
     assert(resolve(When.At(""), now, parse).isLeft)
   }
+
+  test("editing a drink lined up by Same again keeps its later time; other future times are still refused") {
+    val queued = Instant.parse("2026-10-17T22:07:41.250Z") // the field shows minutes; the stored time has seconds
+    assertEquals(resolve(When.At("2026-10-17T22:07"), now, parse, keep = Some(queued)), Right(queued))
+    assert(resolve(When.At("2026-10-17T22:30"), now, parse, keep = Some(queued)).isLeft)
+  }
 }

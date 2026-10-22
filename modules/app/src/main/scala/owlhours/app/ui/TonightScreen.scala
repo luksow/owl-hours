@@ -233,10 +233,7 @@ object TonightScreen {
         cls := s"$Tile border-pink/60 text-pink disabled:opacity-40",
         disabled <-- lastDrink.map(_.isEmpty),
         onClick --> (_.foreach(_ =>
-          (lastDrink.get, Now.instant).flatMapN {
-            case (Some(d), now) => app.addIntake(Intake.Drink(d.snapshot, now, d.duration))
-            case (None, _)      => IO.unit
-          }
+          (session.get, Now.instant).flatMapN((s, now) => SameAgain.next(s, now).traverse_(app.addIntake))
         )),
         icon(Icon.Repeat, Tube.Pink),
         "Same again"

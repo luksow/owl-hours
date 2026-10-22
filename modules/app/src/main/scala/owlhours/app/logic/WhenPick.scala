@@ -21,8 +21,17 @@ object WhenPick {
       .collectFirst { case (m, _) if format(now.minusSeconds(m * 60L)) == text => When.Ago(m) }
       .getOrElse(When.At(text))
 
-  def resolve(w: When, now: Instant, parse: String => Either[String, Instant]): Either[String, Instant] = w match {
+  def resolve(
+      w: When,
+      now: Instant,
+      parse: String => Either[String, Instant],
+      keep: Option[Instant] = None
+  ): Either[String, Instant] = w match {
     case When.Ago(m) => Right(now.minusSeconds(m * 60L))
-    case When.At(s)  => parse(s).flatMap(Edits.notInFuture(_, now))
+    // a drink lined up by Same again keeps its later time while it is edited (the field shows whole minutes)
+    case When.At(s) =>
+      parse(s).flatMap { t =>
+        keep.find(k => k.getEpochSecond / 60 == t.getEpochSecond / 60).fold(Edits.notInFuture(t, now))(Right(_))
+      }
   }
 }

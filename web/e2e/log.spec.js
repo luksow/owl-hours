@@ -88,3 +88,22 @@ test("opening an editor does not rebuild the other rows", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
   await expect(page.locator("button[data-probe=kept]")).toHaveCount(1);
 });
+
+test("Same again during a drink lines the next one up behind it, and a lined-up drink can still be edited", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Same again" }).click();
+  await page.getByRole("button", { name: "Same again" }).click();
+  await expect.poll(async () => (await stored(page)).at(-1).intakes.filter((i) => i.type === "drink").length).toBe(3);
+  const starts = (await stored(page)).at(-1).intakes.filter((i) => i.type === "drink").map((i) => Date.parse(i.start)).sort();
+  // the seeded pint is finished, so the first tap starts now; the second waits for it
+  expect(starts[2] - starts[1]).toBe(30 * 60_000);
+
+  await page.goto("/#/log");
+  await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).nth(2).click(); // tonight lists oldest first
+  await page.getByLabel("Amount (ml)").fill("500");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
+  const drinks = (await stored(page)).at(-1).intakes.filter((i) => i.type === "drink");
+  const queued = drinks.find((i) => Date.parse(i.start) === starts[2]);
+  expect(queued?.snapshot.volume).toBe(500);
+});
