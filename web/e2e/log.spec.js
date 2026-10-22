@@ -102,8 +102,9 @@ test("Same again during a drink lines the next one up behind it, and a lined-up 
   await page.getByRole("button", { name: /Pale lager \/ Pilsner/ }).nth(2).click(); // tonight lists oldest first
   await page.getByLabel("Amount (ml)").fill("500");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
-  const drinks = (await stored(page)).at(-1).intakes.filter((i) => i.type === "drink");
-  const queued = drinks.find((i) => Date.parse(i.start) === starts[2]);
-  expect(queued?.snapshot.volume).toBe(500);
+  // the editor closes first and the change is saved after the nights are regrouped, which runs the model
+  await expect.poll(async () => {
+    const drinks = (await stored(page)).at(-1).intakes.filter((i) => i.type === "drink");
+    return drinks.find((i) => Date.parse(i.start) === starts[2])?.snapshot.volume;
+  }).toBe(500);
 });
